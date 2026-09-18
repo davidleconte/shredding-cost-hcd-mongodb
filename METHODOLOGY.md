@@ -104,7 +104,7 @@ In practice this decomposed into four standing rules.
 
 Every substantive claim in the source article carries one of four markers, and
 the same markers are used throughout this repository. They are reproduced here
-verbatim from `docs/article/article-corrected.html` and
+verbatim from the two volets under `docs/article/` and
 `docs/article/wording-insertions.md`:
 
 | Marker | Meaning |

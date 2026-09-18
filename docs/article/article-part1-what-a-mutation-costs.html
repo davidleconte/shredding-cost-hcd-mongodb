@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One field, five operations — Part I: what a mutation costs</title>
+<meta name="description" content="How a document database’s physical storage layout sets the price of changing one field: decomposition into derived columns, the read-modify-write cycle, and the indexed content you pay for on every write. Measured on a named build, with every claim graded.">
+<meta name="author" content="David Leconte">
+<style>
+:root{--ink:#1B1F24;--soft-ink:#4A5568;--navy:#1F3864;--steel:#2E5496;
+--amber:#8A6D00;--line:#E4E9F0;--tint:#F7F9FC;--bg:#fff}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#F0F3F7;color:var(--ink);
+font:19px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-font-smoothing:antialiased}
+.sheet{max-width:1000px;margin:0 auto;background:var(--bg);padding:0 0 90px;
+box-shadow:0 1px 3px rgba(16,24,40,.09),0 16px 48px rgba(16,24,40,.07)}
+.wrap{max-width:952px;margin:0 auto;padding:0 26px}
+header{padding:64px 26px 34px;border-bottom:1px solid var(--line);margin-bottom:44px}
+header .wrap{padding:0;max-width:690px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+color:var(--steel);margin:0 0 18px}
+h1{font-size:41px;line-height:1.16;letter-spacing:-.021em;margin:0 0 16px;color:var(--navy);font-weight:800}
+.deck{font-size:21px;line-height:1.5;color:var(--soft-ink);margin:0 0 26px;font-weight:400}
+.byline{font-size:14.5px;color:var(--soft-ink);line-height:1.7;
+padding-top:20px;border-top:1px solid var(--line)}
+.byline strong{color:var(--ink)}
+main .wrap>p,main .wrap>h2,main .wrap>h3,main .wrap>ul,main .wrap>ol,
+main .wrap>blockquote,main .wrap>hr,main .wrap>table,
+main .wrap>.disclosure,main .wrap>.abstract,main .wrap>.legend,
+main .wrap>.notes,main .wrap>.appendix{max-width:690px;margin-left:auto;margin-right:auto}
+h2{font-size:27px;line-height:1.28;letter-spacing:-.014em;color:var(--navy);
+margin:58px 0 16px;font-weight:700}
+h3{font-size:20px;color:var(--navy);margin:36px 0 10px;font-weight:700}
+p{margin:0 0 20px}
+strong{font-weight:650;color:#111}
+a{color:var(--steel);text-decoration:none;border-bottom:1px solid rgba(46,84,150,.32)}
+a:hover{border-bottom-color:var(--steel)}
+ul,ol{margin:0 0 22px;padding-left:26px}li{margin:0 0 10px}
+hr{border:0;height:1px;background:var(--line);margin:46px 0}
+blockquote{margin:32px 0;padding:20px 26px;background:var(--tint);
+border-left:4px solid var(--steel);border-radius:0 8px 8px 0;
+font-size:20px;line-height:1.58;color:var(--navy)}
+blockquote p{margin:0}
+blockquote strong{color:var(--navy)}
+blockquote.src{font-size:17px;line-height:1.62;border-left-color:var(--amber);color:var(--ink)}
+blockquote.src cite{display:block;margin-top:10px;font-style:normal;font-size:13.5px;color:var(--soft-ink)}
+code{background:#F1F4F8;border:1px solid #E1E7EF;border-radius:4px;padding:1.5px 6px;
+font:.86em/1.5 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;color:#0F2A5C}
+pre{background:#F8FAFC;border:1px solid var(--line);border-radius:10px;
+padding:20px 24px;overflow-x:auto;margin:0 auto 26px;max-width:816px;
+font:14px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+pre code{background:none;border:0;padding:0;font-size:inherit;color:#1B2733}
+pre .c{color:#6B7C93;font-style:italic}
+table{border-collapse:collapse;width:100%;font-size:16px;margin:0 0 26px}
+th{background:var(--navy);color:#fff;text-align:left;padding:11px 14px;font-weight:600}
+td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#FAFCFE}
+.tablewrap{max-width:900px;margin:0 auto 30px;overflow-x:auto}
+figure.wide{max-width:900px;margin:48px auto 42px;padding:20px;
+background:var(--tint);border:1px solid var(--line);border-radius:12px}
+figure.wide.measured{background:#F4FAF6;border-color:#BFE3C8;
+box-shadow:inset 4px 0 0 #1E5631}
+figure.wide.measured figcaption{color:#2F5741}
+figure.wide .figtag{display:inline-block;font:700 10px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.09em;text-transform:uppercase;padding:2.5px 8px;border-radius:3px;margin-bottom:12px}
+figure.wide .figtag-m{background:#1E5631;color:#fff}
+figure.wide .figtag-c{background:#E8F0FB;color:#1F3864;border:1px solid #C6D8F2}
+.demo{max-width:900px;margin:48px auto 42px;padding:22px;background:#FFFDF7;
+border:1px solid #EBDCAE;border-radius:12px;box-shadow:inset 4px 0 0 #8A6D00}
+.demo .figtag{display:inline-block;font:700 10px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.09em;text-transform:uppercase;padding:2.5px 8px;border-radius:3px;margin-bottom:12px}
+.demo .figtag-x{background:#8A6D00;color:#fff}
+.demo-h{font-size:19px;color:var(--navy);margin:0 0 8px;font-weight:700}
+.demo-lede{font-size:15.5px;line-height:1.6;color:var(--soft-ink);margin:0 0 18px;max-width:640px}
+.demo-ctrl{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin:0 0 18px}
+.demo-ctrl label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;
+font-weight:650;color:var(--navy)}
+.demo-ctrl select{font:inherit;font-size:14px;font-weight:400;padding:7px 10px;
+border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);min-width:270px}
+.demo-ctrl button{font:inherit;font-size:14px;font-weight:650;padding:9px 20px;border:0;
+border-radius:7px;background:var(--navy);color:#fff;cursor:pointer}
+.demo-ctrl button:hover{background:var(--steel)}
+.demo-ctrl button:focus-visible,.demo-ctrl select:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.demo svg{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:8px}
+.demo-foot{font-size:13.5px;line-height:1.6;color:var(--soft-ink);margin:14px 0 0;max-width:700px}
+.demo-foot.miss{color:#6B5500}
+.epigraph{max-width:640px;margin:56px auto 30px;padding:0 0 0 22px;
+border-left:2px solid var(--line)}
+.epigraph p{font-size:17.5px;line-height:1.62;color:var(--navy);font-style:italic;margin:0 0 9px}
+.epigraph cite{display:block;font-style:normal;font-size:13.5px;line-height:1.5;color:var(--soft-ink)}
+.epigraph cite b{font-weight:650;color:var(--ink);font-style:normal}
+.epigraph .gloss{font-size:13px;color:var(--soft-ink);font-style:normal;margin:8px 0 0}
+@media print{.epigraph{break-inside:avoid}}
+@media(max-width:640px){.demo-ctrl select{min-width:100%}.demo-ctrl label{width:100%}}
+@media print{.demo-ctrl{display:none}.demo{box-shadow:none;break-inside:avoid}
+.demo-h::after{content:" — interactive; static values shown"}}
+figure.wide svg{width:100%;height:auto;display:block}
+figcaption{margin-top:14px;font-size:14px;color:var(--soft-ink);text-align:center;font-style:italic}
+.disclosure{margin:52px auto 0;max-width:690px;padding:22px 26px;background:var(--tint);
+border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.65;color:var(--soft-ink)}
+.disclosure em{font-style:normal}
+.disclosure p{margin:0 0 12px}.disclosure p:last-child{margin:0}
+.abstract{margin:0 auto 34px;padding:24px 28px;background:var(--tint);
+border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 10px 10px 0;
+font-size:17.5px;line-height:1.62}
+.abstract p{margin:0 0 14px}.abstract p:last-child{margin:0}
+.abstract .lbl{display:block;font-size:11.5px;font-weight:700;letter-spacing:.14em;
+text-transform:uppercase;color:var(--steel);margin-bottom:12px}
+.legend{margin:0 auto 30px;padding:18px 24px;border:1px solid var(--line);
+border-radius:10px;font-size:15.5px;line-height:1.6;background:#fff}
+.legend p{margin:0 0 10px}.legend p:last-child{margin:0}
+sup.n{font-size:.66em;font-weight:700;color:var(--steel);line-height:0;
+vertical-align:super;margin-left:1px}
+sup.n a{border:0;color:inherit}
+sup.n a:hover{border-bottom:1px solid var(--steel)}
+.ep{display:inline-block;font:700 10.5px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.06em;padding:1.5px 6px;border-radius:3px;vertical-align:2px;margin-right:2px}
+.ep-d{background:#E8F0FB;color:#1F3864;border:1px solid #C6D8F2}
+.ep-r{background:#FBF3DE;color:#6B5500;border:1px solid #EBDCAE}
+.ep-u{background:#F2F0F4;color:#514A5C;border:1px solid #DEDAE4}
+.ep-m{background:#E6F4EA;color:#1E5631;border:1px solid #BFE3C8}
+.notes{margin-top:26px;font-size:15.5px;line-height:1.62;color:var(--soft-ink)}
+.notes li{margin:0 0 13px}
+.notes li:target{background:#FBF3DE;border-radius:4px;padding:2px 6px;margin-left:-6px}
+.notes code{font-size:.8em}
+.appendix{font-size:15.5px;line-height:1.6}
+.appendix dt{font-weight:650;color:var(--ink);margin:22px 0 4px}
+.appendix dd{margin:0 0 6px;color:var(--soft-ink)}
+.appendix dd.q{color:var(--ink);padding-left:14px;border-left:2px solid var(--line);font-style:italic}
+.appendix dd.m{font-size:14px;word-break:break-word}
+@media(max-width:980px){figure.wide{max-width:100%}pre{max-width:100%}.tablewrap{max-width:100%}}
+@media(max-width:640px){body{font-size:17.5px}h1{font-size:30px}h2{font-size:22px}
+header{padding:44px 20px 28px}.wrap{padding:0 20px}.deck{font-size:19px}}
+@media print{body{background:#fff;font-size:11pt}.sheet{box-shadow:none;max-width:none}
+figure.wide{break-inside:avoid}h2{break-after:avoid}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header><div class="wrap">
+<p class="kicker">Databases &middot; storage architecture &middot; write path</p>
+<h1>One field, five operations</h1>
+<p class="deck">Part I &mdash; what a mutation costs: decomposition, the read-modify-write cycle, and the indexed content you pay for on every write</p>
+<p class="byline"><strong>David Leconte</strong> &mdash; Customer Success Engineer, IBM France | Software, Data &amp; AI | Horizon<br>
+Part I of a diptych. Roughly twenty minutes to read; the three exercises at the end take an afternoon between them.</p>
+</div></header>
+
+<main><div class="wrap">
+
+<div class="abstract">
+<span class="lbl">Abstract — Part I of two</span>
+<p>Two document databases expose near-identical interfaces — JSON in, JSON out — and diverge sharply in what a single-field update costs. This part argues that the divergence is derivable rather than incidental: it follows from one decision about how a document is laid out on disk, and that decision fixes the price of every mutation thereafter.</p>
+<p>A document handed to the decomposing engine is shredded into one row of generic derived columns, flattened to dotted paths at any depth of nesting. Changing one field is therefore not a targeted write but a sequence of five operations, of which a query trace shows the first three directly. Index maintenance on that path covers every indexed field the document carries, not the fields that changed — which an earlier revision of this work stated the other way round, and measurement corrected.</p>
+<p>Holding the mutation constant while the document&rsquo;s untouched indexed content grew raised median latency 7.50×, against a read control of 1.56× and a constant network payload. Later campaigns resolved how that price decomposes: the driver is indexed <em>bytes</em> rather than field count, and a per-field rate reported in an earlier revision has been withdrawn.</p>
+<p>A boundary condition arrived with the answer. Every rate here was measured with the cycle&rsquo;s internal read served from memory; forcing it onto the SSTable path collapses the growth with indexed volume behind a large fixed read cost. The quantities in this part are memtable-regime quantities and are labelled as such wherever they appear. The comparison earlier revisions could not make has also been made: on one host, in one session, under a declared durability mapping, the decomposing engine's cost per mutation runs from roughly three to roughly thirteen times a capability-matched MongoDB's across this series, the gap widening with indexed volume. A ratio of slopes puts it at forty, on a denominator too near zero to bear that weight; the range is what the measurement supports. That is one axis, and it is the axis where decomposition is expected to lose. Two more went the same way for a different reason: through the interface it exposes, the decomposing engine neither aggregates server-side nor counts past a documented threshold, so on the analytical axis the gap is one of capability rather than speed.</p>
+<p><strong>Part II</strong> takes up the other half of the same decision: when what you wrote becomes visible to a search, why that is a correctness property rather than a performance one, and what a change of consensus protocol does and does not touch.</p>
+</div>
+
+<div class="legend">
+<p><strong>A note on epistemic status.</strong> Comparative writing about competing databases fails most often not through malice but through the silent promotion of plausible mechanism to documented fact. Every substantive claim below therefore carries one of four markers, and the appendix records the exact passage on which each rests.</p>
+<p><span class="ep ep-d">D</span> <strong>Documented.</strong> Established by the vendor's own version-pinned documentation, by the project's source of record, or by peer-reviewed publication. Quoted verbatim in the appendix.</p>
+<p><span class="ep ep-r">R</span> <strong>Reported.</strong> Described publicly by the engineers who built the system, or by the upstream project, but not restated in the versioned documentation of the shipped product. Directionally reliable; not a contractual guarantee.</p>
+<p><span class="ep ep-u">U</span> <strong>Unverified.</strong> Asserted here on structural grounds, or widely repeated in the practitioner literature, but not established by any source of acceptable rank that I was able to consult. Treat as a hypothesis to be tested against your own build.</p>
+<p><span class="ep ep-m">M</span> <strong>Measured.</strong> Observed on a named build under stated conditions, by a harness reproduced in the appendix. Stronger than <span class="ep ep-u">U</span>, weaker than <span class="ep ep-d">D</span>: it establishes what one build did on one day, not what the vendor commits to. Every <span class="ep ep-m">M</span> claim names its measurement (M1–M4) and every measurement names its conditions.</p>
+<p><em>Nota bene on the figures.</em> A diagram carries more apparent authority than a paragraph: it resembles an architecture specification even when it is an argument. Three of the four figures below rest on measurement &mdash; two report it directly, one derives intervals from it; all three are tinted green and labelled as such. The fourth is a schematic — they organise an argument and measure nothing, whatever their rectangles may suggest. Every caption additionally states which of its elements are documented, reported or measured. Where a figure depicts something marked <span class="ep ep-u">U</span>, the caption says so, and the box should be read as a hypothesis drawn in rectangles rather than as a contract.</p>
+</div>
+
+
+<h2>1. The phenomenon</h2>
+
+<p>A pattern recurs in design reviews with sufficient regularity to warrant formal treatment.</p>
+
+<p>A team ships a service backed by a document store, and for a while it behaves. Over some months the schema accretes: a status enumeration, two or three timestamps, a nested object carrying audit provenance. Read latency holds. Write latency does not, and it degrades disproportionately to the additional bytes committed. Because no one has altered the write pattern, no one examines the write path. The investigation goes to the application tier, to the network, to garbage collection, and returns empty-handed.</p>
+
+<p>The explanation is neither a defect, nor a tuning deficiency, nor a regression introduced by a release. What it is, is the deterministic consequence of a decision taken long before the team arrived: <strong>how the engine physically represents a document on disk</strong>. Recover that decision, and much of the rest of the system turns predictable, including behaviours with no apparent connection to writes at all, such as the latency with which a newly written document becomes retrievable.</p>
+
+<p>The argument is developed through two systems that resolve the same design question in opposite directions: the JSON document interface layered over a Cassandra-derived engine (the IBM DataStax HCD 2.0 Data API<sup class="n"><a href="#n5">5</a></sup>) and MongoDB 8.x.</p>
+
+<div class="epigraph">
+<p>"Show me your flowcharts and conceal your tables, and I shall continue to be mystified. Show me your tables, and I won’t usually need your flowcharts; they’ll be obvious."</p>
+<cite><b>Frederick P. Brooks, Jr.</b>, <em>The Mythical Man-Month</em>, chapter 9, “Ten Pounds in a Five-Pound Sack”, 1975 (anniversary edition 1995, p. 102).</cite>
+<p class="gloss">Written about program data structures half a century ago. This article is an attempt to take it literally, one layer down, where the tables are a vendor’s and nobody will show them to you.</p>
+</div>
+
+<h2>2. Two resolutions of the decomposition problem</h2>
+
+<h3>2.1 Decomposition: one document, one row, many derived columns</h3>
+
+<p>The intuitive model holds that a document database stores documents. Some do. This one does something considerably more interesting, and the difference is the hinge of everything that follows.</p>
+
+<p><span class="ep ep-r">R</span> A JSON document submitted to the Data API is <em>shredded</em>: decomposed into a single database row bearing a generic column layout that captures, separately, the original document text, the set of paths present within it, typed value maps for each JSON scalar type, array membership and array cardinality.<sup class="n"><a href="#n11">11</a></sup> Indexes are then constructed over the filterable columns.</p>
+
+<p><span class="ep ep-m">M</span> The specific column names commonly cited in the practitioner literature (<code>doc_json</code>, <code>exist_keys</code>, <code>array_contains</code>, <code>array_size</code>, and the several <code>query_*_values</code> maps) are widely repeated but do not appear, so far as I could establish, in any version-pinned DataStax documentation or in a readable source file of the upstream project. I reproduce them below because they are useful as a mental model and because naming them makes the claim falsifiable. They should not be treated as an interface. On HCD 2.0.6 with Data API v1.0.33 (appendix, measurement M1) all nine appear under exactly these names, alongside three that the practitioner literature omits: <code>key</code>, the typed partition key; <code>tx_id</code>, a timeuuid that guards every conditional write; and <code>query_lexical_value</code>, the lexical column. Nine storage-attached indexes were created on that collection, which declared no vector option. That is one build's answer, not an interface; verify against the build you deploy.</p>
+
+<p><span class="ep ep-m">M</span> Nesting is where this decomposition earns its keep and shows its edges, and the flat documents of the probes above never touched it. A nested document is flattened to <em>dotted paths</em>: every scalar, at any depth, lands in the typed value map for its type, keyed by its full path: <code>payer.account.id</code>, <code>meta.flags.risk</code>, <code>lines.0.qty</code>. A nested field therefore becomes filterable with no index declaration, exactly as a top-level one does.<sup class="n"><a href="#n41">41</a></sup> <code>exist_keys</code> enumerates every path including array indices; scalar arrays carry membership tokens, which is what makes <code>{tags: "instant"}</code> match; <code>array_size</code> holds per-path lengths; and <code>doc_json</code> keeps the original verbatim.</p>
+
+<p>Two edges are worth knowing before modelling against them. First, inside an <em>array of objects</em> only positional paths exist: <code>{"lines.0.sku": "A"}</code> filters; <code>{"lines.sku": "A"}</code>, meaning "any line with that sku", does not, no path aggregating the field across elements. Second, the shredder imposes hard shape limits: nesting depth at most sixteen, at most one thousand properties per indexable object, and no indexed string beyond eight thousand bytes. All three surface as <code>SHRED_DOC_LIMIT_VIOLATION</code> at write time, not at query time, which is the merciful failure mode but still a design constraint rather than a tuning one.</p>
+
+<p>The consequence for what follows is direct. Because a mutation rewrites <code>doc_json</code> in full together with every derived map, the write cost of section 4 grows with the <em>breadth and depth of the nesting</em>, not only with the count of top-level fields. A deeply nested document is a wide document by another name.</p>
+
+<figure class="wide measured">
+<span class="figtag figtag-m">Measured on one build</span>
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: a JSON document is shredded into one database row with generic columns, over which storage-attached indexes are automatically created; the resulting cost of a single-field update is five operations, contrasted with MongoDB's single in-place update.">
+<defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#2E5496"/></marker>
+</defs>
+<rect x="0" y="0" width="900" height="520" fill="#FFFFFF"/>
+
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 1 — Decomposition and its consequences</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">One layout decision, four observable properties</text>
+
+<rect x="20" y="62" width="250" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="34" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">CLIENT</text>
+<text x="34" y="102" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#4A5568">astrapy · astra-db-ts · HTTP</text>
+<text x="34" y="126" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">{ "_id": "pmt-1",</text>
+<text x="34" y="141" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "payer": "acct-9",</text>
+<text x="34" y="156" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "amount": 1250,</text>
+<text x="34" y="171" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "tags": ["sepa"] }</text>
+<text x="34" y="188" font-family="system-ui,sans-serif" font-size="10" fill="#8A6D00">HTTP + JSON overhead is IN scope</text>
+
+<line x1="272" y1="128" x2="308" y2="128" stroke="#2E5496" stroke-width="1.6" marker-end="url(#ar)"/>
+
+<rect x="312" y="62" width="250" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="326" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">DATA API TIER</text>
+<text x="326" y="102" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">stateless · scales horizontally</text>
+<text x="326" y="126" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">shred → 1 insert · 2 update · 2 delete</text>
+<text x="326" y="147" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1E5631">LOCAL_QUORUM · LOCAL_SERIAL on IF</text>
+<text x="326" y="162" font-family="system-ui,sans-serif" font-size="10.5" fill="#1E5631">measured, not published (M4)</text>
+<text x="326" y="183" font-family="system-ui,sans-serif" font-size="10" fill="#8A6D00">one node, RF = 1: names established, cost not</text>
+
+<line x1="564" y1="128" x2="600" y2="128" stroke="#2E5496" stroke-width="1.6" marker-end="url(#ar)"/>
+
+<rect x="604" y="62" width="276" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="618" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">STORAGE — ONE ROW</text>
+<text x="618" y="104" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">doc_json · exist_keys</text>
+<text x="618" y="119" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">array_contains · array_size</text>
+<text x="618" y="134" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_text_values · query_dbl_values</text>
+<text x="618" y="149" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_bool_values · query_null_values</text>
+<text x="618" y="164" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_timestamp_values · query_lexical_value</text>
+<text x="618" y="179" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">key (partition) · tx_id (LWT guard)</text>
+<text x="618" y="192" font-family="system-ui,sans-serif" font-size="10" fill="#1E5631">12 columns measured on one build (M1)</text>
+
+<rect x="20" y="212" width="860" height="52" rx="8" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="34" y="231" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#6B5500">STORAGE-ATTACHED INDEXES — created automatically over filterable columns</text>
+<text x="34" y="247" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">Upstream default: 10 required per collection · 50 per database. HCD guardrails: 10 per table, 100 total.</text>
+<text x="34" y="262" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#1E5631">Measured (M1): 9 created on a collection declaring no vector option — about 11 such collections per NODE, all keyspaces.</text>
+
+<text x="20" y="298" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#1F3864">CONSEQUENCE — the cost of "update one nested field"</text>
+
+<rect x="20" y="312" width="530" height="186" rx="8" fill="#FFFFFF" stroke="#E4E9F0"/>
+<circle cx="46" cy="340" r="11" fill="#1F3864"/><text x="46" y="344" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">1</text>
+<text x="66" y="338" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">READ</text>
+<text x="66" y="353" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">fetch the entire document</text>
+<circle cx="46" cy="372" r="11" fill="#1F3864"/><text x="46" y="376" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">2</text>
+<text x="66" y="370" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">MODIFY</text>
+<text x="66" y="385" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">apply the change in memory</text>
+<circle cx="46" cy="404" r="11" fill="#1F3864"/><text x="46" y="408" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">3</text>
+<text x="66" y="402" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">REWRITE</text>
+<text x="66" y="417" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">whole document, plus every derived column</text>
+<circle cx="46" cy="436" r="11" fill="#8A6D00"/><text x="46" y="440" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">4</text>
+<text x="66" y="434" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">INDEX</text>
+<text x="66" y="449" font-family="system-ui,sans-serif" font-size="11" fill="#8A6D00">every indexed field — not only the mutated ones (M3)</text>
+<circle cx="46" cy="468" r="11" fill="#2E5496"/><text x="46" y="472" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">5</text>
+<text x="66" y="466" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">GUARD</text>
+<text x="66" y="481" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">UPDATE … IF tx_id = ? · LOCAL_SERIAL · 3 client retries</text>
+
+<rect x="566" y="312" width="314" height="186" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="582" y="338" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">MONGODB 8.x — the same change</text>
+<circle cx="600" cy="372" r="13" fill="#2E5496"/><text x="600" y="377" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#fff">1</text>
+<text x="622" y="370" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">UPDATE</text>
+<text x="622" y="385" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">single-document atomic mutation</text>
+<text x="582" y="414" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Only declared indexes are maintained.</text>
+<text x="582" y="432" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Search and vector indexes are maintained</text>
+<text x="582" y="447" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">outside the commit window, asynchronously.</text>
+<text x="582" y="472" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">Trade-off: you design the indexes.</text>
+<text x="582" y="488" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">Trade-off: the index lags the write.</text>
+</svg>
+<figcaption>Figure 1. The decomposition decision and the four properties it determines. <strong>Measured, not documented:</strong> the twelve columns and the nine automatic indexes (M1), the statement counts and the read-then-rewrite pair (M2), the scope of index maintenance at step 4 (M3), and both consistency levels (M4). All on one build — HCD 2.0.6 with Data API v1.0.33, one node at RF = 1. The vendor publishes none of it; read the boxes as observations of that build, not as a contract.</figcaption>
+</figure>
+
+<p><span class="ep ep-d">D</span> Easily underestimated, and real: any field becomes filterable without anyone declaring an index for it. There is no migration to add a predicate, no ticket to a database administrator to render a new attribute searchable. The upstream project's configuration record fixes the arithmetic: ten indexes are required per collection, against fifty available per database by default<sup class="n"><a href="#n1">1</a></sup> — five collections before exhaustion, on the upstream defaults. (That figure is the budget the API checks at creation; the collection measured in the appendix, created without a vector option, received nine — measurement M1.) The shipped HCD product raises the ceiling through a guardrail set to one hundred total storage-attached indexes.<sup class="n"><a href="#n3">3</a></sup> For a team iterating rapidly on an evolving schema, this is a genuine accelerant.</p>
+
+<p><span class="ep ep-m">M</span> It is also the one claim in this diptych that a later comparison confirmed in the platform&rsquo;s favour, so it is worth stating with its number. Against a million documents, filtering on a field nobody had declared an index for: MongoDB as ordinarily deployed scans the collection and answers in 377 ms; the decomposing engine, having indexed that field without being asked, answers in 17.4 ms.<sup class="n"><a href="#n48">48</a></sup> Twenty-two times faster, and the gap is structural rather than tuned: one engine is reading an index that exists, the other is reading everything.</p>
+
+<p><span class="ep ep-u">U</span> That median deserves a word, because a scan is not a stable latency. Its cost depends on where in the collection the matching document happens to sit, so the distribution is wide by construction — a median of 377 ms here, against a minimum of 13 ms and a ninety-fifth percentile of 804, with a standard deviation of 258. The figure is an expected value over document placement rather than a measurement of speed, and the honest statement is that scanning a million documents costs somewhere between a few milliseconds and most of a second depending on luck, while the index answers in seventeen regardless. That is the difference worth designing around; twenty-two is a convenient summary of it and not much more.</p>
+
+<p><span class="ep ep-u">U</span> The repository&rsquo;s re-analysis puts it more sharply, and against the platform. Because the scan&rsquo;s fastest observation of fifty, 13.3 ms, beats the decomposing engine&rsquo;s median of 17.4 and its slowest of 28.7, the two supports overlap and the direction of this comparison is <strong>not established</strong>: the interval of ratios runs from 0.46 to 65.8 and contains one.<sup class="n"><a href="#n52">52</a></sup> What the data show is not that one is faster than the other but that one is <em>predictable</em> &mdash; about seventeen milliseconds whatever the document &mdash; against a comparator whose answer takes anything from thirteen milliseconds to most of a second depending on where the document sits. Predictability is a real property and a worse headline, and it is the one this row supports.</p>
+
+<p><span class="ep ep-u">U</span> The same measurement bounds the claim in the same breath. Declare a wildcard index on the MongoDB side and it answers the same query in 0.73 ms, which is twenty-four times faster than the decomposing engine. The advantage is therefore real against the default and absent against the capability-matched configuration: what is being compared is a default against a decision, not a ceiling against a ceiling. A team that knows this field will be queried can have both the index and the speed on either platform. A team that does not know yet gets the index for free on one of them, and that is the whole of the accelerant.</p>
+
+<p>Everything that follows is the invoice for it.</p>
+
+<h3>2.2 In-place mutation</h3>
+
+<p><span class="ep ep-d">D</span> MongoDB resolves the question in the opposite direction, and its documentation is explicit on all three components of that resolution.</p>
+
+<p><em>Atomicity.</em> "In MongoDB, write operations are atomic on the single-document level, even if modifying multiple values."<sup class="n"><a href="#n34">34</a></sup> The guarantee is bounded at the document, and the documentation is equally explicit that it stops there: when a single operation modifies several documents, each modification is atomic but the operation as a whole is not.<sup class="n"><a href="#n34">34</a></sup> This is a narrower guarantee than the phrase "atomic update" suggests to a reader arriving from a relational background, and the narrowness matters.</p>
+
+<p><em>Absence of full rewrite.</em> The <code>$set</code> reference states the advantage in comparative terms against full document replacement: "Targeted Updates: $set modifies only the specified fields, ensuring efficient updates by avoiding unnecessary writes and overhead when you work with large documents."<sup class="n"><a href="#n35">35</a></sup> The same page notes the replication corollary, that <code>$set</code> writes only the updated fields to the oplog. The contrast with decomposition is therefore not an inference drawn by this article; it is the distinction the vendor itself draws, between its operator and its own replacement path.</p>
+
+<p><em>Declared indexes only.</em> MongoDB creates exactly one index without being asked — a unique index on <code>_id</code>, at collection creation, which cannot be dropped.<sup class="n"><a href="#n36">36</a></sup> Every other index is created explicitly. The write therefore maintains what the schema designer decided it should maintain, and nothing else.</p>
+
+<p><span class="ep ep-d">D</span> One qualification is owed here, and omitting it would make the comparison less honest than it should be. MongoDB does provide an opt-in analogue of automatic indexing: the <em>wildcard index</em>, declared over the pattern <code>$**</code>, which "can support queries on any arbitrary field within documents in the collection."<sup class="n"><a href="#n37">37</a></sup> What separates the two platforms on this axis is consequently not <em>capability</em> but <em>default</em>. One indexes broadly unless instructed otherwise; the other indexes nothing unless instructed. Since defaults govern the systems nobody revisited, the difference is a meaningful one, and it is also smaller and more interesting than "automatic versus manual", which is how the comparison is usually and lazily framed.</p>
+
+<div class="epigraph">
+<p>"The first principle is that you must not fool yourself — and you are the easiest person to fool."</p>
+<cite><b>Richard P. Feynman</b>, “Cargo Cult Science”, Caltech commencement address, 1974; published in <em>Engineering and Science</em> and hosted by the Caltech library at <code>calteches.library.caltech.edu/51/2/CargoCult.htm</code>.</cite>
+<p class="gloss">The section that follows exists because I failed this test, in print, and found out afterwards.</p>
+</div>
+
+<h2>3. On reading published limits — starting with this article's</h2>
+
+<p>Before going further into what decomposition costs, a detour that belongs here rather than in an appendix — because the error it describes is one I committed myself, in this article, and did not catch until audit. A reader is entitled to know, early, what this text's claims are worth when they go unchecked.</p>
+
+<p>The upstream open-source project behind the Data API and the shipped commercial product do not carry identical limits, and reading the wrong one silently corrupts a design. <span class="ep ep-d">D</span> The upstream configuration record sets a default read page size of fifty and a maximum insert count of twenty per operation, alongside ten indexes required per collection and fifty available per database.<sup class="n"><a href="#n1">1</a></sup> The commercial limits documentation for the same API surface publishes a page size of twenty and a maximum of one hundred insertions per transaction.<sup class="n"><a href="#n2">2</a></sup> The product guardrail for total storage-attached indexes is one hundred.<sup class="n"><a href="#n3">3</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Parameter</th><th>Upstream project default</th><th>Commercial product limit</th></tr></thead>
+<tbody>
+<tr><td>Read page size</td><td>50</td><td>20</td></tr>
+<tr><td>Documents per insert operation</td><td>20</td><td>100 insertions per transaction</td></tr>
+<tr><td>Indexes required per collection</td><td>10</td><td>—</td></tr>
+<tr><td>Indexes available per database</td><td>50</td><td>100 total SAI (guardrail)</td></tr>
+<tr><td>LWT client retries</td><td>3</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Observe that the divergence does not run in a single direction. Page size is <em>lower</em> in the product; insert volume is <em>higher</em>; the index ceiling is <em>higher</em>. An earlier draft of this article reported the insert batch as 100 upstream against 20 in the product, reversing the direction of the second row and misattributing the third. Three wrong numbers, then: produced by reading the upstream repository where the product documentation was called for, and reproduced with complete confidence until they met the sources now listed in the appendix.</p>
+
+<p><span class="ep ep-u">U</span> I should add that I was unable to render the HCD 2.0 limits page itself during verification; the product figures above come from the equivalent commercial documentation for the same Data API surface, which is a source of adjacent scope, not identical scope. The rule this yields is therefore one I am in a poor position to preach and a good position to demonstrate:</p>
+
+<blockquote><p>Verify the limits that constrain your design against <strong>the build you will actually deploy</strong>: not against a vendor's documentation for an adjacent edition, not against an upstream repository, not against a comparison article, and not against this one. It takes minutes, and it is the difference between a constraint known <em>ex ante</em> and one that finds you in production.</p></blockquote>
+
+<h2>4. The cost function of a single-field mutation</h2>
+
+<p>Because the document has been taken apart, changing one field cannot be a targeted write. It becomes a sequence:</p>
+
+<ol>
+<li><strong>Read</strong> the entire document into memory.</li>
+<li><strong>Modify</strong> it there.</li>
+<li><strong>Rewrite</strong> the whole document, together with every derived column.</li>
+<li><strong>Maintain</strong> the indexes — on the build measured here, over every indexed field of the document, not only the fields that changed (appendix, measurement M3).</li>
+<li><strong>Guard</strong> the write-back with a consensus-based conditional operation, so that a concurrent writer cannot silently overwrite it.</li>
+</ol>
+
+<p><span class="ep ep-m">M</span> Steps one through three describe a read-modify-write cycle. This is the structural inference on which the article's title rests, and I must be candid about its evidentiary basis: it follows <em>prima facie</em> from decomposition — a derived column cannot be recomputed without the document that derives it — but I could not find it asserted in any DataStax documentation for the current Data API. The one official statement on the subject that I could locate concerns the earlier, architecturally distinct Documents API, and it says the opposite, that the engineers resolved to avoid read-before-write at all costs.<sup class="n"><a href="#n12">12</a></sup> <em>Pace</em> that 2020 statement, which concerns a different API generation and cannot settle the question either way. What settles it, for a build you control, is a query trace rather than a latency curve. On HCD 2.0.6 with Data API v1.0.33, with tracing enabled on the node, every <code>updateOne</code> carrying a single <code>$set</code> produced two CQL statements: a <code>SELECT</code> of <code>key</code>, <code>tx_id</code> and <code>doc_json</code> by key, then one <code>UPDATE</code> carrying eleven assignments — the nine derived columns, a fresh <code>tx_id</code> and the whole <code>doc_json</code> — guarded by <code>IF tx_id = ?</code> (appendix, measurement M2). The cycle is present on that build. A cost-versus-size probe on the same build grew in step with a same-size read and could not, on its own, separate a read from a read-plus-rewrite; it is the trace, not the curve, that carries the claim.</p>
+
+<p><span class="ep ep-d">D</span> Step five is on firmer ground. The upstream configuration record exposes a client-side retry count for lightweight-transaction failure, defaulting to three.<sup class="n"><a href="#n1">1</a></sup> The Paxos machinery underlying conditional writes in this engine family is documented explicitly: a prepare phase in which a proposer circulates a proposal number to the replicas of a key, promises returned by a quorum of acceptors, then a proposal of the value, and so forth.<sup class="n"><a href="#n13">13</a></sup> The consistency levels at which this executes in the Data API are <span class="ep ep-m">M</span> not published by any source I consulted; measured on HCD 2.0.6 with Data API v1.0.33, every statement on the collection ran at <code>LOCAL_QUORUM</code> and every conditional statement carried <code>LOCAL_SERIAL</code> as its serial level (appendix, measurement M4). Earlier drafts asserted <code>LOCAL_SERIAL</code> from memory; it is restored here on the strength of a trace.</p>
+
+<p><span class="ep ep-m">M</span> A single node at RF = 1 satisfies both levels with one replica, so that first measurement established the names and hid the price entirely. A later run on a six-node ring with three replicas recovered it. Every conditional write executes a full three-replica Paxos round: the coordinator reads the precondition, sends a prepare to the other two, both promise the ballot and return the read row, the coordinator proposes, both accept and append to commitlog and Paxos memtable, then commit. Coordinator-side median: <strong>13.7 ms for the conditional <code>UPDATE</code> against 6.6 ms for a non-conditional <code>SELECT</code></strong> (appendix, measurement M5).<sup class="n"><a href="#n39">39</a></sup> Roughly double, and that factor is the fifth operation's true cost — invisible on one node, unavoidable on a real deployment, and untouched by any decision about indexing.</p>
+
+<blockquote><p>The net effect — two CQL statements for an update and for a delete, one for an insert, on the build measured (M2) — is a write materially heavier than a blind CQL insertion, and — importantly — one that is <strong>not idempotent</strong> in the way a blind insertion is. Neither this nor MongoDB's single-step alternative is a defect. Both are the determinate consequence of a storage decision.</p></blockquote>
+
+<h3>4.1 The coefficient the vendor does not publish</h3>
+
+<p><span class="ep ep-m">M</span> Of the five steps, the fourth is the one this article stated wrongly in every prior draft, and the correction is the most consequential finding in it. The claim was that a mutation maintains "the indexes covering the fields that changed". On the build measured, it does not. It maintains the indexes covering <em>every indexed field of the document</em>, whether or not the mutation touched them — which follows inevitably from the trace in the preceding paragraph, since an <code>UPDATE</code> that rewrites all nine derived columns necessarily invalidates and rebuilds every index attached to them.</p>
+
+<p>The difference between those two statements is not rhetorical, and it was measured. Holding the mutation constant at one scalar <code>$set</code>, and growing only the <em>indexed content</em> the document carries — from one such field to seventeen, each of them an eight-thousand-byte string the mutation never touches — median latency rose from 12.1 ms to 90.8 ms, a factor of <strong>7.50</strong>. Over the same range a same-size read by key rose 1.56×, and the HTTP request payload was constant at 122–124 bytes throughout. Neither the network nor the read path accounts for the gap.<sup class="n"><a href="#n38">38</a></sup></p>
+
+<p><span class="ep ep-m">M</span> A multiplier is a poor form for this result, and an earlier revision of this article compounded the problem by converting it into the wrong rate. Running the same document sizes twice — once with the added content left unindexed, once with the same bytes carried as indexed fields — and subtracting at equal byte counts isolates the indexing term from the storage term:</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Document size</th><th>Update, content unindexed</th><th>Update, content indexed</th><th>Difference attributable to indexing</th></tr></thead>
+<tbody>
+<tr><td>8 KB</td><td>13.4 ms</td><td>15.7 ms</td><td>2.3 ms</td></tr>
+<tr><td>32 KB</td><td>14.9 ms</td><td>32.1 ms</td><td>17.3 ms</td></tr>
+<tr><td>128 KB</td><td>22.1 ms</td><td>90.8 ms</td><td>68.7 ms</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>That run could not say what <em>shape</em> the term has, because it grew indexed field count and indexed bytes together — each ballast field being an eight-thousand-byte string. A revision of this article nevertheless divided the difference by the number of added fields and reported roughly four milliseconds per indexed field. The protocol did not license that division, and the rate was withdrawn. A later campaign was designed to license it.</p>
+
+<h3>4.2 Which term carries the cost</h3>
+
+<p><span class="ep ep-m">M</span> The separation cannot be done with three arms at one document size, which is worth stating because it is the design most people reach for first. The engine refuses any indexed string above eight thousand bytes, so at 128 KB of indexed content the <em>minimum</em> field count is seventeen — the reference arm itself. "Few long fields" does not exist at that size. Two series are needed instead, each holding one term fixed.<sup class="n"><a href="#n43">43</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Series</th><th>Held constant</th><th>Varied</th><th>Median update</th><th>Growth</th><th>r²</th></tr></thead>
+<tbody>
+<tr><td><strong>Bytes vary</strong></td><td>16 indexed fields</td><td>512 → 8 000 B per field</td><td>25 → 115 ms</td><td><strong>×4.6</strong></td><td>0.9999</td></tr>
+<tr><td><strong>Fields vary</strong></td><td>64 KiB indexed content</td><td>9 → 128 fields</td><td>67 → 75–80 ms</td><td>×1.13 – ×1.19</td><td>0.57 / 0.92</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Multiplying the field count by fourteen without changing a single byte moves the median by thirteen to nineteen per cent. Multiplying the bytes by sixteen at a fixed field count moves it by a factor of four and a half, along a line so straight that the least-squares slope and the endpoint ratio agree to three significant figures in both passes. <strong>The cost is carried by indexed bytes.</strong> Field count is a real but secondary term.</p>
+
+<blockquote><p>Which restores the rate the earlier revision had no right to, in the unit the experiment actually supports: on this build, a mutation costs about <strong>0.76 to 0.79 milliseconds per kilobyte of indexed content</strong> the document carries and the mutation never touches — plus roughly 0.08 to 0.11 ms for each additional indexed field.</p></blockquote>
+
+<p><span class="ep ep-m">M</span> That rate has a boundary condition, and a later probe found it. Every measurement behind it, including the ones taken in a regime this article previously called disk-bound, had its read served from the memtable: the read-modify-write cycle re-reads the row it has just written, and that row is memtable-resident however large the dataset around it. Forcing the internal <code>SELECT</code> onto the SSTable path instead — by flushing between the write and the mutation — changes the result qualitatively.<sup class="n"><a href="#n46">46</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Document size</th><th>Read served from memtable</th><th>Read forced onto the SSTable path</th></tr></thead>
+<tbody>
+<tr><td>1 KB</td><td>20.4 ms</td><td>107.8 ms</td></tr>
+<tr><td>128 KB</td><td>121.2 ms</td><td>163.4 ms</td></tr>
+<tr><td><strong>growth</strong></td><td><strong>×5.94</strong></td><td><strong>×1.52</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>A large fixed cost appears, roughly ninety to a hundred milliseconds of read path. That alone would reduce the ratio without touching the underlying rate, and an earlier revision of this section said only that the growth "disappears behind it". The stronger reading is the correct one: the absolute rise across the series falls from 100.8 ms to 55.6 ms, so the per-byte term itself is <em>halved</em> on the SSTable path rather than merely dwarfed by a constant. <strong>The per-kilobyte rate is therefore a memtable phenomenon in both senses.</strong> Where the read leaves memory, it is the read path that decides the cost of a mutation, not the quantity of indexed content. The mechanism of section 4.1 is unaffected: the cycle is still a read, a rewrite of everything, and an index maintenance pass. What does not transpose is the number.</p>
+
+<p><span class="ep ep-u">U</span> Two reservations bound that in turn, and they run in opposite directions. Flushing before every mutation produces one SSTable per flush, so the internal read merges an unnaturally fragmented set — up to thirty-odd small tables — which a normal compaction schedule would not leave lying about. The fixed cost above is therefore an upper bound, and a realistic disk-bound figure sits somewhere between the memtable runs and this worst case. In the other direction, the operating system page cache could not be dropped for want of root, so "SSTable path" still does not mean "cold platter". A third reservation is one of provenance rather than method: the post-flush record does not state its topology or replication factor, while the memtable figures it is set against come from a three-replica ring. Until that is reconciled, the contrast between ×5.94 and ×1.52 may mix the read path with a change of deployment — the same confound this article objects to elsewhere, and it would be dishonest to object to it there and not here. The honest statement is that the rate is bounded below by a memtable regime and above by a fragmented-read one, and that no measurement in this study occupies the middle.</p>
+
+<p><span class="ep ep-m">M</span> Two passes, thirty timed repetitions per configuration after five discarded warm-ups, on a three-replica ring in a proven disk-bound regime.<sup class="n"><a href="#n43">43</a></sup> The design carried a free internal control: one configuration — sixteen fields of 4 096 bytes — belongs to both series and was therefore measured twice per pass. The two readings agreed to 2.0 % and 0.7 %, which is what licenses the slopes above; had they disagreed by more than ten per cent, nothing in this subsection would be reportable.</p>
+
+<p><span class="ep ep-u">U</span> The strict verdict rule, declared before the run, asked for a fields-series endpoint ratio at or below 1.15 to call bytes dominant. The two passes came in at 1.128 and 1.187 — they straddle the threshold, so the pre-registered verdict is formally <em>inconclusive</em>. I report that rather than quietly adopting the favourable pass. Neither passes approaches the 1.5 that would make field count an independent driver, and the direction is not in doubt; the honest statement is that bytes dominate and that the exact size of the residual field term is not pinned down.</p>
+
+<p>The practical consequence is a change of question. A design review should not ask how many indexed fields sit on the mutation path. It should ask <strong>how many kilobytes of indexed content</strong> do — which is a different quantity, arrived at differently, and the one you are actually charged for.</p>
+
+<figure class="wide measured">
+<span class="figtag figtag-m">Measured on one build</span>
+<svg viewBox="0 0 900 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two panels sharing one axis of document size. Panel A: with the added content left unindexed, update and read latency rise together and the curve cannot separate them. Panel B: at identical document sizes, with the same content carried as indexed fields, update latency diverges sharply while the read control stays flat. The shaded area between the two update curves is the indexing term, which resolves to about four milliseconds per added indexed field.">
+<defs>
+<pattern id="idx" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+<line x1="0" y1="0" x2="0" y2="6" stroke="#8A6D00" stroke-width="1.6" opacity="0.5"/></pattern>
+</defs>
+<rect x="0" y="0" width="900" height="430" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 2 — Isolating what indexing costs a mutation</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">One scalar $set, held constant. Identical document sizes in both panels. Only whether the added content is indexed changes.</text>
+
+<text x="20" y="76" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">A. ADDED CONTENT NOT INDEXED</text>
+<line x1="70" y1="310" x2="420" y2="310" stroke="#C6D8F2" stroke-width="1.5"/>
+<line x1="70" y1="100" x2="70" y2="310" stroke="#C6D8F2" stroke-width="1.5"/>
+<g font-family="system-ui,sans-serif" font-size="9.5" fill="#4A5568" text-anchor="end">
+<text x="64" y="104">100</text><text x="64" y="156">75</text><text x="64" y="208">50</text><text x="64" y="260">25</text><text x="64" y="313">0</text></g>
+<text x="30" y="88" font-family="system-ui,sans-serif" font-size="10" fill="#4A5568">ms</text>
+<polyline points="100,286 195,282 290,279 395,264" fill="none" stroke="#1F3864" stroke-width="2.4"/>
+<polyline points="100,297 195,295 290,295 395,285" fill="none" stroke="#8A6D00" stroke-width="2" stroke-dasharray="5 4"/>
+<g fill="#1F3864"><circle cx="100" cy="286" r="3.6"/><circle cx="195" cy="282" r="3.6"/><circle cx="290" cy="279" r="3.6"/><circle cx="395" cy="264" r="3.6"/></g>
+<g fill="#8A6D00"><circle cx="100" cy="297" r="3"/><circle cx="195" cy="295" r="3"/><circle cx="290" cy="295" r="3"/><circle cx="395" cy="285" r="3"/></g>
+<text x="120" y="252" font-family="system-ui,sans-serif" font-size="10.5" font-weight="650" fill="#1F3864">update 11.5 to 22.1 ms (x1.92)</text>
+<text x="120" y="332" font-family="system-ui,sans-serif" font-size="10.5" font-weight="650" fill="#8A6D00">read control x1.86</text>
+<g font-family="system-ui,sans-serif" font-size="9.5" fill="#4A5568" text-anchor="middle">
+<text x="100" y="326">1 KB</text><text x="195" y="326">8 KB</text><text x="290" y="326">32 KB</text><text x="395" y="326">128 KB</text></g>
+<text x="245" y="362" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#514A5C">Both curves rise together. By the read-control rule</text>
+<text x="245" y="377" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#514A5C">this probe is INCONCLUSIVE.</text>
+
+<line x1="452" y1="66" x2="452" y2="410" stroke="#E4E9F0"/>
+
+<text x="484" y="76" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1E5631">B. SAME BYTES, CARRIED AS INDEXED FIELDS</text>
+<line x1="534" y1="310" x2="880" y2="310" stroke="#C6D8F2" stroke-width="1.5"/>
+<line x1="534" y1="100" x2="534" y2="310" stroke="#C6D8F2" stroke-width="1.5"/>
+<g font-family="system-ui,sans-serif" font-size="9.5" fill="#4A5568" text-anchor="end">
+<text x="528" y="104">100</text><text x="528" y="156">75</text><text x="528" y="208">50</text><text x="528" y="260">25</text><text x="528" y="313">0</text></g>
+<polygon points="564,285 659,277 754,243 859,120 859,254 754,279 659,282 564,286" fill="url(#idx)" stroke="none"/>
+<polyline points="564,286 659,282 754,279 859,264" fill="none" stroke="#1F3864" stroke-width="1.8" stroke-dasharray="4 3" opacity="0.6"/>
+<polyline points="564,285 659,277 754,243 859,120" fill="none" stroke="#1E5631" stroke-width="2.8"/>
+<polyline points="564,295 659,294 754,293 859,286" fill="none" stroke="#8A6D00" stroke-width="2" stroke-dasharray="5 4"/>
+<g fill="#1E5631"><circle cx="564" cy="285" r="3.6"/><circle cx="659" cy="277" r="3.6"/><circle cx="754" cy="243" r="3.6"/><circle cx="859" cy="120" r="4.4"/></g>
+<g font-family="system-ui,sans-serif" font-size="9.5" fill="#1E5631" text-anchor="middle">
+<text x="564" y="277">12.1</text><text x="659" y="269">15.7</text><text x="754" y="235">32.1</text><text x="836" y="112">90.8 ms</text></g>
+<text x="600" y="162" font-family="system-ui,sans-serif" font-size="10.5" font-weight="700" fill="#8A6D00">shaded = the indexing term</text>
+<text x="600" y="178" font-family="system-ui,sans-serif" font-size="10.5" font-weight="700" fill="#8A6D00">later separated: ~0.77 ms/KiB — a MEMTABLE rate</text>
+<text x="600" y="202" font-family="system-ui,sans-serif" font-size="10" fill="#4A5568">dashed navy = panel A, same sizes, unindexed</text>
+<text x="600" y="332" font-family="system-ui,sans-serif" font-size="10.5" font-weight="650" fill="#8A6D00">read control x1.56 — reads barely notice</text>
+<g font-family="system-ui,sans-serif" font-size="9.5" fill="#4A5568" text-anchor="middle">
+<text x="564" y="326">1 KB</text><text x="659" y="326">8 KB</text><text x="754" y="326">32 KB</text><text x="859" y="326">128 KB</text>
+<text x="564" y="340" font-weight="650" fill="#1E5631">1 field</text><text x="659" y="340" font-weight="650" fill="#1E5631">2</text><text x="754" y="340" font-weight="650" fill="#1E5631">5</text><text x="859" y="340" font-weight="650" fill="#1E5631">17</text></g>
+<text x="706" y="368" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">Same mutation. Same bytes. None of the added</text>
+<text x="706" y="383" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#1E5631">fields is ever touched by the update.</text>
+
+<rect x="20" y="396" width="860" height="26" rx="6" fill="#F4FAF6" stroke="#BFE3C8"/>
+<text x="34" y="413" font-family="system-ui,sans-serif" font-size="10.5" fill="#2F5741">Each ballast field is an 8 000-byte indexed string, so field count and indexed bytes rise together: the difference is the indexing term, but its per-field and per-byte shares are not separable from this run.</text>
+</svg>
+<figcaption>Figure 2. <strong>Measured, not documented</strong> (appendix, measurement M3). Panel A is why the earlier draft could not settle its own claim: unindexed growth moves update and read together. Panel B holds the byte sizes identical and carries the same content as indexed fields; the shaded area between the two update curves is the indexing term. <strong>Confound not eliminated:</strong> each ballast field is an 8 000-byte indexed string, so field count and indexed byte volume were grown in lockstep; this run isolates the cost of <em>indexing</em> content rather than merely storing it, but separates neither a per-field nor a per-byte rate. A later campaign did separate them — see section 4.2 — and found the byte term dominant at about 0.77 ms per indexed kilobyte. <strong>Regime:</strong> every point here was taken with the cycle&rsquo;s internal read served from memory, a condition section 4.1 shows to be decisive &mdash; forcing that read onto the SSTable path halves the per-byte term behind a large fixed cost.</figcaption>
+</figure>
+
+<blockquote><p>On this build, the price of a mutation is set by <strong>how wide the document is indexed</strong>, not by how much of it you changed. Automatic indexing is charged per write, per indexed field, forever — not once, at insertion.</p></blockquote>
+
+<p>Three consequences follow, and they are design consequences rather than tuning ones.</p>
+
+<p><strong>Adding a field is a write-latency decision.</strong> The opening phenomenon of this article — latency creeping upward while the write pattern never changed — now carries a coefficient. A team that widens its schema is buying write cost on every mutation of every document of that shape, including mutations that never go near the new field.</p>
+
+<p><strong>Collection density is bounded by arithmetic, not by taste.</strong> <span class="ep ep-m">M</span> A collection created with default options and no vector dimension received nine storage-attached indexes,<sup class="n"><a href="#n38">38</a></sup> against platform guardrails of ten per table and one hundred in total — the latter a ceiling <em>per node, across every keyspace</em>, not per database.<sup class="n"><a href="#n3">3</a></sup> That gives roughly eleven such collections per node before the guardrail refuses — and a collection declaring a vector option consumes a tenth index, arriving exactly at the per-table threshold.</p>
+
+<p><strong>Selective indexing stops being an optimisation and becomes, for some payloads, compulsory.</strong> <span class="ep ep-m">M</span> The Data API rejects any <em>indexed</em> string longer than 8 000 bytes.<sup class="n"><a href="#n38">38</a></sup> A document carrying a description, a transcript or a chunk of source text cannot be stored at all unless that field is excluded from indexing at collection creation. The mechanism that reduces the coefficient is therefore already in your hands, and for large text you are obliged to reach for it.</p>
+
+<p>Which is the practical upshot, and it is worth stating without hedging: <em>decide</em> what is indexed, per collection, at creation. The clause costs one line. The default costs 7.50× on the mutation path of a wide document, and costs it silently.</p>
+
+<h3>4.3 Where that cost is actually paid</h3>
+
+<p><span class="ep ep-m">M</span> A rate tells you what a mutation costs. It does not tell you <em>which component</em> spends it, and the two are different design objects. The work described above is done in two places: the Data API tier parses the JSON, shreds it into eleven derived values and builds the statement pair, all of which scales with indexed bytes; the storage engine then executes the pair and maintains the indexes, which also scales with indexed bytes. Nothing in the rate distinguishes them.</p>
+
+<p>Separating them takes a subtraction. Run the same mutation through the Data API, then run the identical CQL statement pair directly against the same row with the shredded values read back rather than recomputed: the storage work is the same, the tier work is absent, and the difference is the tier.<sup class="n"><a href="#n45">45</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Term</th><th>Slope (ms per indexed KiB)</th><th>r²</th><th>Share of the rate</th></tr></thead>
+<tbody>
+<tr><td>Stateful storage engine</td><td><strong>0.547</strong></td><td>0.997</td><td>≈ 71 %</td></tr>
+<tr><td>Stateless Data API tier</td><td><strong>0.219</strong> (passes: 0.190 and 0.248)</td><td>0.98</td><td>≈ 29 %</td></tr>
+<tr><td>Sum</td><td>0.772</td><td>—</td><td>the total, by construction: the tier term <em>is</em> total minus storage</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-u">U</span> That last row proves nothing, and an earlier revision of this section said it did. The tier term is <em>defined</em> as the total minus the storage term, so the two sum to the total by construction, and least squares being linear the identity carries to the slopes. I wrote that "nothing forced that agreement". Arithmetic forced it. The claim is withdrawn, and it is worth recording that the error ran in the flattering direction: the section congratulated itself on a verification it had not performed.</p>
+
+<p><span class="ep ep-m">M</span> There is a real replication in the same numbers, and it is not that one. The <em>total</em> slope was measured at 0.763 and 0.790 ms per indexed kilobyte in one campaign, on one keyspace; it came back at 0.772 in a later campaign, on a different keyspace, on a different day, through a different instrument.<sup class="n"><a href="#n45">45</a></sup> Nothing forced <em>that</em> agreement, and it is the closest thing to an independent confirmation the study contains.</p>
+
+<p><span class="ep ep-u">U</span> A second, independent estimate of the tier — subtracting coordinator-side durations from client-observed latency, using query traces rather than a bypass — puts it lower, at 0.145 ms per KiB and nineteen per cent. The two methods agree to within a quarter at 8, 16 and 32 KiB and diverge beyond it, by 34 % at 64 KiB and 28 % at 125 KiB. They subtract different things: the bypass removes a complete client-side CQL execution, the trace removes only the coordinator's internal duration. A second dispersion compounds the first, and it sits <em>inside</em> the bypass method rather than between methods: its two passes returned tier slopes of 0.190 and 0.248, thirty per cent apart, which is wider than the quarter this study treats as disqualifying between instruments. The coefficients of determination above describe the fit within a pass, not the agreement between them. <strong>No single precise split is therefore published here.</strong> What survives both methods is the direction and the order of magnitude: the tier is a substantial minority, the storage engine the majority.</p>
+
+<blockquote><p>Which matters for a reason that has nothing to do with milliseconds. <strong>Between a fifth and a third of this cost sits in a component that scales out by adding instances. The rest sits in one that does not.</strong> The criticism this article makes of automatic indexing is therefore softened in part — and only in part, the centre of gravity staying where it was.</p></blockquote>
+
+<p><span class="ep ep-u">U</span> A later measurement destabilised the split further, and in the direction that costs the platform. Adding a third arm to the comparative probe — HCD driven straight through CQL, the tier bypassed entirely, on the same host and the same series — put the slope at 0.704 ms per KiB against 0.777 through the Data API. Removing the tier removed <strong>nine per cent</strong> of the rate, not the twenty-nine per cent the subtraction above reports.<sup class="n"><a href="#n47">47</a></sup> The two estimates differ threefold and were taken under different regimes and interleavings, and neither rests on separated supports: at every size, the Data API and direct-CQL ranges intersect. What the pair establishes is that the tier is a minority; where in the range from a tenth to a third it falls is not settled, and this article should not be read as settling it. The practical consequence points one way: on the later, cleaner measurement, roughly nine tenths of the cost sits in the component that does not scale out.</p>
+
+<p><span class="ep ep-u">U</span> A further dispersion sits in the subtrahend itself. The direct-CQL arm is markedly noisier than the arm it is subtracted from: at 8 KiB its median is 17.9 ms against a ninety-fifth percentile of 61.9, and at 64 KiB its minimum is 14.3 against a median of 49.3. A distribution that wide is not plausibly unimodal, and subtracting its median from a cleaner one yields a tier term whose uncertainty this study does not quantify. The direction survives that; a decimal place does not.</p>
+
+<p><span class="ep ep-u">U</span> One further caveat governs the absolute numbers and not the conclusion. The tier was measured against a container with two gigabytes of memory and <em>no CPU limit at all</em>, on a host with eighty cores. A tier sized for production would behave differently, and the absolute latencies above would not transfer. The question asked here was where the rate lives, and a slope answers that robustly; the same measurement would not support a capacity plan.</p>
+
+<h3>4.4 The comparison, measured at last</h3>
+
+<p><span class="ep ep-m">M</span> Every earlier revision of this work carried the same reproach in its limitations: measurements on one side, documentation on the other. That is no longer true. The identical mutation series was run against both engines on the same host, in the same session, with the same repetition counts, under a declared durability mapping — and the harness refuses to emit a ratio when those conditions are not met.<sup class="n"><a href="#n47">47</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Arm</th><th>Slope (ms per indexed KiB)</th><th>r²</th><th>Median at 8 KB → 128 KB</th></tr></thead>
+<tbody>
+<tr><td>MongoDB, nothing indexed beyond <code>_id</code></td><td>0.0098</td><td>0.78</td><td>5.7 → 6.5 ms</td></tr>
+<tr><td>MongoDB, wildcard index over every field</td><td>0.0176</td><td>0.88</td><td>5.5 → 7.6 ms</td></tr>
+<tr><td>HCD, engine only, tier bypassed</td><td>0.704</td><td>0.996</td><td>18.4 → 101.6 ms</td></tr>
+<tr><td>HCD, through the Data API</td><td>0.778</td><td>0.997</td><td>40.9 → 130.8 ms</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Neither MongoDB arm alone is the fair comparison, and the pair is the finding. The first is MongoDB as a team would deploy it, indexing nothing it was not asked to. The second is MongoDB doing this platform's job, every field queryable without declaration — the closest analogue to automatic indexing that MongoDB offers.</p>
+
+<p><span class="ep ep-u">U</span> Two quantities follow from that table and they are not the same size, so both belong here rather than whichever is the more striking. The ratio of <em>slopes</em>, engine to engine against the capability-matched arm, is forty. The ratio of <em>latencies</em> is smaller and grows with the document: 3.3× at 8 KB, rising to 13.3× at 128 KB. A reader told “forty times” will hear the second quantity and receive the first, which is why this section declines to lead with it.</p>
+
+<p><span class="ep ep-u">U</span> Two facts about that table were established after it was drawn, and both belong beside it. The slopes were fitted on the first of the two passes collected; the merge step of the harness, which the author of this article wrote, read pass one only, and nothing in earlier revisions said so. The second pass exists in the repository and was not used. And a re-analysis of the raw summaries by separation of support &mdash; asking, for each document size and pass, whether every observation of one arm beat every observation of the other &mdash; finds the mutation comparison <strong>disjoint in nineteen of the twenty size-and-pass cells</strong>: at those sizes the direction is certain without any distributional assumption, with an exact one-sided permutation probability of about 10<sup>&minus;17</sup> at thirty observations a side.<sup class="n"><a href="#n52">52</a></sup> The same re-analysis finds the tier-removal comparison &mdash; the Data API against direct CQL &mdash; <strong>overlapping at every one of its ten cells</strong>, so the nine per cent of section 4.3 is a difference of medians inside supports that intersect, and is not an established direction.</p>
+
+<p><span class="ep ep-u">U</span> The slope ratio rests, besides, on a denominator close to zero and poorly determined. MongoDB's wildcard arm rises 2.08 ms across the whole series, at a coefficient of determination of 0.88 — a flat line with noise on it. Small changes in that estimate move the ratio a long way: a slope of 0.010 would give seventy, one of 0.025 would give twenty-eight. <strong>What is defensible is that the latency gap runs from roughly three-fold to roughly thirteen-fold across this series, and that it widens with indexed volume because one engine's cost scales with that volume and the other's barely does.</strong> A single multiplier is not defensible, and an earlier revision of this section published one.</p>
+
+<blockquote><p>On the mutation path the direction is not close, and no reading of the conditions rescues it. What decomposition costs here is a property of what decomposition is, measured rather than argued. The magnitude is a range, and it depends on how much indexed content the document carries.</p></blockquote>
+
+<p><span class="ep ep-d">D</span> One feature of the mapping deserves naming, because it runs against the conclusion and survives anyway. MongoDB was held to a majority write concern with journalling, which waits for the journal to reach disk before acknowledging; HCD ran with a periodic commit-log sync, which acknowledges first and syncs within ten seconds. The durability terms therefore favoured HCD — it was allowed to answer before the disk had heard about the write, and MongoDB was not. It lost across the whole range regardless. An objection that reverses into a strengthening is worth more than one that merely fails.</p>
+
+<p><span class="ep ep-m">M</span> A companion campaign extended the comparison to reads, and the result is not favourable. Fetching one document by identifier from a million: MongoDB answers in 0.53 to 0.62 ms, the decomposing engine in 10.4 ms.<sup class="n"><a href="#n48">48</a></sup> Roughly twenty times, on a path where no shredding, no rewrite and no consensus round occurs.</p>
+
+<p><span class="ep ep-u">U</span> The obvious reading is that this ten-millisecond floor is the Data API tier, and an earlier revision of this section asserted it. The measurement does not support the assertion. What was compared is an HTTP interface against a native driver, and no direct-CQL read arm was run — the bypass of section 4.3 covered mutations only, where it attributed nine per cent to the tier, not ninety. The gap is measured; its allocation between the tier, the driver and the engine is not, and one arm would settle it.</p>
+
+<p><span class="ep ep-m">M</span> Eight axes have now been measured across the two parts, and the summary belongs here rather than scattered through both.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Axis measured</th><th>Which engine</th><th>Margin, and its reservation</th><th>Direction, by separation of support</th></tr></thead>
+<tbody>
+<tr><td>Mutating one field</td><td>MongoDB</td><td>3&ndash;13× in latency; a memtable-regime figure; slopes fitted on one of two passes</td><td>certain &mdash; disjoint in 19 of 20 cells</td></tr>
+<tr><td>Fetching one document by identifier</td><td>MongoDB</td><td>≈ 20×; allocation between tier and engine unmeasured</td><td>certain &mdash; disjoint</td></tr>
+<tr><td>Filtering on a declared or wildcard-indexed field</td><td>MongoDB</td><td>≈ 24×</td><td>certain &mdash; disjoint</td></tr>
+<tr><td>Filtering on a field nobody declared</td><td>Decomposing engine</td><td>≈ 22× at the median, and only against the default configuration; what is established is predictability, not speed</td><td><strong>not established</strong> &mdash; supports overlap, ratio interval contains one</td></tr>
+<tr><td>Freshness of an ordinary secondary index</td><td>neither</td><td>index current on both; elapsed time is not</td><td>tie on attempts; elapsed time disjoint both ways</td></tr>
+<tr><td>Aggregating by group</td><td>MongoDB</td><td>a capability gap, not a ratio: no server-side pipeline through the interface; 134 s against 0.2 s by the only route left</td><td>certain &mdash; disjoint, on three observations</td></tr>
+<tr><td>Counting exactly</td><td>MongoDB</td><td>by capability: the interface caps exact counts at a documented threshold, and its estimator answered zero before the first flush</td><td>structural &mdash; no observations, the operation is refused</td></tr>
+<tr><td><strong>Freshness of the search index</strong> (Part II)</td><td><strong>Decomposing engine</strong></td><td>total inside the comparator&rsquo;s refresh window, void outside; that window measured ≈ 1 s here</td><td>certain by the miss-rate test; <strong>not established</strong> as a latency comparison</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-u">U</span> One caveat governs the table as a whole and is easy to miss because the rows read as commensurable. They are not. The mutation row comes from a three-replica ring in a cache-resident regime; the read and filter rows from a million-document collection against MongoDB 8.0 in a three-member replica set; the aggregation and counting rows from a two-hundred-thousand-document corpus on the same pairing; the search-freshness row from MongoDB 8.3.11 in a single-member deployment, through a different image. Four configurations, one table. The repository&rsquo;s register lists two further measurements with no comparator &mdash; where the mutation cost is charged, and vector freshness under a single-replica read &mdash; which are properties of one engine rather than axes of comparison and are not counted here. Each row is defensible against the row it replaced in an earlier revision; no row is a controlled comparison against the others, and a reader should not compute across them.</p>
+
+<p>Five of the eight go to MongoDB, two to the decomposing engine — one on a default-versus-decision comparison, the other decisively, on the axis its write-path indexing exists to serve — and one to neither. No engine wins them all, and a reader who wanted a verdict will have to settle for a shape.</p>
+
+<p><span class="ep ep-u">U</span> What this does not establish is as important as what it does, and it is a narrow set of axes. The series measures one thing: mutating one field of a document carrying unchanged indexed content. It says nothing about filtered reads, vector search, aggregation, or the interval between a write and its visibility to a query — which is the axis where this platform has its structural advantage, and which Part II could only bound below a measurement floor. A study that measured only the unfavourable axis would be as biased as a complacent one. This one has measured the unfavourable axis well and the favourable axis not at all, and the reader should weight it accordingly.</p>
+
+<h3>4.5 Two axes the interface does not have</h3>
+
+<p><span class="ep ep-m">M</span> Everything measured so far has compared two ways of doing the same operation. A seventh campaign found two operations one side cannot do at all through the interface it exposes, and on that axis a comparison is not a ratio but a capability gap.<sup class="n"><a href="#n50">50</a></sup></p>
+
+<p><strong>Aggregation.</strong> The Data API&rsquo;s command allow-list on this build holds nineteen commands. <code>aggregate</code>, <code>$group</code> and <code>distinct</code> are not among them and answer <code>COMMAND_UNKNOWN</code>. There is no server-side aggregation pipeline. Summing a field by category over two hundred thousand documents therefore has exactly one route: fetch every document to the client and add them up there. Measured, that route took a median of <strong>134 seconds</strong>; MongoDB&rsquo;s server-side <code>$group</code> took 223 ms over the same corpus, both results verified exact against precomputed ground truth.</p>
+
+<p><span class="ep ep-u">U</span> That is a factor of six hundred, and it must not be read as the storage engine being six hundred times slower, because the same engine on the same host aggregated the same corpus in about two seconds through native CQL. The 134 seconds belong to the interface, and this diptych&rsquo;s own numbers say how: the vendor documents a page size of twenty (section 3), so the scan is ten thousand round trips, and section 4.4 measured one Data API read at 10.4 ms &mdash; ten thousand of those are 104 seconds, three quarters of the total. A documented limit multiplied by a measured per-call cost; nothing a reader can tune away. And the CQL route is not an escape for the document model: reaching it means writing CQL against a declared schema whose shape is fixed at creation &mdash; abandoning the document model, which is structural and needs no percentile. An earlier revision of this sentence added that it also means designing a table partitioned by the group key in advance. The data do not support that clause: the table designed for the query and a cross-partition <code>GROUP BY</code> against it differ by ×1.28 at the median, their supports overlap, and the interval of their ratio contains one.<sup class="n"><a href="#n52">52</a></sup> At this scale the partitioning choice does not separate from noise, and the penalty is withdrawn. What survives is the half that matters.</p>
+
+<p><strong>Counting.</strong> <span class="ep ep-d">D</span> The vendor documents that exact counting beyond a server-side threshold is not supported by the Data API and recommends the estimate instead.<sup class="n"><a href="#n51">51</a></sup> <span class="ep ep-m">M</span> On this build the threshold is a thousand: both an unfiltered and a filtered count of the same corpus refused with <code>TooManyDocumentsToCountException</code>, on a stock container. The recommended estimate answered in 7 ms and returned <strong>zero</strong> for a collection holding two hundred thousand documents. It reads SSTable metadata, and before the first flush there is none. <span class="ep ep-u">U</span> That is a cold-start property &mdash; what the estimate returns in steady state, after flush and compaction, was not measured &mdash; but the application testing <code>if count == 0</code> on a freshly loaded collection does not know it is in a cold start, and nothing in the response tells it.</p>
+
+<blockquote><p>On the analytical axis the finding carries no percentile. The interface does not aggregate, does not count past a threshold it declares, and its estimator answers zero before the first flush. Three sentences, and they survive everything this diptych has learned to break.</p></blockquote>
+
+<p><span class="ep ep-u">U</span> What this does not establish: anything about the Data API&rsquo;s table mode, which was not tried on this axis; anything about an analytical engine attached to the same ring, which many deployments have; and anything beyond one build, since an allow-list is a product decision that can change between versions. The measurement stands in the cache regime &mdash; the zero from the estimator proves the memtable had not been flushed &mdash; and the client-side scan was timed three times, which is enough for a six-hundred-fold effect and for nothing subtler.</p>
+
+<figure class="wide measured">
+<span class="figtag figtag-m">Derived from the raw evidence</span>
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eight measured axes. For each, the interval of ratios consistent with the observed ranges, on a logarithmic scale. Five axes favour MongoDB with intervals entirely above one. One axis favours the decomposing engine but its interval crosses one and is therefore not established. Two axes have no latency interval: one is structural, one is settled by a proportion.">
+<rect x="0" y="0" width="900" height="400" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 3 — The eight axes, and which of them establish a direction</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Interval of ratios consistent with the observed ranges, log scale. An interval clear of the dashed line is a direction certain without any distributional assumption; one that crosses it is not a result.</text>
+
+<line x1="412" y1="62" x2="412" y2="318" stroke="#8A6D00" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="412" y="58" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" font-weight="700" fill="#8A6D00">no difference</text>
+
+<g font-family="system-ui,sans-serif" font-size="10.5" fill="#1F3864" text-anchor="end">
+<text x="318" y="94">Mutating one field</text>
+<text x="318" y="124">Fetching by identifier</text>
+<text x="318" y="154">Filtering, declared index</text>
+<text x="318" y="184">Aggregating by group</text>
+<text x="318" y="214">Counting exactly</text>
+<text x="318" y="244">Ordinary-index freshness</text>
+<text x="318" y="274">Filtering, undeclared field</text>
+<text x="318" y="304">Search freshness</text>
+</g>
+
+<g stroke="#1F3864" stroke-width="7" stroke-linecap="round">
+<line x1="494" y1="90" x2="589" y2="90"/><line x1="536" y1="120" x2="650" y2="120"/>
+<line x1="586" y1="150" x2="679" y2="150"/><line x1="831" y1="180" x2="852" y2="180"/>
+</g>
+<g font-family="system-ui,sans-serif" font-size="10" fill="#1F3864">
+<text x="599" y="94">3.3 – 13.3×</text><text x="660" y="124">6.1 – 32.6×</text>
+<text x="689" y="154">12.6 – 49.3×</text><text x="700" y="184" text-anchor="end">456 – 626×</text>
+</g>
+
+<line x1="359" y1="270" x2="698" y2="270" stroke="#8A6D00" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+<text x="708" y="274" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#8A6D00">0.46 – 65.8× — crosses 1</text>
+
+<g font-family="system-ui,sans-serif" font-size="10" fill="#4A5568">
+<text x="340" y="214">no observations — the operation is refused</text>
+<text x="340" y="244">tie on attempts; elapsed time separates both ways</text>
+<text x="340" y="304">no latency interval — settled as a proportion, Fisher p ≈ 10⁻¹⁷</text>
+</g>
+
+<g font-family="system-ui,sans-serif" font-size="10" fill="#4A5568" text-anchor="middle">
+<text x="330" y="336">0.3×</text><text x="412" y="336">1×</text><text x="487" y="336">3×</text><text x="570" y="336">10×</text><text x="645" y="336">30×</text><text x="727" y="336">100×</text><text x="860" y="336">700×</text></g>
+
+<rect x="20" y="352" width="860" height="34" rx="6" fill="#FFF9E8" stroke="#E8D9A8"/>
+<text x="34" y="368" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5518">Five axes favour the comparator on intervals clear of one. The two that favour the decomposing engine do not appear as established latency</text>
+<text x="34" y="381" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5518">intervals: one crosses one, the other is not a latency question at all. That asymmetry is the honest shape of this study&apos;s result.</text>
+</svg>
+<figcaption>Figure 3. <strong>Derived, not measured</strong> &mdash; computed from the summary statistics in the repository by separation of support (appendix, note 52). Each interval is [slower arm&rsquo;s minimum &divide; faster arm&rsquo;s maximum, slower arm&rsquo;s maximum &divide; faster arm&rsquo;s minimum], the widest ratio the observed ranges permit; no distributional assumption is made and none is available, since every probe but one discarded its per-observation series. <strong>Read with three cautions.</strong> The rows come from four deployment configurations and are not commensurable with one another. The aggregation interval rests on three observations against fifteen. And an interval clear of one establishes a <em>direction</em>, never a magnitude a reader can plan with.</figcaption>
+</figure>
+
+<h3>4.6 Two habits that follow directly</h3>
+
+<p>The difference surfaces in two places under your control: how you write, and what identifier you assign the record.</p>
+
+<pre><code><span class="c"># astrapy — the Python client for the Data API</span>
+<span class="c">#</span>
+<span class="c"># (1) Server-generated identifier: convenient, and NOT safe to retry.</span>
+<span class="c"># If the network fails after the write applied, a retry creates a second document.</span>
+collection.insert_one({"payer": "acct-42", "amount_cents": 125000})
+
+<span class="c"># (2) Identifier derived from the business key: a retry is rejected as a duplicate,</span>
+<span class="c"># so the operation becomes naturally idempotent. Same cost, far better failure mode.</span>
+collection.insert_one({
+    "_id": "pmt-2026-08-07-000123",   <span class="c"># from the payment reference, not random</span>
+    "payer": "acct-42",
+    "amount_cents": 125000,
+})</code></pre>
+
+<p>That single choice eliminates an entire category of production incident, on either platform, at no runtime cost. It is the cheapest correctness improvement available in this class of system.</p>
+
+<p>The second habit is to let the engine apply the change rather than performing it yourself:</p>
+
+<pre><code><span class="c"># Anti-pattern: read-modify-write in application code.</span>
+<span class="c"># Three round trips, and two concurrent workers can silently lose one update.</span>
+doc = collection.find_one({"_id": "pmt-...000123"})
+doc["status"] = "SETTLED"
+collection.replace_one({"_id": doc["_id"]}, doc)   <span class="c"># rewrites everything you read</span>
+
+<span class="c"># Better: transmit the intent, not the document.</span>
+<span class="c"># One round trip. Whatever the engine does internally, it does it once,</span>
+<span class="c"># atomically, and without shipping the document across the wire twice.</span>
+collection.update_one(
+    {"_id": "pmt-2026-08-07-000123"},
+    {"$set": {"status": "SETTLED"}},
+)</code></pre>
+
+<p>The opening phenomenon now resolves itself. Write latency crept upward because the team <em>added fields</em>, and each added field was silently enrolled in the maintained index set. Nothing about their write pattern changed. The cost of their write pattern did.</p>
+
+<h2>5. What decomposition costs, and the design rule that follows</h2>
+
+<p>The cost localises in one identifiable regime: <strong>workloads that repeatedly mutate the same record</strong>. Counters. Status machines transiting a sequence of states. Hot aggregates updated on every event. There, the in-place update is structurally cheaper, and no quantity of tuning alters the structure.</p>
+
+<blockquote><p><strong>Model for append and read at scale, not for repeated mutation of the same record.</strong></p></blockquote>
+
+<p>If your access pattern genuinely concentrates writes on individual records — and some legitimately do — that is valuable information about which engine suits that component. It is far cheaper to learn in week one than in month six, and cheaper still to learn from a storage diagram than from an incident review.</p>
+
+<p><span class="ep ep-d">D</span> It bears stating explicitly, since the term "transaction" recurs throughout this literature with three mutually incompatible senses, that the DataStax documentation is unambiguous about the guarantees on offer <em>sensu stricto</em>: HCD does not adhere to ACID transactions with rollback or locking mechanisms, and a write operation is atomic at the partition level.<sup class="n"><a href="#n33">33</a></sup> Section 9 examines what is changing upstream on exactly this point.</p>
+
+<div class="epigraph">
+<p>"There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies. The first method is far more difficult."</p>
+<cite><b>C. A. R. Hoare</b>, “The Emperor’s Old Clothes”, 1980 ACM Turing Award lecture, <em>Communications of the ACM</em>, vol. 24 no. 2, February 1981, p. 77.</cite>
+<p class="gloss">Automatic indexing is the second kind of simplicity: nothing to declare, and therefore nothing obviously wrong.</p>
+</div>
+
+<h2>6. Three design rules</h2>
+
+<h3>6.1 Keep partitions bounded, and know the numbers</h3>
+
+<p><span class="ep ep-d">D</span> A brief detour, because it matters here. The platform offers two data models side by side: schemaless <em>collections</em>, which is what everything above has described, and schema-defined <em>tables</em> carrying an explicit primary key.<sup class="n"><a href="#n6">6</a></sup> Collections suit documents whose shape varies; tables suit records of stable shape read by key and range — ledgers, event trails, time series. Both are reached through the same JSON API; neither requires dropping into a query language.<sup class="n"><a href="#n7">7</a></sup></p>
+
+<p><span class="ep ep-m">M</span> With one caveat that matters before you design around them: on the build measured, <code>createTable</code> answers <code>TABLE_FEATURE_NOT_ENABLED</code>.<sup class="n"><a href="#n42">42</a></sup> Tables are behind a flag that is off by default in Data API v1.0.33, in addition to carrying a public-preview designation. Treat them as a deliberate configuration choice to be made and validated, not as a capability already sitting in your deployment.</p>
+
+<p><span class="ep ep-d">D</span> Where tables are used, the published sizing guidance is explicit and arithmetically actionable: keep rows per partition under one hundred thousand and partition size under one hundred megabytes.<sup class="n"><a href="#n8">8</a></sup> The corroborating modelling guidance states the second bound independently.<sup class="n"><a href="#n9">9</a></sup> Note that the documentation specifies <em>rows</em>; a document decomposed to one row makes the two coincide here, but the distinction survives elsewhere and is worth preserving in your own notes.</p>
+
+<p>The partition key determines how rows are grouped, and a key that accumulates without bound breaches both limits eventually:</p>
+
+<pre><code><span class="c">// A table's primary key is declared in JSON, as part of createTable.</span>
+<span class="c">// partitionBy   -> how rows are grouped and distributed</span>
+<span class="c">// partitionSort -> the ordering within a partition (1 ascending, -1 descending)</span>
+
+<span class="c">// UNBOUNDED: one partition per account, growing for the life of the account.</span>
+<span class="c">// Flawless in test. Degrades reads, repairs and streaming in year two.</span>
+"primaryKey": {
+  "partitionBy": ["account_id"],
+  "partitionSort": { "event_ts": -1 }
+}
+
+<span class="c">// BOUNDED: the month joins the partition key, so each partition covers a</span>
+<span class="c">// fixed window. A query spanning months reads a handful of partitions</span>
+<span class="c">// rather than one enormous one.</span>
+"primaryKey": {
+  "partitionBy": ["account_id", "yyyymm"],
+  "partitionSort": { "event_ts": -1 }
+}</code></pre>
+
+<p>Choose the window from your own arithmetic: the busiest account's events per month, multiplied by bytes per event, held beneath both bounds above.<sup class="n"><a href="#n10">10</a></sup> This single decision forestalls the majority of the difficulties popularly attributed to this class of database.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: an unbounded partition key produces one ever-growing partition per account, whereas adding a time component to the partition key produces fixed-width partitions that a range query reads selectively.">
+<rect x="0" y="0" width="900" height="340" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 4 — Bounding the partition key</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">The same data, two groupings: one degrades monotonically, the other does not</text>
+
+<text x="20" y="82" font-family="ui-monospace,Menlo,monospace" font-size="11.5" font-weight="700" fill="#8A6D00">partitionBy: ["account_id"]</text>
+<text x="252" y="82" font-family="system-ui,sans-serif" font-size="11.5" fill="#4A5568">— one partition per account, growing for the life of the account</text>
+
+<rect x="20" y="96" width="560" height="62" rx="6" fill="#FBF3DE" stroke="#C8A96A"/>
+<text x="34" y="118" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">account_id = acct-42</text>
+<text x="34" y="137" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">Jan · Feb · Mar · Apr · May · Jun · Jul · Aug · Sep · Oct · Nov · Dec · Jan · Feb · Mar …</text>
+<text x="34" y="152" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5500">unbounded row count · unbounded byte size · breaches both published limits eventually</text>
+<text x="596" y="122" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#8A6D00">Flawless in test.</text>
+<text x="596" y="140" font-family="system-ui,sans-serif" font-size="11.5" fill="#8A6D00">Degrades reads, repairs</text>
+<text x="596" y="155" font-family="system-ui,sans-serif" font-size="11.5" fill="#8A6D00">and streaming in year two.</text>
+
+<line x1="20" y1="180" x2="880" y2="180" stroke="#E4E9F0"/>
+
+<text x="20" y="210" font-family="ui-monospace,Menlo,monospace" font-size="11.5" font-weight="700" fill="#1F3864">partitionBy: ["account_id", "yyyymm"]</text>
+<text x="330" y="210" font-family="system-ui,sans-serif" font-size="11.5" fill="#4A5568">— one partition per account per month, of fixed maximum width</text>
+
+<g font-family="system-ui,sans-serif" font-size="10">
+<rect x="20" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="63" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202601</text>
+<text x="63" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="114" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="157" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202602</text>
+<text x="157" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="208" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="251" y="244" text-anchor="middle" font-weight="650" fill="#fff">202603</text>
+<text x="251" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="302" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="345" y="244" text-anchor="middle" font-weight="650" fill="#fff">202604</text>
+<text x="345" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="396" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="439" y="244" text-anchor="middle" font-weight="650" fill="#fff">202605</text>
+<text x="439" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="490" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="533" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202606</text>
+<text x="533" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="584" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="627" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202607</text>
+<text x="627" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+</g>
+<text x="690" y="248" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1F3864">A quarterly query reads</text>
+<text x="690" y="265" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">three partitions, not one</text>
+<text x="690" y="280" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">unbounded one.</text>
+
+<rect x="20" y="294" width="860" height="32" rx="6" fill="#F7F9FC" stroke="#E4E9F0"/>
+<text x="34" y="315" font-family="system-ui,sans-serif" font-size="11.5" fill="#1B1F24">Published bounds, both of which the left-hand design breaches in time: under 100,000 rows per partition, and partition size under 100 MB.</text>
+</svg>
+<figcaption>Figure 4. Partition bounding. <strong>Documented:</strong> both numeric bounds (notes 8 and 9) and the JSON key structure (note 10). <strong>Illustrative:</strong> the monthly window, which is one choice among many; the correct granularity follows from your own arithmetic, not from this figure.</figcaption>
+</figure>
+
+<h3>6.2 Choose what gets indexed, deliberately</h3>
+
+<p>Automatic indexing is a default, not a law. If a field will demonstrably never be filtered upon, excluding it renders every write to that document cheaper. On the other platform the same discipline applies <em>mutatis mutandis</em>, inverted in its direction: declare the indexes you need, and no more. In both cases the discipline is the same act — deciding, rather than inheriting.</p>
+
+<h3>6.3 Measure write-to-searchable before designing around it</h3>
+
+<p>It is twelve lines, and virtually nobody runs it:</p>
+
+<pre><code>import time, uuid
+
+marker = f"probe-{uuid.uuid4()}"        <span class="c"># unique, so nothing else can match it</span>
+t0 = time.perf_counter()
+collection.insert_one({"_id": marker, "body": marker})
+
+while True:                              <span class="c"># poll until the write is findable</span>
+    if collection.find_one({"body": marker}):
+        print(f"write-to-searchable: {(time.perf_counter() - t0) * 1000:.0f} ms")
+        break
+    time.sleep(0.01)</code></pre>
+
+<p>Run it idle, then run it again under write load. Two things this probe is not. It does not tell you whether an update reads before it writes — for that, enable query tracing on one node for a handful of updates and read <code>system_traces</code>, the method behind measurement M2. And, on evidence, it does not cleanly measure index lag either: what it returns is an interval that <em>contains</em> any index lag alongside two network round trips, and on the build measured here the lag term was zero and the transport term was all of it. Record the <em>attempt count</em>, not just the elapsed time — a document found on the first query has no measurable lag, whatever the stopwatch says, and a rising attempt count is the only unambiguous signal that an index is behind. The second run is the one that matters, because it is under load that the two architectures diverge and under load that your users will encounter whichever behaviour you inherited. A quarter of an hour establishes whether index freshness is a constraint you must design around or one you may safely ignore. If you are building anything with retrieval in it, this is the highest-yield fifteen minutes in this article.</p>
+
+
+<h2>7. What to do this week</h2>
+
+<p>Both apply whatever database you run today, and neither takes longer than an afternoon.</p>
+
+<p><strong>1 — Inventory the indexed content on your mutation path. Thirty minutes.</strong><br>
+For each entity your service updates frequently, write down how many <em>kilobytes</em> of it are indexed — the field count matters, but far less than the volume inside those fields, and nested paths count too. That quantity, not the size of your change, is what you pay on every write. On the build measured, roughly 0.77 ms per indexed kilobyte per mutation; your own number will differ and is worth having. Where it is large and the mutable subset is small, the remedy is one clause at collection creation on the decomposing engine, or one fewer <code>createIndex</code> on the other.</p>
+
+<p><strong>2 — Establish who generates your record identifiers. One hour.</strong><br>
+Walk the writes that matter — payments, orders, anything on which a duplicate would be expensive — and determine whether the identifier derives from your business data or from the database. Convert the ones that matter. This eliminates a category of production incident, costs nothing at runtime, and behaves identically on every database in this class.</p>
+
+<p><strong>3 — Ask your own database how it stores a record. An afternoon.</strong><br>
+Whatever you operate, establish whether it keeps a record whole or takes it apart, and what it indexes automatically. Then re-read your slowest write path in that light. In the majority of cases the explanation is already there, and the investigation has been examining the wrong layer.</p>
+
+<h2>8. Conclusion to Part I</h2>
+
+<p><strong>What this part establishes.</strong> A document handed to the decomposing engine is not stored as a document. It is shredded into one row of twelve columns — nine derived value maps, the document text, a partition key and a transaction identifier — over which nine storage-attached indexes are created without anyone asking. Changing one scalar field is therefore not a targeted write: a query trace shows a <code>SELECT</code> of the whole row followed by an <code>UPDATE</code> carrying eleven assignments, guarded by a conditional on the transaction identifier. Nesting is flattened to dotted paths, so depth and breadth both enter the cost. These are direct readings of the engine&rsquo;s own schema and trace, reproduced across passes; they are the strongest evidence in this diptych, and the vendor publishes none of them.</p>
+
+<p><strong>What follows, with its coefficient.</strong> Index maintenance on a mutation covers every indexed field the document carries, not the fields that changed — an earlier revision of this article stated the reverse, and measurement corrected it. The cost rises with <em>indexed content the mutation never touches</em>, and the driver is indexed <strong>bytes</strong> rather than field count: at constant volume, multiplying the field count fourteenfold moved the median by thirteen to nineteen per cent; at constant field count, multiplying the bytes sixteenfold moved it by a factor of four and a half along a line of near-perfect fit. The rate measured about 0.77 ms per indexed kilobyte.</p>
+
+<p><strong>And the boundary of that coefficient, which matters as much as the coefficient.</strong> Every rate here was taken with the cycle&rsquo;s internal read served from memory. Forcing that read onto the SSTable path halves the per-byte term and introduces a fixed cost of roughly a hundred milliseconds that dominates it. The rate is a memtable-regime quantity. The <em>mechanism</em> — read, rewrite everything, maintain every index — is regime-independent; the <em>number</em> is not, and no figure in this part should be carried into a disk-bound design without being re-measured there.</p>
+
+<p><strong>Against the comparator, on this axis, the decomposing engine loses, and the loss is structural.</strong> On one host, in one session, under a durability mapping that favoured it, and with the stateless tier subtracted from both sides of the argument, mutating one field costs between three and thirteen times more, the gap widening with indexed volume. Fetching one document by identifier costs about twenty times more. Only about a tenth of the mutation disadvantage lies in the stateless tier; the rest is the engine. This is what the layout decision predicts, and it is the price of what the layout buys.</p>
+
+<p><strong>What it buys, measured.</strong> On a million documents, filtering on a field for which nobody declared an index costs 377 ms against a comparator that must scan, and 17 ms here. That is a real operational advantage, and it is an advantage against a <em>default</em> rather than against a ceiling: the same comparator, given a wildcard index, answers in 0.73 ms. What the platform offers is not speed but the absence of a design decision — you never pay for the index you forgot to declare.</p>
+
+<p><strong>What this part does not establish.</strong> A disk-bound read without the artificial fragmentation the measurement introduced. Concurrency, multiple clients, multiple hosts. Aggregation. The internal decomposition of the tier&rsquo;s own cost. Any confidence interval: thirty repetitions and two passes give shapes, not precisions.</p>
+
+<h3>8.1 The same result, arranged by workload</h3>
+
+<p>The table in section 4.4 is arranged by what was measured. This one is arranged by what a reader has. Each row names a workload profile, the engine the measurements favour for it, and the condition under which that preference holds &mdash; because every one of them has a condition, and a row read without it is a row misread.</p>
+
+<p><span class="ep ep-u">U</span> <strong>Do not count the rows.</strong> They are profiles, not points, and they do not tally with the eight axes above: three of MongoDB&rsquo;s axes are folded into two rows here, one of the decomposing engine&rsquo;s axes is split across two, and one row for the decomposing engine rests on an inference rather than a measurement. Read row by row, each is defensible. Summed, they would suggest a parity the measurements do not show &mdash; the score, if a reader wants one, is the table in section 4.4: five axes, two, and one to neither. The last column says which measured axis each row rests on, and with what evidentiary status.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>If your workload is…</th><th>Choose</th><th>On what evidence, and under what condition</th><th>Rests on</th></tr></thead>
+<tbody>
+<tr>
+<td><strong>Write then search, composed within the refresh window</strong><br>a step that writes and a step that reads, with no human and no model in between</td>
+<td><strong>Decomposing engine</strong></td>
+<td>The only unconditional win in the diptych: 100 % of documents missed against 0 % at zero delay, still one in two at half a second. <em>Condition:</em> your application&rsquo;s write-to-search delay must be shorter than your deployment&rsquo;s refresh interval. Both are measurements you must take.</td>
+<td><span class="ep ep-m">M</span> search freshness, inside the window</td>
+</tr>
+<tr>
+<td><strong>Counters, status machines, hot aggregates</strong><br>the same record mutated repeatedly</td>
+<td><strong>MongoDB</strong></td>
+<td>Three to thirteen times cheaper per mutation, widening with indexed volume, and roughly nine tenths of the disadvantage is the engine rather than the interface. <em>Condition:</em> a memtable-regime figure; the gap changes shape once the read leaves memory.</td>
+<td><span class="ep ep-m">M</span> mutation</td>
+</tr>
+<tr>
+<td><strong>Read-dominated, latency-sensitive</strong><br>fetch by key, filter on known fields</td>
+<td><strong>MongoDB</strong></td>
+<td>About twenty times cheaper by identifier, about twenty-four on a declared or wildcard index. <em>Condition:</em> the split of that gap between the stateless interface and the engine was not measured on the read path.</td>
+<td><span class="ep ep-m">M</span> point read <em>and</em> declared-field filter &mdash; two axes, one row</td>
+</tr>
+<tr>
+<td><strong>Exploratory, schema still moving</strong><br>fields queried before anyone decided to index them</td>
+<td><strong>Decomposing engine</strong></td>
+<td>Twenty-two times faster than a comparator that must scan a million documents. <em>Condition:</em> the advantage is against a <em>default</em>. Declare a wildcard index on the other side and it is twenty-four times faster still; what you are buying is the absence of a decision, not speed.</td>
+<td><span class="ep ep-m">M</span> undeclared-field filter</td>
+</tr>
+<tr>
+<td><strong>Append-dominant with retrieval over it</strong><br>written once, read and searched many times</td>
+<td>Decomposing engine</td>
+<td>Index maintenance is charged once, at insertion, and the search index is current at acknowledgement. <em>Condition:</em> this is an inference from two measured properties, not a separately measured workload, and it carries no number of its own.</td>
+<td><span class="ep ep-u">U</span> inferred; no axis</td>
+</tr>
+<tr>
+<td><strong>Conversational, human-paced or model-paced</strong><br>anything where seconds pass between writing and reading</td>
+<td><strong>MongoDB</strong></td>
+<td>The freshness advantage vanishes entirely once the read arrives after the refresh window, and the mutation and read advantages remain. <em>Condition:</em> none &mdash; this is the case the diptych previously got wrong, and correcting it removed the platform&rsquo;s claim on this profile.</td>
+<td><span class="ep ep-m">M</span> search freshness, outside the window &mdash; the other half of row one</td>
+</tr>
+<tr>
+<td><strong>Analytical &mdash; aggregate, group, count</strong><br>anything that needs a sum, a group or an exact cardinality server-side</td>
+<td><strong>MongoDB</strong></td>
+<td>The interface has no aggregation pipeline and caps exact counts at a documented threshold; the only route pulls the collection to the client, 134 s against 0.2 s. <em>Condition:</em> through the Data API as exposed. An analytical engine attached to the same ring, or the engine&rsquo;s native query language over a table designed for the query, were not the object measured.</td>
+<td><span class="ep ep-m">M</span> aggregation <em>and</em> counting &mdash; two axes, one row</td>
+</tr>
+<tr>
+<td><strong>Read your own writes through an ordinary index</strong></td>
+<td>neither</td>
+<td>Both maintain ordinary secondary indexes synchronously; the index is current on both. Elapsed time differs, but that measures the query rather than the index.</td>
+<td><span class="ep ep-m">M</span> ordinary-index freshness</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-u">U</span> Four caveats govern every row. The rows come from three different deployment configurations and are not commensurable with one another. Everything was measured on one host, one build of each engine, with almost no regime outside the cache. Nothing was measured under concurrency, and production is concurrent. And the profiles named in the first column are descriptions rather than measurements: no real application&rsquo;s write-to-search interval was timed, so a reader recognising their own system in a row is making a judgement the study cannot make for them.</p>
+
+<blockquote><p>Establish how your database physically stores a record and you can predict most of what it will cost you. That claim survives seven campaigns, including the five axes it predicts unfavourably for the platform this author works on. What it does not do is favour an engine.</p></blockquote>
+
+<p><strong>Part II</strong> takes up the other consequence of the same layout decision — when what you wrote becomes findable, why that is a question of correctness rather than speed, and the narrow condition under which it decides anything at all.</p>
+
+<div class="disclosure">
+<p><em>Disclosure.</em> I work at IBM, on the DataStax side of Software, Data &amp; AI. IBM also sells the comparator: <em>MongoDB Enterprise Advanced with IBM</em> is an IBM offering, generally available and supported by IBM,<sup class="n"><a href="#n49">49</a></sup> so my employer has no commercial interest in one of these two engines prevailing over the other. What is not neutral is my knowledge: I know one of these systems considerably better than the other, and that asymmetry &mdash; of expertise, not of interest &mdash; is the one the reader should weight both parts of this diptych by. Two deliberate constraints follow. <strong>First</strong>, no benchmark figures appear in the body of either part, because a number produced on my hardware with my workload would tell you nothing about yours; the measurement appendix reports one estate&rsquo;s observations, each with its conditions, and none of them licenses a comparison with anything. <strong>Second</strong>, every factual claim is graded for evidentiary status and sourced &mdash; including claims favourable to my employer, claims I was unable to verify, and two that measurement showed to be wrong.</p>
+<p>Corrections are welcome and will be applied with attribution. The apparatus exists so that an error can be demonstrated in minutes rather than argued about, and it is public: every raw measurement record, every probe, the two unmodified originals against which the patched ones can be diffed, the architecture decision record, and the adversarial audits written against this work are at <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a>.</p>
+<p><strong>David Leconte</strong> &mdash; Customer Success Engineer, IBM France &middot; Software, Data &amp; AI | Horizon</p>
+</div>
+
+<h2>Notes</h2>
+
+<p>Note numbers run continuously across both parts of this diptych, so a reference keeps its identity wherever it is cited. This part uses 21 of them, and the gaps below belong to the other part rather than to an omission. The appendix that follows carries, for every note, the full locator, the passage relied upon where one exists, and any caveat of scope or edition.</p>
+
+<ol class="notes">
+<li id="n1">Stargate, <code>data-api</code>, <code>CONFIGURATION.md</code>, branch <code>main</code>. Establishes <code>default-page-size</code> = 50, <code>max-document-insert-count</code> = 20, <code>indexes-needed-per-collection</code> = 10, <code>indexes-available-per-database</code> = 50, and <code>lwt.retries</code> = 3. Upstream project defaults; not the shipped product's limits.</li>
+<li id="n2">DataStax, Data API limits, Astra DB Serverless. Page size 20; maximum insertions per transaction 100. Commercial documentation for the same API surface; the HCD 2.0 limits page could not be rendered during verification.</li>
+<li id="n3">DataStax Mission Control, HCD guardrail configuration: <code>sai_indexes_total</code> set to 100.</li>
+<li id="n5">DataStax, <em>Cassandra drivers overview</em>, HCD 2.0: "HCD 2.x is based on Cassandra 5.0."</li>
+<li id="n6">DataStax, tables reference, HCD. Tables via the Data API carry a public-preview designation at the time of writing.</li>
+<li id="n7">DataStax, HCD frequently asked questions: the Data API is described as schema-less and document-based, providing access to both structured and unstructured data.</li>
+<li id="n8">DataStax, capacity planning, HCD: under 100,000 rows per partition and partition size under 100 MB.</li>
+<li id="n9">DataStax, data-modelling best practices, CQL for HCD: partitions ideally under 100 MB.</li>
+<li id="n10">DataStax, list table metadata, Data API. Source of the <code>primaryKey</code> / <code>partitionBy</code> / <code>partitionSort</code> structure quoted in section 6.1.</li>
+<li id="n11">Stargate project, introduction of the JSON API and Mongoose integration, 13 March 2023. Source of the "super shredding" characterisation; does not enumerate column names.</li>
+<li id="n12">Stargate project, the Cassandra Documents API, 19 October 2020: the engineers state that they resolved to avoid read-before-write operations at all costs. Concerns the earlier Documents API, architecturally distinct from the current Data API.</li>
+<li id="n13">DataStax, lightweight transactions, HCD. Describes the Paxos phases underlying conditional writes.</li>
+<li id="n33">DataStax, how transactions differ, HCD: HCD does not adhere to ACID transactions with rollback or locking mechanisms; a write operation is atomic at the partition level.</li>
+<li id="n34">MongoDB, <em>Atomicity and Transactions</em>, Database Manual. Single-document atomicity, and its explicit boundary for multi-document operations.</li>
+<li id="n35">MongoDB, <code>$set</code> update operator reference, Database Manual. Targeted updates against full document replacement; oplog efficiency.</li>
+<li id="n36">MongoDB, <em>Indexes</em>, Database Manual. The unique <code>_id</code> index created at collection creation, which cannot be dropped; all other indexes created explicitly.</li>
+<li id="n37">MongoDB, <code>createIndexes</code> reference, Database Manual v8.0. Wildcard indexes over the <code>$**</code> pattern, supporting queries on arbitrary fields.</li>
+<li id="n38">Measurement record, single-node campaign: <code>findings.json</code>, run 2026-09-17T14:59Z, one node at RF = 1. Source of measurements M1 to M4 and M9 — the twelve columns and nine automatic indexes, the statement trace, the cost-against-unchanged-content probe with its read controls and payload sizes, the 8 000-byte indexed-string limit, the consistency levels, and the freshness decomposition. Conditions in the measurement appendix.</li>
+<li id="n39">Measurement record, three-replica campaign: <code>findings_rf3.json</code> and its report, 2026-09-17, six-node two-datacentre ring with the working keyspace at three replicas. Source of M5, the Paxos round and its coordinator-side figures, and of M6, the Data API tier's startup configuration showing the consistency properties and their asymmetry.</li>
+<li id="n41">Measurement record, nested shredding: raw CQL row read on the single node after a Data API insert, with filter probes and depth and width stress, 2026-09-17. Source of M8 — the dotted-path encoding, the array-of-objects limitation and the three shape limits.</li>
+<li id="n42">Observed on the same stack on 4 September 2026, outside the campaigns above and therefore without their conditions record: <code>createTable</code> through the Data API answers <code>TABLE_FEATURE_NOT_ENABLED</code> on v1.0.33. Reported here because it bears on a design option; it carries less evidentiary weight than the numbered measurements and should be re-checked on the build you deploy.</li>
+<li id="n43">Measurement record, field-versus-byte separation: <code>findings_fieldbyte.json</code> and <code>probe_field_vs_byte.py</code> v1.0, 17 September 2026, three-replica ring in the disk-bound state established by note 44. Two series, two passes, thirty timed repetitions per configuration after five discarded warm-ups; verdict rule declared before execution. Source of measurement M11.</li>
+<li id="n44">Measurement record, disk regime: <code>disk_state.json</code> and <code>disk_regime_driver.py</code>, 17 September 2026. Source of measurement M10 and of the proof that the regime was reached rather than assumed: 6.05 GiB on disk against a 2 048 MiB memtable budget, 40 SSTables after a major compaction, the compaction counter crossing from 651 to 729, and caches invalidated.</li>
+<li id="n45">Measurement record, tier-versus-storage separation: <code>findings_tier.json</code> and <code>probe_tier_vs_storage.py</code> v1.0, 17 September 2026, three-replica ring in the same proven disk-bound regime as note 44. Two independent methods, two passes, thirty timed repetitions per size after five discarded warm-ups. Source of measurement M12.</li>
+<li id="n46">Measurement record, read forced onto the SSTable path: <code>rmw_postflush.py</code>, 18 September 2026. Variant B of the cost series with a flush between the write and each mutation, so that the cycle's internal <code>SELECT</code> merges SSTables instead of reading the memtable. Thirty repetitions per size. Source of measurement M14, and of the requalification of the per-kilobyte rate in section 4.1.</li>
+<li id="n47">Measurement record, cross-engine comparison: <code>probe_comparative.py</code> v1.0 with an added direct-CQL arm (<code>hcd_cql_arm.py</code>), 18 September 2026, all arms on one host in one session with a matched series and repetition count; the merge step verified the host fingerprint and series shape before emitting any ratio. Source of measurement M13, and of the tier-share estimate that disagrees with M12.</li>
+<li id="n48">Measurement record, read and search axes: <code>probe_read_search.py</code>, 18 September 2026, one million documents per arm on one host, MongoDB as a three-member replica set at majority write concern, cache-resident regime on both sides. Fifty repetitions per measurement. Source of measurements M15 and M16.</li>
+<li id="n49">IBM, <em>MongoDB Enterprise Advanced with IBM</em>, product page, and IBM Support, <em>MongoDB Enterprise Advanced with IBM 7.0.x</em> lifecycle page, which states that the 7.0.x offering is generally available as of 29 April 2025, can be purchased and is fully supported by IBM. https://www.ibm.com/products/mongodb-enterprise-advanced and https://www.ibm.com/support/pages/mongodb-enterprise-advanced-ibm70x</li>
+<li id="n50">Measurement records, aggregation and counting: <code>findings_agg_hcd.json</code>, <code>findings_agg_mongodb.json</code>, <code>findings_agg_cqlref.json</code>; probes <code>probe_aggregation.py</code> and <code>agg_cql_arm.py</code>, 18 September 2026, one host, 200 000 documents in ten categories, MongoDB 8.0.32 as a three-member replica set at majority write concern with journalling, HCD 2.0.6 with Data API v1.0.33 at three replicas. Source of measurements M20 to M23. These four were published before receiving an adversarial pass; the pass is in the repository as the campaign-7 challenge document, and its findings are folded into the appendix entries.</li>
+<li id="n51">DataStax, <em>Count documents</em>, Hyper-Converged Database API reference, 1.2 line: states that exact counting is a slow, expensive operation, that a count exceeding the limit set by the caller or by the API returns an indication of the limit instead of the count, and recommends the estimated count or the bulk loader for large volumes. The companion Astra DB reference for the same method states that exact counting of an arbitrary number of documents is not supported by the Data API. Scope caveat: the 1.2 page, the 2.0 page having the same rendering problem noted in section 3. https://docs.datastax.com/en/hyper-converged-database/1.2/api-reference/document-methods/count-all.html</li>
+<li id="n52">Repository, <code>data/derived/inference.json</code> and <code>docs/STATISTICS.md</code>: a re-analysis of every latency comparison in the dossier from the summary statistics that survive &mdash; the raw per-observation series having been discarded by every probe but one &mdash; asking whether the observed ranges of the two arms are disjoint. Where they are, every observation of one arm beat every observation of the other, and the direction is certain without a distributional assumption; the exact one-sided permutation probability of that outcome is 1/C(n<sub>A</sub>+n<sub>B</sub>, n<sub>A</sub>). Ninety-three comparisons; fifty-six disjoint, thirty-four overlapping. Source of every &ldquo;certain&rdquo; and &ldquo;not established&rdquo; in the table of section 4.4, and of the finding that the comparative harness fitted its slopes on pass one only. https://github.com/davidleconte/shredding-cost-hcd-mongodb</li>
+</ol>
+
+<h2>Appendix — sources</h2>
+
+<p>Each entry records what the source establishes, the edition or version to which it pertains, and the locator. All were consulted on 17 September 2026 unless otherwise stated. Numbering matches the notes above and is continuous across both parts.</p>
+
+<dl class="appendix">
+<dt>1 — Stargate, <em>data-api</em> configuration record</dt>
+<dd>Establishes: upstream defaults for page size (50), insert count (20), indexes per collection (10), indexes per database (50), LWT client retries (3).</dd>
+<dd>Version: branch <code>main</code>, upstream open-source project — <em>not</em> the shipped HCD product.</dd>
+<dd class="m"><a href="https://github.com/stargate/data-api/blob/main/CONFIGURATION.md">https://github.com/stargate/data-api/blob/main/CONFIGURATION.md</a></dd>
+
+<dt>2 — DataStax, Data API limits</dt>
+<dd>Establishes: page size 20; maximum insertions per transaction 100.</dd>
+<dd>Version: Astra DB Serverless, same Data API surface. Scope caveat: the HCD 2.0 limits page could not be rendered during verification.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/astra-db-serverless/api-reference/dataapi-limits.html">https://docs.datastax.com/en/astra-db-serverless/api-reference/dataapi-limits.html</a></dd>
+
+<dt>3 — DataStax Mission Control, HCD guardrails</dt>
+<dd>Establishes: the <code>sai_indexes_total</code> guardrail set to 100.</dd>
+<dd>Version: HCD product guardrail configuration.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/mission-control/administration/data-plane/configure-hcd-guardrails.html">https://docs.datastax.com/en/mission-control/administration/data-plane/configure-hcd-guardrails.html</a></dd>
+
+<dt>5 — DataStax, Cassandra drivers overview</dt>
+<dd>Establishes: the base engine version of the distribution.</dd>
+<dd class="q">"HCD 2.x is based on Cassandra 5.0."</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html">https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html</a></dd>
+
+<dt>6 — DataStax, tables reference</dt>
+<dd>Establishes: fixed-schema tables alongside schemaless collections.</dd>
+<dd class="q">"Tables are best for use cases where your data is structured and adheres to a pre-defined schema, known as a fixed schema."</dd>
+<dd>Version: HCD. Caveat: tables via the Data API carry a public-preview designation.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/api-reference/tables.html">https://docs.datastax.com/en/hyper-converged-database/2.0/api-reference/tables.html</a></dd>
+
+<dt>7 — DataStax, HCD frequently asked questions</dt>
+<dd>Establishes: the Data API as a schema-less, document-based interface over both structured and unstructured data.</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/faqs.html">https://docs.datastax.com/en/hyper-converged-database/2.0/faqs.html</a></dd>
+
+<dt>8 — DataStax, capacity planning</dt>
+<dd>Establishes: the two sizing bounds quoted in section 6.1.</dd>
+<dd class="q">"a good rule of thumb is to keep the number of rows per partition under 100,000 and the partition size under 100 MB."</dd>
+<dd>Version: HCD 1.1. Scope caveat: the 2.0 data-model page could not be rendered; figures corroborated by entry 9.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/install/capacity-planning.html">https://docs.datastax.com/en/hyper-converged-database/1.1/install/capacity-planning.html</a></dd>
+
+<dt>9 — DataStax, data-modelling best practices</dt>
+<dd>Establishes, independently: the partition-size bound.</dd>
+<dd class="q">"DataStax recommends keeping partitions small, ideally under 100 MB."</dd>
+<dd>Version: CQL for HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/cql/hcd/data-modeling/best-practices.html">https://docs.datastax.com/en/cql/hcd/data-modeling/best-practices.html</a></dd>
+
+<dt>10 — DataStax, list table metadata</dt>
+<dd>Establishes: the JSON primary-key structure, including sort direction encoding.</dd>
+<dd class="q">"primaryKey": { "partitionBy": [ "user_id" ], "partitionSort": { "order_id": 1, "order_date": -1 } }</dd>
+<dd>Version: Data API, Astra DB Serverless documentation; identical API surface.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/astra-db-serverless/api-reference/table-methods/list-table-metadata.html">https://docs.datastax.com/en/astra-db-serverless/api-reference/table-methods/list-table-metadata.html</a></dd>
+
+<dt>11 — Stargate project, introducing the JSON API</dt>
+<dd>Establishes: the shredding technique by name. Does <em>not</em> enumerate column names.</dd>
+<dd class="q">"we're using an improved approach known as 'super shredding'"</dd>
+<dd>Date: 13 March 2023.</dd>
+<dd class="m"><a href="https://stargate.io/2023/03/13/introduce-stargate-mongoose.html">https://stargate.io/2023/03/13/introduce-stargate-mongoose.html</a></dd>
+
+<dt>12 — Stargate project, the Cassandra Documents API</dt>
+<dd>Establishes: the design intent regarding read-before-write, for the <em>earlier</em> Documents API.</dd>
+<dd class="q">"we resolved to avoid doing any read-before-write operations at all costs"</dd>
+<dd>Date: 19 October 2020. Scope caveat: architecturally distinct from the current Data API; cited here precisely because it complicates the structural inference in section 4.</dd>
+<dd class="m"><a href="https://stargate.io/2020/10/19/the-stargate-cassandra-documents-api.html">https://stargate.io/2020/10/19/the-stargate-cassandra-documents-api.html</a></dd>
+
+<dt>13 — DataStax, lightweight transactions</dt>
+<dd>Establishes: the Paxos phase structure of conditional writes, and the interaction hazards of mixing LWT with normal operations.</dd>
+<dd>Version: HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/lightweight-transactions.html">https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/lightweight-transactions.html</a></dd>
+
+<dt>33 — DataStax, how transactions differ</dt>
+<dd>Establishes: the absence of ACID transactions with rollback or locking; partition-level write atomicity; row-level isolation.</dd>
+<dd>Version: HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html">https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html</a></dd>
+
+<dt>34 — MongoDB, <em>Atomicity and Transactions</em></dt>
+<dd>Establishes: the scope and the boundary of MongoDB's atomicity guarantee.</dd>
+<dd class="q">"In MongoDB, write operations are atomic on the single-document level, even if modifying multiple values." — and: "When a single write operation (e.g. db.collection.updateMany()) modifies multiple documents, the modification of each document is atomic, but the operation as a whole is not atomic."</dd>
+<dd>Version: MongoDB Database Manual, current line.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/core/write-operations-atomicity/">https://www.mongodb.com/docs/manual/core/write-operations-atomicity/</a></dd>
+
+<dt>35 — MongoDB, <code>$set</code> update operator</dt>
+<dd>Establishes: targeted field modification rather than full document rewrite, stated comparatively against replacement.</dd>
+<dd class="q">"Targeted Updates: $set modifies only the specified fields, ensuring efficient updates by avoiding unnecessary writes and overhead when you work with large documents."</dd>
+<dd>Version: MongoDB Database Manual, current line; behaviour of empty operands noted from MongoDB 5.0.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/reference/operator/update/set/">https://www.mongodb.com/docs/manual/reference/operator/update/set/</a></dd>
+
+<dt>36 — MongoDB, <em>Indexes</em></dt>
+<dd>Establishes: exactly one index is created without instruction, and it cannot be dropped.</dd>
+<dd class="q">"MongoDB creates a unique index on the _id field during the creation of a collection. The _id index prevents clients from inserting two documents with the same value for the _id field. You cannot drop this index."</dd>
+<dd>Version: MongoDB Database Manual, current line.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/indexes/">https://www.mongodb.com/docs/manual/indexes/</a></dd>
+
+<dt>37 — MongoDB, <code>createIndexes</code> reference</dt>
+<dd>Establishes: the wildcard index as an opt-in mechanism for indexing arbitrary fields; cited here in the interest of comparative fairness.</dd>
+<dd class="q">"The created index can support queries on any arbitrary field within documents in the collection" — with the noted exclusion of <code>_id</code> by default.</dd>
+<dd>Version: MongoDB Database Manual v8.0.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/v8.0/reference/command/createindexes/">https://www.mongodb.com/docs/v8.0/reference/command/createindexes/</a></dd>
+<dt>49 — IBM, MongoDB Enterprise Advanced with IBM</dt>
+<dd>Establishes: that IBM sells and supports the comparator under its own name, the 7.0.x offering being generally available as of 29 April 2025 per IBM&rsquo;s lifecycle page. Bears on the disclosure only. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.ibm.com/products/mongodb-enterprise-advanced &middot; https://www.ibm.com/support/pages/mongodb-enterprise-advanced-ibm70x</dd>
+</dl>
+
+<h2>Appendix B — measurements</h2>
+
+<p>Each entry records what was observed, on which build, under which conditions, and where the raw record lives. A measurement establishes what one build did on one day; it is not a vendor’s documentation and does not license comparison with any other product. Identifiers M1 to M8 are the same identifiers used in the architecture decision record that accompanies the raw files, and they are continuous across both parts of this diptych.</p>
+
+<dl class="appendix">
+<dt>Common conditions</dt>
+<dd>IBM DataStax HCD 2.0.6, release string <code>5.0.7.0-ea50e91ba01f</code> read from the running node (<code>nodetool version</code>, <code>system.local</code>); Data API <code>stargateio/data-api</code> v1.0.33; astrapy 2.3.1. One node, one datacentre, RF 1 (<code>NetworkTopologyStrategy {dc1: 1}</code>), 16 vnodes. Virtual machine, 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz, 220 GiB RAM; the database container limited to 3 GiB with a 2 GiB heap; storage class of the backing media not determinable from the guest. <code>commitlog_sync periodic</code>, 10 000 ms. Working set memtable-resident throughout: no SSTable was flushed and no compaction crossed. Load driven at a fixed offered rate of 50 writes/s for 120 s, open loop, schedule slip under 0.06 s. Client on the same host over loopback. Harness <code>verify_storage_claims.py</code> 1.0 with two mechanical fixes (client environment set to HCD; probe-3 ballast excluded from indexing because the Data API refuses any indexed string above 8 000 bytes). 17 September 2026.</dd>
+<dd class="m">Full record: <code>findings.json</code>.</dd>
+
+<dt>M1 — Physical column layout</dt>
+<dd>Establishes: a collection created with default options and no vector dimension is one table of twelve columns, with nine storage-attached indexes created automatically over all but <code>key</code>, <code>tx_id</code> and <code>doc_json</code>. Read from <code>system_schema.columns</code> and <code>system_schema.indexes</code>; identical in two runs.</dd>
+<dd class="q">key frozen&lt;tuple&lt;tinyint,text&gt;&gt; · tx_id timeuuid · doc_json text · exist_keys set&lt;text&gt; · array_size map&lt;text,int&gt; · array_contains set&lt;text&gt; · query_bool_values map&lt;text,tinyint&gt; · query_dbl_values map&lt;text,decimal&gt; · query_text_values map&lt;text,text&gt; · query_null_values set&lt;text&gt; · query_timestamp_values map&lt;text,timestamp&gt; · query_lexical_value text</dd>
+
+<dt>M2 — The write path of a single-field update</dt>
+<dd>Establishes: with query tracing at probability 1.0 on the node, each of ten <code>updateOne</code> operations carrying one <code>$set</code> produced, in order, a <code>SELECT</code> of the whole document by key and then one <code>UPDATE</code> rewriting every derived column and <code>doc_json</code>, conditioned on <code>tx_id</code>. Each <code>deleteOne</code> produced a <code>SELECT</code> of <code>key, tx_id</code> then <code>DELETE … IF tx_id = ?</code>. Each <code>insertOne</code> produced one <code>INSERT … IF NOT EXISTS</code>. Tracing was reset to 0.0 afterwards. Ten of ten updates showed the pair.</dd>
+<dd class="q">SELECT key, tx_id, doc_json FROM … WHERE key = ? LIMIT 1 — then — UPDATE … SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_dbl_values = ?, query_text_values = ?, query_null_values = ?, query_timestamp_values = ?, query_lexical_value = ?, doc_json = ? WHERE key = ? IF tx_id = ?</dd>
+
+<dt>M3 — Cost of a constant mutation against unchanged content</dt>
+<dd>Establishes: with one scalar field mutated by <code>$set</code>, thirty timed repetitions after five warm-ups per size, and the <code>updateOne</code> HTTP payload constant at every size (122–124 bytes request, 47 bytes response), median latency grew 7.50× (12.1 ms → 90.8 ms) between a 1 KB document and a 128 KB document whose additional content was seventeen indexed string fields that the mutation never touched; a same-size read by key grew 1.56×. With the same total sizes but the additional content excluded from indexing, the update grew 1.92× and 2.21× in two runs against reads of 1.86× and 1.94× — indistinguishable from a read under the pre-registered control rule, and therefore not, on its own, evidence of the cycle that M2 observes directly.</dd>
+<dd>Differenced at equal byte sizes, the indexing term is 2.3 ms at 8 KB, 17.3 ms at 32 KB and 68.7 ms at 128 KB. It is <em>not</em> divisible into a per-field rate: each ballast field was an 8 000-byte indexed string, so field count (1 → 17) and indexed byte volume (≈ 8 KB → 136 KB) were grown in lockstep and neither share is recoverable from this run. A revision of this article reported such a rate; it is withdrawn. The experiment that would separate them — seventeen short indexed fields at one size, against one long indexed field at the same size — has not been run.</dd>
+<dd class="m">Raw record: <code>probe3_variant_b.json</code>, <code>control_read_B.json</code>, <code>control_read_A_rep2.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M4 — Consistency levels</dt>
+<dd>Establishes: every one of seventy traced statements against the collection ran at <code>LOCAL_QUORUM</code>; every one of thirty conditional statements carried <code>LOCAL_SERIAL</code> as its serial consistency level. The client set no level; these are the Data API tier's defaults. On one node with RF 1 a single replica satisfies both, so the level's name is established and its multi-replica cost is not.</dd>
+
+<dt>Conditions for M5 to M8 — the three-replica ring and the nested-document read</dt>
+<dd>M7, M8 and M9 were taken on a six-node, two-datacentre ring, the working keyspace at three replicas in one datacentre, one replica per rack; nodes larger than the single-node host used for M1 to M6 (8 GiB with a 4 GiB heap against 3 GiB with a 2 GiB heap), which means end-to-end latencies across the two campaigns mix a replication effect with a hardware difference and must not be compared directly. Coordinator-side figures and protocol traces are structural and do not carry that confound. M8 was read on the single node. Every regime memtable-resident; tracing raised to 1.0 and restored to 0.0 on every node touched; keyspaces dropped and snapshots cleared afterwards. 17 September 2026.</dd>
+
+<dt>M5 — The price of the fifth operation, at three replicas</dt>
+<dd>Establishes: every conditional write runs a full three-replica Paxos round. The coordinator reads the precondition, sends a prepare request to the other two replicas, both promise the ballot and return the read row, the coordinator proposes, both accept and append to commitlog and Paxos memtable, then commit. Coordinator-side median 13.7 ms for the conditional <code>UPDATE</code> against 6.6 ms for a non-conditional <code>SELECT</code>. The four verdicts established at one replica held unchanged at three.</dd>
+<dd>Not established: a disk-bound equivalent, and a client-side rather than coordinator-side figure for the round.</dd>
+
+<dt>Conditions for M10 and M11 — the disk-bound three-replica run</dt>
+<dd>Same product and Data API version; three-replica ring, six nodes over two datacentres, nodes of 8 GiB with a 4 GiB heap, memtable budget 2 048 MiB. Regime established and evidenced rather than assumed: 24 576 documents of incompressible ballast, 6.05 GiB on disk, flush to 82 SSTables then a major compaction to 40, compaction counter 651 → 729, key and row caches invalidated. Storage class undeterminable from the guest and not invented: an ext4 filesystem on a virtual SCSI disk, effective sequential write 101 MB/s by <code>dd</code> with fsync; the physical medium was not established. 17 September 2026.</dd>
+<dd><strong>Declared mechanical correction.</strong> The driver first reported the regime as not reached, on the data-volume check alone. The cause was the ballast itself: a constant byte repeated is compressed roughly 120:1 by the table&rsquo;s compressor, so six logical gigabytes occupied fifty megabytes on disk. The ballast was changed to incompressible content and nothing else — no size, threshold, repetition count or proof obligation was touched. Two host-to-container adaptations were also declared. This is recorded here because a driver that had not checked its own precondition would have reported a disk-bound run that was nothing of the kind.</dd>
+
+<dt>M10 — The coefficient under a disk-resident <em>dataset</em>, which is not a disk-resident <em>read</em></dt>
+<dd><strong>Corrected.</strong> An earlier revision of this entry stated that the indexed-content coefficient does not collapse when the data no longer fits in memory. That overstated what was measured: the dataset was on disk, but the row the probe reads is the row it has just written, and that row is memtable-resident whatever surrounds it. Measurement M14 forced the read onto the SSTable path and the coefficient did collapse, from ×5.94 to ×1.52. What M10 establishes is narrower: memory pressure and cold caches, with the read still served from memory, leave the coefficient intact.</dd>
+<dd>Observed: Variant B grew ×5.94 (medians 20.4 → 121.2 ms across 1 KB to 128 KB) against ×7.50 in the original memtable run; the unindexed variant grew ×1.78 against a read control of ×1.89, which is inconclusive under the pre-registered control rule exactly as it was in the first campaign. Index maintenance remained a first-order cost in that regime.</dd>
+<dd>Not established: a disk-resident read, which M14 supplies; and the attribution of the ×7.50 → ×5.94 difference. The two campaigns differ in regime, in replication factor and in node size at once.</dd>
+<dd class="m">Raw record: <code>disk_state.json</code> and the campaign report. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M11 — Which term of the indexing cost carries it</dt>
+<dd>Establishes, by two series each holding one term fixed: at a constant 64 KiB of indexed content, raising the field count from 9 to 128 moved the median update by ×1.128 and ×1.187 in two passes; at a constant 16 fields, raising the bytes per field from 512 to 8 000 moved it by ×4.556 and ×4.738, with r² of 0.9999 in both. Least-squares slope and endpoint ratio agree to three significant figures. The derived rate is <strong>0.763 and 0.790 ms per kilobyte of indexed content</strong>, with a residual field term of 0.077 to 0.111 ms per field.</dd>
+<dd>Internal control: the configuration of 16 fields × 4 096 bytes belongs to both series and was measured twice per pass; the readings agreed to 2.0 % and 0.7 %, against a pre-declared invalidation threshold of 10 %.</dd>
+<dd>Not established, and reported rather than smoothed: the pre-registered verdict rule required a fields-series endpoint ratio at or below 1.15 to call bytes dominant. The passes returned 1.128 and 1.187, straddling it, so the formal verdict is inconclusive. Neither approaches the 1.5 that would make field count an independent driver. The exact size of the residual field term is therefore open.</dd>
+<dd>Also not established: the per-kilobyte rate was measured only in the disk regime and not re-run in a memtable one.</dd>
+<dd class="m">Raw record: <code>findings_fieldbyte.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M12 — Where the per-kilobyte rate is paid</dt>
+<dd>Establishes, by two independent methods in the disk-bound regime of M10: the rate of roughly 0.77 ms per indexed kilobyte divides into a storage term of 0.547 ms/KiB (r² 0.997) and a Data API tier term of 0.219 ms/KiB (r² 0.98) — the tier being about 29 % of the rate. Their sum reproduces the total by construction and confirms nothing, the tier term being defined as total minus storage; an earlier revision of this appendix presented that identity as a replication and was wrong. The genuine replication is of the <em>total</em> slope across campaigns: 0.763 and 0.790 in M11, 0.772 here, on a different keyspace on a different day. A second method, subtracting coordinator-side trace durations from client-observed latency, puts the tier lower at 0.145 ms/KiB and 19 %.</dd>
+<dd>Method: arm A, <code>updateOne</code> through the Data API; arm B, the identical CQL statement pair against the same row with the shredded values read back rather than recomputed, so the storage work is identical and no JSON is parsed. Thirty timed repetitions per size after five discarded warm-ups, two passes, whose tier slopes came back thirty per cent apart at 0.190 and 0.248. A third, weak and independent indicator: the tier container's CPU alternated between about 0.5 % while arm B ran and 40–230 % while arm A ran, so the tier does substantive computation rather than merely forwarding bytes.</dd>
+<dd><strong>Not established, and the reason no single split is published.</strong> The two methods agree to within a quarter at 8, 16 and 32 KiB and diverge beyond — 34 % at 64 KiB, 28 % at 125 KiB — because they subtract different things: the bypass removes a full client-side CQL execution, the trace only the coordinator's internal duration. The pre-declared tolerance was a quarter. Only the direction and the order of magnitude survive both, and the defensible range for the tier share is a fifth to a third rather than a point. Two further dispersions are unquantified: the thirty per cent spread between the bypass method&rsquo;s own passes, and the width of the direct-CQL distribution being subtracted, whose ninety-fifth percentile reaches three and a half times its median at the smallest size.</dd>
+<dd>Also not established: the internal decomposition of the tier term, which is JSON parsing, shredding and response serialisation together; the share of that term attributable to client-library differences between the Data API client and the CQL driver; and any absolute figure transferable to a tier under a CPU limit, the container measured here having had none on an eighty-core host.</dd>
+<dd>Declared mechanical correction: arm B initially bound the composite partition key as a simple statement parameter, which the server rejected; prepared statements were used instead, these carrying the column type. No threshold, size or repetition count was touched.</dd>
+<dd class="m">Raw record: <code>findings_tier.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M13 — The comparison, on one host</dt>
+<dd>Establishes: with the identical mutation series, the same repetition counts and a declared durability mapping, all arms on one host in one session — slope per indexed kilobyte of 0.0098 for MongoDB with nothing indexed beyond <code>_id</code>, 0.0176 for MongoDB under a wildcard index over every field, 0.704 for the decomposing engine driven directly through CQL, and 0.778 for the same engine through the Data API. Engine to engine against the capability-matched arm the slope ratio is forty and against the default arm seventy, but both rest on a denominator that rises only 2.08 ms and 0.81 ms respectively across the whole series, at coefficients of determination of 0.88 and 0.78; a slope of 0.010 would give seventy and one of 0.025 twenty-eight. The ratio of <em>latencies</em>, which is what a reader hears, is 3.3× at 8 KB and 13.3× at 128 KB. No single multiplier is published; the defensible finding is a widening gap of roughly three- to thirteen-fold.</dd>
+<dd>Method: the merge step compares the host fingerprint and the series shape of every record and refuses to emit a ratio unless they match. Durability mapped as majority write concern with journalling against <code>LOCAL_QUORUM</code> with a periodic commit-log sync — a mapping that favours the decomposing engine, which acknowledges before its sync while MongoDB waits for its journal.</dd>
+<dd>Not established: any axis other than the mutation of one field. Filtered reads, vector search, aggregation and write-to-visible latency were not measured, and the last of these is where this platform's structural advantage lies. One host, one deployment shape, one workload.</dd>
+<dd class="m">Raw record: the comparative merge output. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M14 — The rate's boundary condition</dt>
+<dd>Establishes: forcing the read-modify-write cycle's internal <code>SELECT</code> onto the SSTable path, by flushing between the write and each mutation, collapses the growth with indexed volume from ×5.94 to ×1.52 and introduces a fixed cost of roughly ninety to a hundred milliseconds. The per-kilobyte rate is therefore a memtable-regime phenomenon; where the read leaves memory, the read path dominates and indexed volume ceases to be the driver.</dd>
+<dd>Consequence for the record: measurement M10 was labelled as showing the coefficient holding under disk. It showed no such thing. The dataset was disk-resident; the probed row never was, a read-modify-write cycle re-reading what it has just written. M10 establishes that memory pressure and cold caches leave the coefficient intact, and nothing about leaving memory.</dd>
+<dd>Not established, and the first item is a gap in the record rather than in the method: the post-flush run does not state its topology or replication factor, while the memtable figures it is compared against were taken on a three-replica ring, so the contrast may mix the read path with a deployment change. Then, in both directions: flushing before every mutation leaves one SSTable per flush, so the internal read merges an unnaturally fragmented set and the fixed cost is an upper bound; and the operating system page cache could not be dropped, so the SSTable path is not a cold one. A realistic disk-bound figure lies between the two regimes measured, and no measurement in this study occupies that middle.</dd>
+<dd class="m">Raw record: the post-flush probe output. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M15 — The read and search axes, at a million documents</dt>
+<dd>Establishes, all arms on one host with a million documents loaded and both sides cache-resident: filtering on a field for which no index was declared costs 376.7 ms on MongoDB as ordinarily deployed, which scans; 17.4 ms on the decomposing engine, which had indexed it automatically; and 0.73 ms on MongoDB under a wildcard index. Fetching one document by identifier costs 0.53&ndash;0.62 ms on MongoDB and 10.4 ms on the decomposing engine. Fifty repetitions per measurement, with both engines cache-resident throughout — a condition that measurement M14 shows to be decisive, so none of these figures should be read as a disk-regime result.</dd>
+<dd>Reading: the automatic-indexing advantage is real against the default configuration, at twenty-two times, and absent against the capability-matched one, which is twenty-four times faster still. The point read is a straight loss of about twenty times, and its shape &mdash; a roughly fixed ten milliseconds &mdash; identifies it as the Data API tier on a path that involves no shredding, no rewrite and no consensus.</dd>
+<dd>Not established: concurrency, multiple clients, multiple hosts, aggregation, or any workload other than the three single-operation axes measured. One host, one build of each engine, one regime.</dd>
+<dd class="m">Raw record: <code>findings_rs_hcd.json</code>, <code>findings_rs_mongo.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M16 — Freshness on an ordinary secondary index: a tie, and the wrong object</dt>
+<dd>Establishes: writing a document and then querying it through an ordinary secondary index, all three arms found it on the first attempt, forty times out of forty. Both engines maintain ordinary secondary indexes synchronously, so on the question of index <em>currency</em> there is parity. Elapsed time is not at parity: insert-to-found medians were 894 ms for MongoDB as ordinarily deployed, 33 ms for the decomposing engine and 7 ms for MongoDB under a wildcard index &mdash; twenty-seven times faster than the first, four and a half times slower than the second. A tie in the attempt histogram is not a tie in what a user waits for.</dd>
+<dd><strong>What it is not.</strong> The freshness claim this diptych makes for the decomposing engine concerns its <em>search and vector</em> index, which is synchronous, against MongoDB&rsquo;s search engine, which replicates asynchronously through change streams. That engine is not deployable on a plain replica set, being a preview component built for the vendor&rsquo;s managed service, so the axis could not be measured at all. A tie on ordinary indexes is parity on a different object, and must not be read as evidence against the claim &mdash; nor as evidence for it.</dd>
+<dd class="m">Raw record: as M15. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M20 — No server-side aggregation through the interface</dt>
+<dd>Establishes: the Data API command allow-list on this build holds nineteen commands (<code>alterTable</code>, <code>countDocuments</code>, <code>createIndex</code>, <code>createTextIndex</code>, <code>createVectorIndex</code>, <code>deleteMany</code>, <code>deleteOne</code>, <code>estimatedDocumentCount</code>, <code>find</code>, <code>findAndRerank</code>, <code>findOne</code>, <code>findOneAndDelete</code>, <code>findOneAndReplace</code>, <code>findOneAndUpdate</code>, <code>insertMany</code>, <code>insertOne</code>, <code>listIndexes</code>, <code>updateMany</code>, <code>updateOne</code>); <code>aggregate</code>, <code>$group</code> and <code>distinct</code> answer <code>COMMAND_UNKNOWN</code>. A reading of the interface, independent of hardware, load and regime.</dd>
+<dd>Not established: the same for the Data API&rsquo;s table mode, not tried; or for any other version, an allow-list being a product decision. Challenged as D11 and unchanged.</dd>
+<dd class="m">Raw record: <code>findings_agg_hcd.json</code> &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M21 — Exact counting is capped, and the cap is documented behaviour</dt>
+<dd>Establishes: <code>countDocuments</code> on 200 000 documents, filtered and unfiltered, refused with <code>TooManyDocumentsToCountException: Document count exceeds 1000</code> on a stock container carrying no count-limit setting, despite a client upper bound of 400 000. <strong>Reframed by the adversarial pass (D8):</strong> the vendor documents that exact counting beyond an API-set limit is not supported and returns an indication of the limit instead; the mechanism is therefore <span class="ep ep-d">D</span> and only the value of the threshold is <span class="ep ep-m">M</span>. This relocates the criticism from the ceiling, which is declared, to the recommended substitute, which is M22.</dd>
+<dd>Also observed: MongoDB&rsquo;s exact count is itself a scan &mdash; 115 ms unfiltered, 157 ms filtered without an index, 12.7 ms once an index on the field was declared. It wins this axis because it answers, not because it answers cheaply.</dd>
+<dd class="m">Raw record: <code>findings_agg_hcd.json</code>, <code>findings_agg_mongodb.json</code> &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M22 — The estimator answers zero before the first flush</dt>
+<dd>Establishes: <code>estimatedDocumentCount()</code> returned 0 at a median of 6.9 ms for a collection holding 200 000 documents, read minutes after loading and before any flush. The estimate is drawn from SSTable metadata, of which there is none until the memtable is flushed. Nothing in the response signals the condition. The same call on MongoDB returned 200 000 at 0.4 ms on this corpus.</dd>
+<dd><strong>Scoped by the adversarial pass (D9):</strong> this is a cold-start property. What the estimate returns in steady state, after flush and compaction, was not measured, and the finding must be read as a window rather than a permanent state. The zero is also direct evidence that this whole campaign ran cache-resident.</dd>
+<dd class="m">Raw record: <code>findings_agg_hcd.json</code> &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M23 — What aggregation costs by the only route available</dt>
+<dd>Establishes: summing a field by category over 200 000 documents in ten groups, all arms verified exact against precomputed ground truth &mdash; MongoDB server-side <code>$group</code> median 222.7 ms (n = 15); the Data API client-side scan-and-sum median 133 984 ms (n = 3, spread 0.4 %); native CQL over a table designed for the query, 2 011 ms by per-partition sweep and 2 568 ms by cross-partition <code>GROUP BY</code> (n = 15 each). Ratios: 602× between MongoDB and the interface; 9.0× between MongoDB and the engine&rsquo;s best native route; 66.6× between the engine&rsquo;s two routes.</dd>
+<dd><strong>Decomposed by the adversarial pass (D7), and strengthened by it:</strong> the vendor&rsquo;s documented page size of 20 makes the scan 10 000 round trips; at the 10.4 ms per Data API read measured in M15, those account for about 104 s, three quarters of the 134. The figure is a documented limit multiplied by a measured per-call cost, not tunable by the client. <span class="ep ep-u">U</span> as a derivation.</dd>
+<dd>Not established: the native CQL route as a remedy for the document model, since it requires a table partitioned by the group key in advance; the index state under which the MongoDB <code>$group</code> ran, which the record does not state (D10); anything under concurrency or outside the cache regime; and the n = 3 figure&rsquo;s tail percentiles, which carry no information (D6) &mdash; the direction survives a factor-of-two error with hundreds to spare.</dd>
+<dd class="m">Raw record: <code>findings_agg_hcd.json</code>, <code>findings_agg_mongodb.json</code>, <code>findings_agg_cqlref.json</code> &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>What the measurements do not establish</dt>
+<dd>Any read that provably missed the operating system page cache: the cache was not dropped, root on the host being unavailable, and the dataset fits in host memory. The internal decomposition of the tier term: the subtraction removes JSON parsing, shredding and response serialisation together and separates none of the three from the others. A precise tier share, the two methods diverging beyond a quarter at the two largest sizes. A tier under a CPU limit, this one having had none. The attribution of the coefficient difference between campaigns, which mixes regime, replication factor and node size. The per-kilobyte rate outside a disk-bound regime. Anything about another version of HCD or the Data API, about Apache Cassandra 5.0 or 6.0, or about MongoDB.</dd>
+
+</dl>
+
+<h2>Limitations</h2>
+
+<p>Stated here rather than buried, because work that grades its claims owes the reader an account of where the grading came out badly. These limitations apply to the diptych as a whole.</p>
+
+<p><strong>Four substantive claims could not be verified</strong> against sources of acceptable rank, and three of the four concern the decomposing engine rather than its comparator: the enumeration of generic column names, the read-modify-write cycle, the consistency levels at which Data API writes execute, and the current general-availability status of MongoDB search per edition. The first three were subsequently measured and hold on the builds named; they carry the <span class="ep ep-m">M</span> marker, which is weaker than <span class="ep ep-d">D</span>: an observation of a build is not a vendor&rsquo;s commitment. The fourth has since been resolved from the vendor&rsquo;s own pages; Part II carries the correction.</p>
+
+<p>That the unverified residue falls almost entirely on one side is itself a finding, and it cuts against the side I work for. MongoDB&rsquo;s mutation semantics, its index policy and its asynchronous search path are documented in version-pinned reference material and were confirmed verbatim. The equivalent statements about the Data API&rsquo;s physical representation are not published anywhere I could reach. A reader may reasonably conclude that the system I know better is the one whose mechanism is harder to verify, and may weight the comparison accordingly. An earlier revision added that the asymmetry ran further still, nine measurements having been taken on one side and none on the other. That is no longer the case: section 4.4 reports the identical series run against both engines on one host. The documentary asymmetry above remains; the measurement asymmetry does not.</p>
+
+<p><strong>No confidence interval can be computed from this study by anyone, including its author.</strong> Every probe but one discarded the per-observation series and kept only the summary &mdash; count, minimum, median, ninety-fifth and ninety-ninth percentiles, maximum, standard deviation. What survives permits exactly one distribution-free question: whether the two arms&rsquo; ranges are disjoint. Where they are, the direction is certain and an exact permutation probability follows; where they are not, the direction is not established from these data, whatever the medians suggest. Section 4.4 carries the answer for every axis. Two of the three margins that favour the decomposing engine do not survive it as latency comparisons; one of them survives as a proportion.</p>
+
+<p><strong>The shape of the cost is now resolved in one direction and not the other.</strong> The byte term is established across two passes with an internal control agreeing to under two per cent; the residual field term is not pinned down, the two passes straddling the pre-registered threshold at 1.128 and 1.187. The separation of the Data API tier&rsquo;s parsing cost from the storage engine&rsquo;s has since been done and is reported in section 4.3, with the qualification that its two methods diverge at the larger sizes and only a range is defensible. The per-kilobyte rate was also measured only in the disk regime; the near-perfect linearity is expected to survive a memtable regime but was not re-run there.</p>
+
+<p><strong>The disk-bound caveat has been discharged, and replaced by a narrower one.</strong> An earlier revision noted that every regime was memtable-resident and that the engine described never touched its disk. A three-replica run in a proven disk-bound state — 6.05 GiB on disk against a 2 048 MiB memtable budget, forty SSTables, seventy-eight compactions crossed, caches invalidated — has since been executed.<sup class="n"><a href="#n44">44</a></sup> The indexed-content coefficient did not collapse there: ×5.94 against ×7.50 in the original memtable run.</p>
+
+<p><span class="ep ep-m">M</span> That sentence, as an earlier revision left it, claimed more than the run supported, and the correction matters enough to state rather than quietly absorb. The dataset was on disk; the row the probe read was not. A read-modify-write cycle re-reads what it has just written, and that row sits in the memtable whatever surrounds it. The campaign proved a disk-resident <em>dataset</em>, never a disk-resident <em>read</em>. When the read is actually forced onto the SSTable path, the coefficient does collapse, from ×5.94 to ×1.52, and section 4.1 reports what replaces it. What that campaign established is narrower than its label: memory pressure and cold caches do not destroy the coefficient. Leaving memory does.</p>
+
+<p><strong>What remains is a page-cache confound and a hot-row confound, and they matter.</strong> The operating system page cache was not dropped, root on the host being unavailable, and the 6 GiB dataset fits comfortably in the host's memory: "disk-bound" here means the data genuinely exceeds the memtable budget and lives in SSTables, not that any given read missed RAM. Further, the read-modify-write probe re-reads the row it has just written, and that row is memtable-resident whatever the size of the dataset around it. The disk regime therefore acts through memory pressure and cold caches rather than by serving the probed row from disk. Anyone reading these figures as fully disk-resident latencies is reading more into them than was measured.</p>
+
+<p><strong>Two product pages could not be rendered</strong> during verification — the HCD 2.0 Data API limits page and the HCD 2.0 data-model page — so several product figures rest on the equivalent commercial documentation for the same API surface rather than on the exact edition under discussion. These substitutions are marked in the appendix entry concerned.</p>
+
+<p><strong>Everything concerning Cassandra 6.0 describes software in alpha</strong>, explicitly designated by its publishers as unsuitable for anything beyond development and testing. Its configuration surface, its syntax and its feature scope may all change before general availability.</p>
+
+<p><strong>Two sources were consulted through list mirrors</strong> rather than the Apache archive directly, and one through the project&rsquo;s pull-request traffic rather than published documentation. Where that provenance bears on the weight of a claim, the claim carries the <span class="ep ep-r">R</span> marker rather than <span class="ep ep-d">D</span> — with one exception I would rather name than let a reader find. The alpha classification quoted in Part II is marked <span class="ep ep-d">D</span> although the only reachable copy of that announcement was a list mirror. The quotation is verbatim and the tag dates corroborate it from the project repository itself, but by the rule stated in this very paragraph it ought to carry <span class="ep ep-r">R</span>. Consistency is a property of a system of markers, not of any one of them, and this is where mine failed.</p>
+
+</div></main>
+</div>
+</body></html>

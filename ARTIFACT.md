@@ -516,7 +516,7 @@ Recorded here so that no future badge claim overreaches it.
    reason M23's arms can be described as "exact against ground truth" at all.
 6. **No axis was measured under concurrency.** Every probe is a single sequential closed-loop
    client. The article under verification promises "concurrency" in its own title
-   (`docs/article/article-corrected.html`); it is never measured. `README.md` line 1 and the
+   (`docs/article/`, the two volets); it is never measured. `README.md` line 1 and the
    `CITATION.cff` title have both been corrected to drop the word, but citations of the earlier
    title are already in circulation and cannot be recalled. `CITATION.cff` also keyworded "write
    amplification", which no file quantifies; that keyword now reads "read-modify-write".

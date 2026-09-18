@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One field, five operations — Part II: when the index is current</title>
+<meta name="description" content="Where index maintenance sits relative to the commit, why that makes freshness a correctness property for retrieval, and what a change of consensus protocol does and does not touch. Measured on a named build, with every claim graded.">
+<meta name="author" content="David Leconte">
+<style>
+:root{--ink:#1B1F24;--soft-ink:#4A5568;--navy:#1F3864;--steel:#2E5496;
+--amber:#8A6D00;--line:#E4E9F0;--tint:#F7F9FC;--bg:#fff}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#F0F3F7;color:var(--ink);
+font:19px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-font-smoothing:antialiased}
+.sheet{max-width:1000px;margin:0 auto;background:var(--bg);padding:0 0 90px;
+box-shadow:0 1px 3px rgba(16,24,40,.09),0 16px 48px rgba(16,24,40,.07)}
+.wrap{max-width:952px;margin:0 auto;padding:0 26px}
+header{padding:64px 26px 34px;border-bottom:1px solid var(--line);margin-bottom:44px}
+header .wrap{padding:0;max-width:690px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+color:var(--steel);margin:0 0 18px}
+h1{font-size:41px;line-height:1.16;letter-spacing:-.021em;margin:0 0 16px;color:var(--navy);font-weight:800}
+.deck{font-size:21px;line-height:1.5;color:var(--soft-ink);margin:0 0 26px;font-weight:400}
+.byline{font-size:14.5px;color:var(--soft-ink);line-height:1.7;
+padding-top:20px;border-top:1px solid var(--line)}
+.byline strong{color:var(--ink)}
+main .wrap>p,main .wrap>h2,main .wrap>h3,main .wrap>ul,main .wrap>ol,
+main .wrap>blockquote,main .wrap>hr,main .wrap>table,
+main .wrap>.disclosure,main .wrap>.abstract,main .wrap>.legend,
+main .wrap>.notes,main .wrap>.appendix{max-width:690px;margin-left:auto;margin-right:auto}
+h2{font-size:27px;line-height:1.28;letter-spacing:-.014em;color:var(--navy);
+margin:58px 0 16px;font-weight:700}
+h3{font-size:20px;color:var(--navy);margin:36px 0 10px;font-weight:700}
+p{margin:0 0 20px}
+strong{font-weight:650;color:#111}
+a{color:var(--steel);text-decoration:none;border-bottom:1px solid rgba(46,84,150,.32)}
+a:hover{border-bottom-color:var(--steel)}
+ul,ol{margin:0 0 22px;padding-left:26px}li{margin:0 0 10px}
+hr{border:0;height:1px;background:var(--line);margin:46px 0}
+blockquote{margin:32px 0;padding:20px 26px;background:var(--tint);
+border-left:4px solid var(--steel);border-radius:0 8px 8px 0;
+font-size:20px;line-height:1.58;color:var(--navy)}
+blockquote p{margin:0}
+blockquote strong{color:var(--navy)}
+blockquote.src{font-size:17px;line-height:1.62;border-left-color:var(--amber);color:var(--ink)}
+blockquote.src cite{display:block;margin-top:10px;font-style:normal;font-size:13.5px;color:var(--soft-ink)}
+code{background:#F1F4F8;border:1px solid #E1E7EF;border-radius:4px;padding:1.5px 6px;
+font:.86em/1.5 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;color:#0F2A5C}
+pre{background:#F8FAFC;border:1px solid var(--line);border-radius:10px;
+padding:20px 24px;overflow-x:auto;margin:0 auto 26px;max-width:816px;
+font:14px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+pre code{background:none;border:0;padding:0;font-size:inherit;color:#1B2733}
+pre .c{color:#6B7C93;font-style:italic}
+table{border-collapse:collapse;width:100%;font-size:16px;margin:0 0 26px}
+th{background:var(--navy);color:#fff;text-align:left;padding:11px 14px;font-weight:600}
+td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#FAFCFE}
+.tablewrap{max-width:900px;margin:0 auto 30px;overflow-x:auto}
+figure.wide{max-width:900px;margin:48px auto 42px;padding:20px;
+background:var(--tint);border:1px solid var(--line);border-radius:12px}
+figure.wide.measured{background:#F4FAF6;border-color:#BFE3C8;
+box-shadow:inset 4px 0 0 #1E5631}
+figure.wide.measured figcaption{color:#2F5741}
+figure.wide .figtag{display:inline-block;font:700 10px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.09em;text-transform:uppercase;padding:2.5px 8px;border-radius:3px;margin-bottom:12px}
+figure.wide .figtag-m{background:#1E5631;color:#fff}
+figure.wide .figtag-c{background:#E8F0FB;color:#1F3864;border:1px solid #C6D8F2}
+.demo{max-width:900px;margin:48px auto 42px;padding:22px;background:#FFFDF7;
+border:1px solid #EBDCAE;border-radius:12px;box-shadow:inset 4px 0 0 #8A6D00}
+.demo .figtag{display:inline-block;font:700 10px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.09em;text-transform:uppercase;padding:2.5px 8px;border-radius:3px;margin-bottom:12px}
+.demo .figtag-x{background:#8A6D00;color:#fff}
+.demo-h{font-size:19px;color:var(--navy);margin:0 0 8px;font-weight:700}
+.demo-lede{font-size:15.5px;line-height:1.6;color:var(--soft-ink);margin:0 0 18px;max-width:640px}
+.demo-ctrl{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin:0 0 18px}
+.demo-ctrl label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;
+font-weight:650;color:var(--navy)}
+.demo-ctrl select{font:inherit;font-size:14px;font-weight:400;padding:7px 10px;
+border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);min-width:270px}
+.demo-ctrl button{font:inherit;font-size:14px;font-weight:650;padding:9px 20px;border:0;
+border-radius:7px;background:var(--navy);color:#fff;cursor:pointer}
+.demo-ctrl button:hover{background:var(--steel)}
+.demo-ctrl button:focus-visible,.demo-ctrl select:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.demo svg{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:8px}
+.demo-foot{font-size:13.5px;line-height:1.6;color:var(--soft-ink);margin:14px 0 0;max-width:700px}
+.demo-foot.miss{color:#6B5500}
+.epigraph{max-width:640px;margin:56px auto 30px;padding:0 0 0 22px;
+border-left:2px solid var(--line)}
+.epigraph p{font-size:17.5px;line-height:1.62;color:var(--navy);font-style:italic;margin:0 0 9px}
+.epigraph cite{display:block;font-style:normal;font-size:13.5px;line-height:1.5;color:var(--soft-ink)}
+.epigraph cite b{font-weight:650;color:var(--ink);font-style:normal}
+.epigraph .gloss{font-size:13px;color:var(--soft-ink);font-style:normal;margin:8px 0 0}
+@media print{.epigraph{break-inside:avoid}}
+@media(max-width:640px){.demo-ctrl select{min-width:100%}.demo-ctrl label{width:100%}}
+@media print{.demo-ctrl{display:none}.demo{box-shadow:none;break-inside:avoid}
+.demo-h::after{content:" — interactive; static values shown"}}
+figure.wide svg{width:100%;height:auto;display:block}
+figcaption{margin-top:14px;font-size:14px;color:var(--soft-ink);text-align:center;font-style:italic}
+.disclosure{margin:52px auto 0;max-width:690px;padding:22px 26px;background:var(--tint);
+border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.65;color:var(--soft-ink)}
+.disclosure em{font-style:normal}
+.disclosure p{margin:0 0 12px}.disclosure p:last-child{margin:0}
+.abstract{margin:0 auto 34px;padding:24px 28px;background:var(--tint);
+border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 10px 10px 0;
+font-size:17.5px;line-height:1.62}
+.abstract p{margin:0 0 14px}.abstract p:last-child{margin:0}
+.abstract .lbl{display:block;font-size:11.5px;font-weight:700;letter-spacing:.14em;
+text-transform:uppercase;color:var(--steel);margin-bottom:12px}
+.legend{margin:0 auto 30px;padding:18px 24px;border:1px solid var(--line);
+border-radius:10px;font-size:15.5px;line-height:1.6;background:#fff}
+.legend p{margin:0 0 10px}.legend p:last-child{margin:0}
+sup.n{font-size:.66em;font-weight:700;color:var(--steel);line-height:0;
+vertical-align:super;margin-left:1px}
+sup.n a{border:0;color:inherit}
+sup.n a:hover{border-bottom:1px solid var(--steel)}
+.ep{display:inline-block;font:700 10.5px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.06em;padding:1.5px 6px;border-radius:3px;vertical-align:2px;margin-right:2px}
+.ep-d{background:#E8F0FB;color:#1F3864;border:1px solid #C6D8F2}
+.ep-r{background:#FBF3DE;color:#6B5500;border:1px solid #EBDCAE}
+.ep-u{background:#F2F0F4;color:#514A5C;border:1px solid #DEDAE4}
+.ep-m{background:#E6F4EA;color:#1E5631;border:1px solid #BFE3C8}
+.notes{margin-top:26px;font-size:15.5px;line-height:1.62;color:var(--soft-ink)}
+.notes li{margin:0 0 13px}
+.notes li:target{background:#FBF3DE;border-radius:4px;padding:2px 6px;margin-left:-6px}
+.notes code{font-size:.8em}
+.appendix{font-size:15.5px;line-height:1.6}
+.appendix dt{font-weight:650;color:var(--ink);margin:22px 0 4px}
+.appendix dd{margin:0 0 6px;color:var(--soft-ink)}
+.appendix dd.q{color:var(--ink);padding-left:14px;border-left:2px solid var(--line);font-style:italic}
+.appendix dd.m{font-size:14px;word-break:break-word}
+@media(max-width:980px){figure.wide{max-width:100%}pre{max-width:100%}.tablewrap{max-width:100%}}
+@media(max-width:640px){body{font-size:17.5px}h1{font-size:30px}h2{font-size:22px}
+header{padding:44px 20px 28px}.wrap{padding:0 20px}.deck{font-size:19px}}
+@media print{body{background:#fff;font-size:11pt}.sheet{box-shadow:none;max-width:none}
+figure.wide{break-inside:avoid}h2{break-after:avoid}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header><div class="wrap">
+<p class="kicker">Databases &middot; retrieval correctness &middot; distributed consensus</p>
+<h1>One field, five operations</h1>
+<p class="deck">Part II &mdash; when the index is current: freshness as a correctness property, and what a change of consensus protocol does not touch</p>
+<p class="byline"><strong>David Leconte</strong> &mdash; Customer Success Engineer, IBM France | Software, Data &amp; AI | Horizon<br>
+Part II of a diptych. Roughly twenty minutes to read; the measurement at the end takes fifteen.</p>
+</div></header>
+
+<main><div class="wrap">
+
+<div class="abstract">
+<span class="lbl">Abstract — Part II of two</span>
+<p>Where index maintenance sits relative to the commit decides whether a system can read back what it just wrote. One engine pays for indexing on the write path and is searchable at acknowledgement; the other maintains its search indexes outside the transaction commit window, asynchronously, and is faster to write for it. Neither is a defect: it is the same cost placed in two different places.</p>
+<p>Two kinds of index have to be separated before that claim means anything, and a comparative campaign forced the separation. Ordinary secondary indexes are maintained synchronously by both engines, so the index is current on both and on that question they are at parity — though not on what a caller waits for, which ranges from 7 ms to 894 ms across the three configurations measured. The asymmetry is confined to the <em>search and vector</em> index, and there it has been measured: a document just written is returned by search on the first query on one engine, and not for two thirds of a second on average on the other — a periodic refresh spread from a tenth of a second to a second and a fifth — while remaining findable by its identifier throughout. Whether that costs anything depends on how soon the search arrives: sweeping that delay shows the asynchronous path missing every document at zero, half of them at half a second, and none at all beyond one. This is one of two axes of eight in this diptych that the decomposing engine wins, and the only one it wins on an exactly tested result &mdash; a miss-rate, the latency ranges overlapping and establishing nothing: absolutely inside the comparator&rsquo;s refresh window and not at all outside &mdash; a window that measured about a second on this deployment and is a property of that deployment, not of the product. Narrower, and more conditional, than earlier revisions of this part claimed.</p>
+<p>For a catalogue the difference is invisible. For a system that composes a write and a search without waiting, it is categorical. A system that records a fact and cannot retrieve it is producing a wrong answer, not a slow one, and the failure is invisible to latency instrumentation by construction. This part argues that the write-to-searchable interval belongs in acceptance criteria rather than in a performance backlog, and supplies a control that lets a reader put their own number to it.</p>
+<p>It then qualifies its own side&rsquo;s guarantee. The Data API&rsquo;s consistency levels are configuration rather than fixed behaviour, and they are asymmetric: writes commit at quorum while vector search reads a single replica. Measured on a co-located ring the resulting window was not detectable; a wide-area deployment is where it would surface, and this bench cannot reproduce that.</p>
+<p>The part closes on the fifth operation — the consensus round guarding a conditional write, now priced at three replicas — and on its designated successor in Apache Cassandra, which turns out to leave the four storage steps of <strong>Part I</strong> untouched.</p>
+</div>
+
+<div class="legend">
+<p><strong>A note on epistemic status.</strong> Comparative writing about competing databases fails most often not through malice but through the silent promotion of plausible mechanism to documented fact. Every substantive claim below therefore carries one of four markers, and the appendix records the exact passage on which each rests.</p>
+<p><span class="ep ep-d">D</span> <strong>Documented.</strong> Established by the vendor's own version-pinned documentation, by the project's source of record, or by peer-reviewed publication. Quoted verbatim in the appendix.</p>
+<p><span class="ep ep-r">R</span> <strong>Reported.</strong> Described publicly by the engineers who built the system, or by the upstream project, but not restated in the versioned documentation of the shipped product. Directionally reliable; not a contractual guarantee.</p>
+<p><span class="ep ep-u">U</span> <strong>Unverified.</strong> Asserted here on structural grounds, or widely repeated in the practitioner literature, but not established by any source of acceptable rank that I was able to consult. Treat as a hypothesis to be tested against your own build.</p>
+<p><span class="ep ep-m">M</span> <strong>Measured.</strong> Observed on a named build under stated conditions, by a harness reproduced in the appendix. Stronger than <span class="ep ep-u">U</span>, weaker than <span class="ep ep-d">D</span>: it establishes what one build did on one day, not what the vendor commits to. Every <span class="ep ep-m">M</span> claim names its measurement (M1–M4) and every measurement names its conditions.</p>
+<p><em>Nota bene on the figures.</em> A diagram carries more apparent authority than a paragraph: it resembles an architecture specification even when it is an argument. One of the seven figures below reports a measurement taken on a named build; it is tinted green and labelled as such. The other six are schematics — they organise an argument and measure nothing, whatever their rectangles may suggest. Every caption additionally states which of its elements are documented, reported or measured. Where a figure depicts something marked <span class="ep ep-u">U</span>, the caption says so, and the box should be read as a hypothesis drawn in rectangles rather than as a contract.</p>
+</div>
+
+
+<h2>1. What decomposition purchases</h2>
+
+<p>Three properties, of which the third is the one comparative treatments most consistently omit.</p>
+
+<p><strong>Queryability without index design.</strong> Already treated, and genuinely valuable early in a product's life, when the schema is still an argument rather than a contract.</p>
+
+<p><strong>Write scale-out without a coordinating primary.</strong> No single node must accept every write, so capacity is added by adding nodes rather than by enlarging one.</p>
+
+<p><strong>An index current at the moment the write completes.</strong> <span class="ep ep-d">D</span> Because indexing occurs on the write path, a document becomes searchable as soon as it is written. The HCD 2.0 documentation states this directly, and attributes it to the vector index implementation by name:</p>
+
+<blockquote class="src"><p>"When you insert data, JVector adds those new documents to the graph immediately, so you can efficiently search right away."</p>
+<cite>DataStax, <em>About vector databases</em>, Hyper-Converged Database 2.0.<sup class="n"><a href="#n4">4</a></sup></cite></blockquote>
+
+<p><span class="ep ep-m">M</span> One qualifier that sentence omits, and it only appears above a single replica. The Data API's consistency levels are configuration properties rather than fixed behaviour, and its defaults are asymmetric: writes and ordinary reads commit at <code>LOCAL_QUORUM</code>, but <em>vector search reads at <code>LOCAL_ONE</code></em>.<sup class="n"><a href="#n39">39</a></sup> "Searchable as soon as it is written" is therefore a single-replica guarantee, not a quorum one: at RF &gt; 1 a vector query issued at acknowledgement can in principle read the one replica the write has not yet reached.</p>
+
+<p><span class="ep ep-m">M</span> Measured on a six-node, two-datacentre ring with the collection at three replicas, the effect was <strong>not detectable</strong>: in 120 of 120 cycles the just-written vector was the top match on the first <code>LOCAL_ONE</code> query, and in no cycle did the quorum key read succeed while the vector search missed.<sup class="n"><a href="#n40">40</a></sup> Sub-millisecond inter-replica latency closes the gap far below the round trip that carries the query. The window is therefore real in the protocol and bounded below the measurement floor on that ring — and a wide-area deployment, where inter-replica latency is tens of milliseconds, is precisely where it would surface. Which is the same window this article attributes to the other engine, arriving here by a different route and at a different scale. The guarantee is real; its scope is one replica; and a reader deploying across datacentres should measure it there rather than inherit it from this page.</p>
+
+<h3>1.1 Index freshness as a correctness property</h3>
+
+<p>Depending on what is being built, this third point changes character entirely, and it changes categorically rather than by degree. Since the whole of it follows from a single structural choice, namely where index maintenance sits relative to the commit, it is worth seeing before it is argued.</p>
+
+<figure class="wide">
+<span class="figtag figtag-c">Schematic — scope</span>
+<span class="figtag figtag-c">Schematic — public record</span>
+<span class="figtag figtag-c">Schematic — consequence</span>
+<span class="figtag figtag-c">Schematic — protocol</span>
+<span class="figtag figtag-c">Schematic — taxonomy</span>
+<span class="figtag figtag-c">Schematic — design rule</span>
+<span class="figtag figtag-c">Schematic — architecture</span>
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: two timelines comparing synchronous on-write index maintenance against asynchronous index replication through change streams, and the resulting window during which a retrieval query can miss a committed document.">
+<defs>
+<marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#2E5496"/></marker>
+<pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+<line x1="0" y1="0" x2="0" y2="7" stroke="#C8A96A" stroke-width="2.4"/></pattern>
+</defs>
+<rect x="0" y="0" width="900" height="400" fill="#FFFFFF"/>
+
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 1 — The write-to-searchable interval</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Where index maintenance sits relative to the commit determines whether retrieval can miss a committed fact</text>
+
+<text x="20" y="86" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">A. INDEXING ON THE WRITE PATH — decomposing engine</text>
+<line x1="20" y1="150" x2="860" y2="150" stroke="#E4E9F0" stroke-width="2"/>
+<rect x="60" y="112" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="135" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">write accepted</text>
+<rect x="216" y="112" width="210" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="321" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">index maintained · same path</text>
+<rect x="432" y="112" width="140" height="34" rx="5" fill="#1F3864"/>
+<text x="502" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#fff">ACK to client</text>
+<circle cx="502" cy="168" r="5" fill="#1F3864"/>
+<text x="516" y="173" font-family="system-ui,sans-serif" font-size="11.5" fill="#1B1F24">searchable at acknowledgement — at ONE replica (M6/M7)</text>
+<text x="60" y="192" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Cost: index maintenance is charged to every write. Benefit: no window.</text>
+
+<line x1="20" y1="216" x2="880" y2="216" stroke="#E4E9F0"/>
+
+<text x="20" y="248" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">B. INDEXING OUTSIDE THE COMMIT WINDOW — separate process, change streams</text>
+<line x1="20" y1="312" x2="860" y2="312" stroke="#E4E9F0" stroke-width="2"/>
+<rect x="60" y="274" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="135" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">write accepted</text>
+<rect x="216" y="274" width="140" height="34" rx="5" fill="#1F3864"/>
+<text x="286" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#fff">ACK to client</text>
+<rect x="362" y="274" width="286" height="34" rx="5" fill="url(#hatch)" stroke="#C8A96A"/>
+<rect x="362" y="274" width="286" height="34" rx="5" fill="#FFFFFF" opacity="0.62"/>
+<text x="505" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">asynchronous replication · measured: 89–1170 ms, mean 646 (M18)</text>
+<rect x="654" y="274" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="729" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">index reflects write</text>
+<line x1="362" y1="332" x2="654" y2="332" stroke="#8A6D00" stroke-width="1.4" marker-end="url(#ar2)"/>
+<line x1="362" y1="326" x2="362" y2="338" stroke="#8A6D00" stroke-width="1.4"/>
+<text x="508" y="354" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#8A6D00">a query issued inside this window returns a wrong answer — one arriving after it does not</text>
+<text x="60" y="378" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Cost: a window exists. Benefit: transactional throughput is unaffected by index maintenance.</text>
+</svg>
+<figcaption>Figure 1. The two placements of index maintenance relative to the commit. <strong>Documented:</strong> immediate searchability in A (note 4); asynchronous replication through change streams in B (note 14). <strong>Measured:</strong> the scope of A’s guarantee — one replica, since vector search reads at <code>LOCAL_ONE</code> while the write commits at quorum (M6), an asymmetry whose user-visible effect was not detectable on a co-located ring (M7). <strong>Not established as a latency comparison:</strong> the two sides&rsquo; observed ranges overlap, so this figure must not be read as one path being faster than the other &mdash; what separates them is whether the document is found at all, which Figure 2 settles by an exact test. <strong>Measured, late:</strong> the width of the window in B, which no published source bounds and which section 1.2 measured at 89 to 1 170 ms, mean 646, on one deployment at idle; and the fact that its cost falls to nothing for a caller arriving after it. The figure is drawn without a time axis because the two sides are not on the same scale — one has a window whose width is a setting, the other has none.</figcaption>
+</figure>
+
+<p>A window either catches your read or it does not, and which of the two happens is decided by two numbers that no diagram can supply on your behalf. The control below takes them from you.</p>
+
+<div class="demo" id="lagdemo">
+<span class="figtag figtag-x">Demonstrator — you supply the number</span>
+<h4 class="demo-h">Where does your read land?</h4>
+<p class="demo-lede">The mechanism is what is being shown; the magnitude is yours. One thing the control makes visible that prose does not: move the read past the lag and the failure disappears entirely, which is exactly what section 1.2 measures — the window costs nothing to a caller who arrives after it.</p>
+
+<div class="demo-ctrl">
+  <label>Index lag after commit
+    <select id="d-lag">
+      <option value="0">0 ms — indexed on the write path</option>
+      <option value="25">25 ms</option>
+      <option value="150" selected>150 ms</option>
+      <option value="800">800 ms</option>
+      <option value="646">646 ms — measured on one deployment (M18)</option>
+      <option value="3000">3 s</option>
+      <option value="15000">15 s — a replication hiccup</option>
+    </select>
+  </label>
+  <label>Read arrives after
+    <select id="d-read">
+      <option value="60">60 ms — same request handler</option>
+      <option value="400" selected>400 ms — next tool call in the same turn</option>
+      <option value="2500">2.5 s — the user's next message</option>
+      <option value="30000">30 s — a later turn</option>
+    </select>
+  </label>
+  <button id="d-go" type="button">Write, then read</button>
+</div>
+
+<svg id="d-svg" viewBox="0 0 860 210" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="A timeline. A write commits at time zero. A shaded window extends for the index lag you selected. A read marker falls either inside that window, in which case the document is not found, or after it, in which case it is found.">
+  <defs>
+    <pattern id="d-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#C8A96A" stroke-width="2.6" opacity="0.55"/>
+    </pattern>
+    <marker id="d-arr" markerWidth="9" markerHeight="9" refX="4.5" refY="8.5" orient="0">
+      <path d="M4.5,9 L0.5,1 L8.5,1 z" fill="#1F3864"/>
+    </marker>
+  </defs>
+
+  <line x1="60" y1="130" x2="820" y2="130" stroke="#C6D8F2" stroke-width="2"/>
+  <rect id="d-window" x="60" y="106" width="0" height="48" fill="url(#d-hatch)" stroke="#C8A96A" stroke-width="1"/>
+  <text id="d-winlabel" x="60" y="98" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00"></text>
+
+  <line x1="60" y1="92" x2="60" y2="168" stroke="#1F3864" stroke-width="2.5"/>
+  <text x="60" y="184" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#1F3864">write commits</text>
+
+  <g id="d-readg" opacity="0">
+    <line id="d-readline" x1="300" y1="168" x2="300" y2="114" stroke="#1F3864" stroke-width="2.5" marker-end="url(#d-arr)"/>
+    <text id="d-readtext" x="300" y="186" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#1F3864">read</text>
+  </g>
+
+  <text id="d-verdict" x="440" y="46" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" font-weight="800" fill="#4A5568">Press the button</text>
+  <text id="d-detail" x="440" y="68" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568"></text>
+  <text id="d-axis" x="820" y="184" text-anchor="end" font-family="system-ui,sans-serif" font-size="10" fill="#8895A7"></text>
+</svg>
+
+<p class="demo-foot" id="d-foot">Nothing here is a measurement. On the build this article did instrument, no index lag was detectable below a floor of roughly one network round trip; for any system you have not instrumented, the honest value is unknown, which is the reason this control exists.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('lagdemo');
+  if (!root) { return; }
+  var svg = document.getElementById('d-svg');
+  var win = document.getElementById('d-window');
+  var winLabel = document.getElementById('d-winlabel');
+  var readG = document.getElementById('d-readg');
+  var readLine = document.getElementById('d-readline');
+  var readText = document.getElementById('d-readtext');
+  var verdict = document.getElementById('d-verdict');
+  var detail = document.getElementById('d-detail');
+  var axis = document.getElementById('d-axis');
+  var foot = document.getElementById('d-foot');
+  var lagSel = document.getElementById('d-lag');
+  var readSel = document.getElementById('d-read');
+  var btn = document.getElementById('d-go');
+
+  var X0 = 60, X1 = 820;
+  var reduced = false;
+  try {
+    reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch (e) { reduced = false; }
+
+  function fmt(ms) {
+    if (ms >= 1000) { return (ms / 1000) + ' s'; }
+    return ms + ' ms';
+  }
+
+  function scaleFor(lag, read) {
+    var span = Math.max(lag, read);
+    if (span <= 0) { span = 100; }
+    return span * 1.18;
+  }
+
+  function xOf(ms, domain) {
+    var t = domain <= 0 ? 0 : ms / domain;
+    if (t < 0) { t = 0; }
+    if (t > 1) { t = 1; }
+    return X0 + t * (X1 - X0);
+  }
+
+  function run() {
+    var lag = parseInt(lagSel.value, 10);
+    var read = parseInt(readSel.value, 10);
+    var domain = scaleFor(lag, read);
+
+    var wEnd = xOf(lag, domain);
+    var rX = xOf(read, domain);
+    var found = read >= lag;
+
+    // reset
+    readG.setAttribute('opacity', '0');
+    win.setAttribute('width', '0');
+    verdict.textContent = '';
+    detail.textContent = '';
+    axis.textContent = 'axis spans ' + fmt(Math.round(domain));
+
+    var dur = reduced ? 0 : 520;
+
+    function paintWindow(p) {
+      win.setAttribute('width', String(Math.max(0, (wEnd - X0) * p)));
+      winLabel.setAttribute('x', String(X0 + 6));
+      winLabel.textContent = lag === 0 ? 'no window — searchable at commit' : 'not yet searchable · ' + fmt(lag);
+    }
+
+    function settle() {
+      readLine.setAttribute('x1', String(rX));
+      readLine.setAttribute('x2', String(rX));
+      readText.setAttribute('x', String(rX));
+      readText.textContent = 'read · ' + fmt(read);
+      readG.setAttribute('opacity', '1');
+
+      if (found) {
+        verdict.textContent = 'FOUND';
+        verdict.setAttribute('fill', '#1E5631');
+        readLine.setAttribute('stroke', '#1E5631');
+        readText.setAttribute('fill', '#1E5631');
+        detail.setAttribute('fill', '#2F5741');
+        detail.textContent = lag === 0
+          ? 'Indexing sat on the write path. There was no window to fall into.'
+          : 'The read arrived ' + fmt(read - lag) + ' after the index caught up.';
+        foot.className = 'demo-foot';
+      } else {
+        verdict.textContent = 'NOT FOUND';
+        verdict.setAttribute('fill', '#8A6D00');
+        readLine.setAttribute('stroke', '#8A6D00');
+        readText.setAttribute('fill', '#8A6D00');
+        detail.setAttribute('fill', '#6B5500');
+        detail.textContent = 'The read landed ' + fmt(lag - read) + ' before the index caught up. '
+          + 'The write succeeded, the query was fast, and the answer was wrong.';
+        foot.className = 'demo-foot miss';
+      }
+    }
+
+    if (dur === 0) { paintWindow(1); settle(); return; }
+
+    var t0 = null;
+    function step(ts) {
+      if (t0 === null) { t0 = ts; }
+      var p = Math.min(1, (ts - t0) / dur);
+      paintWindow(p * p * (3 - 2 * p));
+      if (p < 1) { requestAnimationFrame(step); } else { settle(); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  btn.addEventListener('click', run);
+  lagSel.addEventListener('change', run);
+  readSel.addEventListener('change', run);
+})();
+</script>
+
+
+
+
+
+<p>For a product catalogue, several seconds of index lag is invisible; no user experiences it and no requirement references it. For anything that reads back what it has just written, it is not a performance detail at all: a system that records a fact and cannot retrieve it is producing a wrong answer, not a slow one, however promptly the index subsequently converges. How soon the read arrives decides whether that matters, and section 1.2 puts a number on it. The failure is semantic, it is invisible to latency instrumentation, and it will be reported by users as hallucination rather than as staleness. <em>A fortiori</em>, any system that writes and reads within a single conversational turn inherits the interval as a hard correctness bound rather than as a service objective.</p>
+
+<p><span class="ep ep-m">M</span> Measured, that interval turns out not to be an index interval at all. Across forty idle cycles on HCD 2.0.6, the freshly written marker was found on the <em>first</em> attempt forty times out of forty; the attempt histogram has a single entry.<sup class="n"><a href="#n38">38</a></sup> Decomposed, the 22.9 ms median splits into an insert of 9.8 ms and the one retrieval of 11.2 ms that followed it: two HTTP round trips, and nothing else. No index lag was detectable at all, which means the harness's own threshold — it declared the probe inconclusive for exceeding 50 ms under load — was measuring transport rather than indexing. A harness that reports the wrong thing precisely is still reporting the wrong thing, and the attempt histogram is what caught it.</p>
+
+<p>Two caveats bound that result; none softens it. The retrieval exercised a storage-attached index on a scalar field, not the vector graph the quotation above concerns; and one node at RF = 1 removes any replication interval by construction. The later vector probe, at three replicas, used vectors of sixteen dimensions &mdash; between one and two orders of magnitude below the embeddings a retrieval system actually stores &mdash; and the cost of maintaining a graph index synchronously at production dimensions was not measured. What is established is that on this build, on this path, the write-to-searchable interval is indistinguishable from the cost of asking.</p>
+
+<blockquote><p>If you are building a system of that kind, the write-to-searchable interval belongs in your <strong>acceptance criteria</strong>, not in your performance backlog.</p></blockquote>
+
+<p><span class="ep ep-m">M</span> A distinction has to be drawn here that earlier revisions of this part did not draw, and drawing it removes most of the territory this section thought it held. There are two kinds of index in play, and only one of them is contested. <em>Ordinary secondary indexes</em> are maintained synchronously by both engines: a later comparison wrote a document and queried it through one, on a million-document collection, and all three arms found it on the first attempt, forty times out of forty.<sup class="n"><a href="#n41">41</a></sup> The index was current everywhere, and on <em>that</em> question there is parity.</p>
+
+<p><span class="ep ep-m">M</span> The elapsed time is not at parity in either direction, and an earlier revision of this section lost the distinction by calling the whole thing a tie. Writing a document and then retrieving it through a secondary index took 894 ms against MongoDB as ordinarily deployed, 33 ms against the decomposing engine, and 7 ms against MongoDB under a wildcard index.<sup class="n"><a href="#n41">41</a></sup> Twenty-seven times faster than the first, four and a half times slower than the second.</p>
+
+<p>Which is the distinction this part exists to draw, arriving from an unexpected direction. <em>Index currency</em> — whether the write is in the index yet — is a tie on ordinary indexes. <em>Time to answer</em> is not, and for a user or an assistant waiting on a reply, the second is what the first feels like. Against the configuration a team actually deploys, the automatic index turns almost a second into a thirtieth of one. Against a configuration that declared its index, it does the opposite.</p>
+
+<p>The asymmetry this part describes concerns the other kind: the <em>search and vector</em> index, synchronous on one engine and maintained asynchronously through change streams on the other. That is the axis where the window exists, and it is where the argument of this section lives.</p>
+
+<p><span class="ep ep-m">M</span> That axis has now been measured, on one host in one session, and it is the only axis in this diptych where the decomposing engine wins decisively. MongoDB&rsquo;s search engine turns out to be deployable locally after all, through the vendor&rsquo;s own packaged image, which runs the database and the search process together &mdash; and which the vendor designates for evaluation only, a single node without high availability, not a production target.<sup class="n"><a href="#n42">42</a></sup><sup class="n"><a href="#n48">48</a></sup> That designation is the vendor&rsquo;s own, and it applies to every freshness figure in this section. <span class="ep ep-m">M</span> The engine inside that image has since been pinned: <code>mongot</code> 1.75.1, above the 1.70.1 at which the self-managed capability reached general availability, so the figures below were not taken against a preview build. <span class="ep ep-d">D</span> They were taken against something the image labels itself: edition <code>localDev</code>, alongside a Community-edition <code>mongod</code> 8.3.11, at image digest <code>sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1</code> built on 16 September 2026.<sup class="n"><a href="#n50">50</a></sup> That label narrows the reserve rather than lifting it. The refresh interval measured here is the default of a <em>development edition</em> of the engine, and whether the editions a reader would deploy &mdash; the managed service, or a self-managed Community or Enterprise process &mdash; commit on the same period is not established by anything in this study. <span class="ep ep-d">D</span> The topology differs too: on the managed service the vendor offers Search Nodes, dedicated infrastructure that runs the search process apart from the database and is generally available on the three major clouds,<sup class="n"><a href="#n51">51</a></sup> whereas what was measured here is that process as a sidecar sharing one container with the database. A dedicated node may refresh faster, or less often; the study cannot say which. With it running and a search index reported ready, the write-to-searchable interval is no longer an argument.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Path</th><th>Write to searchable (median)</th><th>Found on the first query?</th></tr></thead>
+<tbody>
+<tr><td>Decomposing engine, search index on the write path</td><td><strong>45 ms</strong></td><td><strong>yes</strong> — median one attempt</td></tr>
+<tr><td>MongoDB <code>$search</code>, index maintained asynchronously</td><td><strong>646 ms mean</strong>, spread 89&ndash;1 170</td><td>no — the index is not yet current</td></tr>
+<tr><td>MongoDB fetch by identifier, for contrast</td><td>1.3 ms</td><td>yes</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-m">M</span> That second row took two attempts to measure, and the first one was mine to get wrong. A probe that writes, then polls until the document appears, then writes again, synchronises itself to the indexing cycle: every write lands just after a commit and waits a full period. It returned a tight 1 015 ms, and an earlier revision of this section published it. Inserting a random delay before each write, so that the cycle is sampled at every phase, gives a different picture — a lag spread from 89 ms to 1 170, mean 646, standard deviation 291.<sup class="n"><a href="#n43">43</a></sup> The signature is a periodic refresh of roughly a second rather than a fixed pipeline delay, and my first figure overstated it by about 1.6 times.</p>
+
+<p>A document that has just been written is therefore <em>not findable by search</em> on MongoDB for something between a tenth of a second and a second and a bit, depending on where the write falls in that cycle, while being immediately findable by its identifier — which is the shape of the failure this section opened with, measured rather than posited. The decomposing engine shows no such window, and the precise form of that statement matters: forty cycles out of forty returned the document on the first query, which bounds its index lag <em>below the measurement floor</em> of one HTTP round trip.<sup class="n"><a href="#n42">42</a></sup> The lag may be nothing; it may be forty milliseconds. This measurement cannot tell the two apart, and an earlier revision of this section asserted the first — a temptation the same volume of evidence had already taught the rest of this diptych to resist.</p>
+
+<p><span class="ep ep-u">U</span> Read as a comparison of latencies, that table does not establish a direction at all. The synchronous side&rsquo;s slowest observation, above half a second, exceeds the asynchronous side&rsquo;s fastest, at 89 ms; the supports overlap, and the interval of the ratio runs from 0.16 to 36.7 and contains one.<sup class="n"><a href="#n54">54</a></sup> The only version of this comparison whose ranges separate is the self-synchronised one this section withdrew. What establishes the axis is not the latency but the proportion in section 1.2 &mdash; thirty misses in thirty against none, exactly tested &mdash; and a reader should carry that distinction: the freshness advantage is a fact about whether a search finds the document, not about how long either search takes.</p>
+
+<p><span class="ep ep-u">U</span> The winning side is also the more erratic one, which a single median conceals. Against a median of 45 ms the decomposing engine shows a ninety-fifth percentile of 85 and a maximum above half a second, while the asynchronous path, slow throughout, varies by a standard deviation of only 35 ms around its thousand. One engine is quick and uneven; the other is late and dependable. For a system whose failure mode is a wrong answer rather than a slow one that trade still favours the first, but it is a trade and not a clean win.</p>
+
+<blockquote><p>A write followed immediately by a search finds the document on one engine and misses it, on average, for two thirds of a second on the other — sometimes for a tenth, sometimes for a second and a fifth, and it cannot know which.</p></blockquote>
+
+<h3>1.2 How much of that matters, and to whom</h3>
+
+<p><span class="ep ep-m">M</span> A lag only costs you something if you read inside it, so the question that decides this section is not how long the window is but how soon the read arrives. Sweeping the delay between write and search, thirty cycles at each point, gives the failure rate directly.<sup class="n"><a href="#n44">44</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Search issued after</th><th>MongoDB <code>$search</code> misses</th><th>Decomposing engine misses</th></tr></thead>
+<tbody>
+<tr><td>immediately<sup class="n"><a href="#n44">44</a></sup></td><td><strong>100 %</strong></td><td>0 %</td></tr>
+<tr><td>100 ms</td><td>93 %</td><td>0 %</td></tr>
+<tr><td>250 ms</td><td>83 %</td><td>0 %</td></tr>
+<tr><td>500 ms</td><td>50 %</td><td>0 %</td></tr>
+<tr><td>750 ms</td><td>33 %</td><td>0 %</td></tr>
+<tr><td>1 000 ms and beyond</td><td><strong>0 %</strong></td><td>0 %</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure class="wide measured">
+<span class="figtag figtag-m">Measured on one build</span>
+<svg viewBox="0 0 900 390" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Failure rate of a search issued a given delay after the write. The asynchronous path misses every document at zero delay, half of them at five hundred milliseconds, and none from one second onward. The synchronous path is a flat line at zero across the whole range. The region below one second is shaded as the refresh window.">
+<defs>
+<pattern id="win" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+<line x1="0" y1="0" x2="0" y2="7" stroke="#C8A96A" stroke-width="2" opacity="0.4"/></pattern>
+</defs>
+<rect x="0" y="0" width="900" height="390" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 2 — What the window costs, against how soon you read</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Share of just-written documents a single search fails to return. Thirty cycles per point. Delay axis is square-root scaled to keep the sub-second detail legible.</text>
+
+<rect x="90" y="90" width="433" height="210" fill="url(#win)"/>
+<text x="306" y="82" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#8A6D00">the refresh window of this deployment</text>
+
+<line x1="90" y1="300" x2="860" y2="300" stroke="#C6D8F2" stroke-width="1.5"/>
+<line x1="90" y1="90" x2="90" y2="300" stroke="#C6D8F2" stroke-width="1.5"/>
+<g font-family="system-ui,sans-serif" font-size="10" fill="#4A5568" text-anchor="end">
+<text x="84" y="94">100 %</text><text x="84" y="146">75</text><text x="84" y="199">50</text><text x="84" y="252">25</text><text x="84" y="304">0</text></g>
+<text x="30" y="70" font-family="system-ui,sans-serif" font-size="10.5" fill="#4A5568">misses</text>
+
+<polyline points="90,90 227,104 307,125 396,195 465,230 523,300 620,300 702,300 840,300" fill="none" stroke="#8A6D00" stroke-width="2.8"/>
+<g fill="#8A6D00"><circle cx="90" cy="90" r="4.2"/><circle cx="227" cy="104" r="4"/><circle cx="307" cy="125" r="4"/><circle cx="396" cy="195" r="4"/><circle cx="465" cy="230" r="4"/><circle cx="523" cy="300" r="4.2"/><circle cx="620" cy="300" r="3.4"/><circle cx="702" cy="300" r="3.4"/><circle cx="840" cy="300" r="3.4"/></g>
+
+<polyline points="90,300 840,300" fill="none" stroke="#1E5631" stroke-width="3.4"/>
+<g fill="#1E5631"><circle cx="90" cy="300" r="4.2"/><circle cx="307" cy="300" r="3.4"/><circle cx="523" cy="300" r="3.4"/><circle cx="840" cy="300" r="3.4"/></g>
+
+<text x="104" y="84" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#8A6D00">100 % — every document missed</text>
+<text x="540" y="292" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#8A6D00">0 % from here on</text>
+<text x="600" y="322" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#1E5631">index on the write path: flat at zero, everywhere</text>
+
+<g font-family="system-ui,sans-serif" font-size="10" fill="#4A5568" text-anchor="middle">
+<text x="90" y="318">0</text><text x="307" y="318">250 ms</text><text x="396" y="318">500</text><text x="523" y="318">1 s</text><text x="702" y="318">2 s</text><text x="840" y="318">3 s</text></g>
+<text x="465" y="344" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">delay between the write returning and the search being issued</text>
+
+<rect x="20" y="356" width="860" height="26" rx="6" fill="#F4FAF6" stroke="#BFE3C8"/>
+<text x="34" y="373" font-family="system-ui,sans-serif" font-size="10.5" fill="#2F5741">Inside the window the asymmetry is total; outside it there is none. The window is a setting on one side and does not exist on the other — which is the whole of the finding.</text>
+</svg>
+<figcaption>Figure 2. <strong>Measured, not documented</strong> (appendix, measurement M19). Thirty cycles at each of nine delays, both engines on one host. <strong>Read with three qualifications:</strong> the zero-delay point compares a native driver against an HTTP interface and so not the same instant, worth about three percentage points; the transition is located only to within a quarter of a second, the flanking points being 750 ms and 1 000; and thirty cycles gives roughly eighteen points of confidence interval around the middle values, so the shape is solid and the intermediate readings are not. The shaded region is <em>this deployment&rsquo;s</em> refresh window; another&rsquo;s would be wider or narrower, and the curve would move with it.</figcaption>
+</figure>
+
+<p><span class="ep ep-m">M</span> Read the first row before the caveats, because it is the finding. A search issued the instant a write returns misses <em>every</em> document on the asynchronous path and none at all on the synchronous one. At half a second it still misses one in two. From a second onward it misses nothing — and that last transition is where the argument of this part turns.</p>
+
+<p><span class="ep ep-d">D</span> One asymmetry is not a matter of deployment and should not be phrased as if it were. The window on the asynchronous side has a width, and that width is a setting — this deployment&rsquo;s happens to be about a second, another&rsquo;s would differ. The synchronous side has no window to widen or narrow: its index is maintained on the write path, so there is no interval, no setting that would create one, and nothing to tune. What the two deployments differ in is how much the asymmetry costs. That it exists is architectural.</p>
+
+<p><span class="ep ep-u">U</span> Three qualifications on the table itself, before its consequences. The first row does not compare the same instant: the comparator was queried through a native driver, which reaches its index about a millisecond after the write, while the decomposing engine was queried over HTTP, which reaches its own some forty-five milliseconds later. Asking one earlier than the other flatters the later, and correcting for it would read about 97 % rather than 100 — a small effect, but it is the same driver-against-interface confound that distorts the read axis in Part I. Second, the transition is located only to within a quarter of a second: the flanking points are 750 ms at a third and 1 000 ms at nothing, with nothing measured between. Third, thirty cycles per point puts a confidence interval of roughly eighteen points around the middle values, so the shape of the curve is solid and its intermediate readings are not.</p>
+
+<p><span class="ep ep-u">U</span> Which obliges this part to withdraw the example it opened with. The assistant of the opening paragraph — write a fact, answer the user, search for the fact on the next turn — does not experience this failure, because a turn driven by a language model takes seconds and the window closes inside one &mdash; <span class="ep ep-u">U</span> where &ldquo;takes seconds&rdquo; is an assumption about such turns that this study states and did not measure against any real workload. Every earlier revision of this section used conversational retrieval to motivate the argument. On these numbers that motivation is wrong: by the time the model has finished speaking, the refresh has happened and the document is there.</p>
+
+<p><span class="ep ep-m">M</span> What the measurement does establish is narrower and sharper. Inside the window the asymmetry is not a tendency but a certainty: at the shortest delay the asynchronous path misses <em>every</em> document and the synchronous one misses none, and the failure rate is still one in two at half a second. Whether a given workload sits inside that window is the only question that matters, and it is a question about the workload. One term of it deserves naming. In a retrieval system the document is written with its vector already computed, so embedding the document sits <em>before</em> the write and does not enter the window; embedding the <em>query</em> sits inside it and consumes part of the interval &mdash; <span class="ep ep-u">U</span> plausibly tens to a few hundred milliseconds, an estimate this study did not measure &mdash; without closing it. A pipeline that writes the raw document and computes its vector asynchronously moves the start of the window to the vector&rsquo;s arrival rather than the document&rsquo;s. <span class="ep ep-d">D</span> The comparator now offers exactly such a pipeline as a feature: with its Automated Embedding, in preview for self-managed deployments, the search process itself generates the vector at index time rather than the application supplying it.<sup class="n"><a href="#n52">52</a></sup> A document written that way enters the search index only after both the embedding and the refresh, so the convenience widens the window this section measures rather than narrowing it &mdash; a point in the decomposing engine&rsquo;s favour that the measurements here, taken with vectors supplied by the client, do not capture.</p>
+
+<p><span class="ep ep-u">U</span> The boundary is not a second. It is <em>this deployment&rsquo;s refresh interval</em>, which happens to be about a second and which no user setting exposes.<sup class="n"><a href="#n43">43</a></sup> On a deployment refreshing every two hundred milliseconds the advantage would be total below two hundred milliseconds; on one refreshing every three seconds it would reach far further. The curve traces the interval, it does not fix it, and stating the finding as "below a second" would make a container default sound like a property of a product.</p>
+
+<blockquote><p>One engine has a window whose width is a setting. The other has none, and no setting would give it one. What your deployment decides is how much that costs you — not whether it is true.</p></blockquote>
+
+<p><span class="ep ep-u">U</span> The margin, stated at its narrowest rather than its widest: even in the best phase of the cycle, the asynchronous path takes 89 ms to become searchable, which is already above the 45 ms floor below which the synchronous one cannot be resolved. The mean gap is about fourteen times; the best-case gap is about two. Both favour the synchronous index, and the smaller number is the one a design should be built on.</p>
+
+<p><span class="ep ep-u">U</span> Four reservations, and the first two matter. The packaged image runs a single-member replica set, so a majority write concern is satisfied trivially there. An earlier revision then argued that the asynchronous lag is a property of the ingestion path rather than of the replica count, and is therefore representative. That reasoning inverts itself: a quantity that depends on the deployment is precisely one this deployment cannot vouch for elsewhere. The image is, besides, the vendor&rsquo;s development and testing build, whose ingestion tuning has no particular reason to match the managed service a reader would actually buy. What is established is that the path is asynchronous and that the lag on this build, at idle, is about a second. Whether a production deployment lags by a hundred milliseconds or by five is not established here. The two systems were also exercised on different search paths: a vector index on one side, a text index on the other. That the two ingestion architectures are the ones being compared is an inference, and a reasonable one, but it is not what was measured. The strict pairing would set the vector paths against each other, or the two text paths; both exist on both engines, and neither pairing was run. The thousand milliseconds is an idle figure and load would widen it. And both engines were cache-resident, a condition Part I shows to be decisive elsewhere.</p>
+
+<h3>1.3 The opposite resolution, stated in the vendor's own terms</h3>
+
+<p><span class="ep ep-d">D</span> MongoDB's self-managed search and vector search execute in a separate process, <code>mongot</code>, running alongside the database.<sup class="n"><a href="#n15">15</a></sup><sup class="n"><a href="#n16">16</a></sup> MongoDB describes the mechanism precisely:</p>
+
+<blockquote class="src"><p>"mongot builds and maintains these compute-intensive indexes outside of the transaction commit window by leveraging change streams to asynchronously replicate changes to source data, allowing customers to add search and vector search capabilities without fear of impacting existing transactional workloads."</p>
+<cite>MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em>, 15 January 2026.<sup class="n"><a href="#n14">14</a></sup></cite></blockquote>
+
+<p>This is a deliberate and defensible design, and it is panel B of the figure above. It removes index maintenance from the write path, which is precisely the cost the decomposing engine elects to pay. Two coherent answers to one question, with the trade legible in a single sentence from each vendor, which is a considerably better basis for a decision than any benchmark.</p>
+
+<p>Note that the two designs are not in competition on a single axis. They optimise different things and the choice is properly determined by the workload, not by preference: <em>ceteris paribus</em>, a catalogue tolerates the window and profits from the throughput; a retrieval system does not tolerate the window at all.</p>
+
+<p><span class="ep ep-d">D</span> One corollary follows from the quoted mechanism and requires no further source: asynchronous replication of changes implies a non-zero interval between a write committing and the corresponding search index reflecting it. <span class="ep ep-u">U</span> What that interval is, and whether MongoDB documents any bound on it, I did not establish. This is again a measurement question rather than a reading question.</p>
+
+<p><span class="ep ep-d">D</span> Status matters here and is easy to misstate, because three things carry the same name. The <em>managed</em> service already offered these capabilities as production-ready when the self-managed preview opened in September 2025.<sup class="n"><a href="#n45">45</a></sup> The <em>self-managed</em> capability — the same engine deployed alongside one&rsquo;s own database — went from public preview in October 2025 to general availability at <code>mongot</code> 1.70.1,<sup class="n"><a href="#n46">46</a></sup> and <span class="ep ep-r">R</span> a vendor FAQ marks the 0.x builds as preview releases not recommended for production.<sup class="n"><a href="#n49">49</a></sup> And the engine&rsquo;s <em>source</em> was released under the Server Side Public License as a public preview on 15 January 2026, which is a statement about the code&rsquo;s availability rather than the feature&rsquo;s.<sup class="n"><a href="#n14">14</a></sup> An earlier revision of this paragraph conflated the second and third and could not confirm the first; the vendor&rsquo;s pages resolve all three. What the vendor also states, and this article relies on: the search engine is the same on the managed service and on a self-managed deployment, so query behaviour, scoring and index semantics are, in the vendor&rsquo;s word, <em>generally</em> consistent across them.<sup class="n"><a href="#n47">47</a></sup></p>
+
+<h2>2. Where JVector actually appears — three loci, three statuses</h2>
+
+<p>A persistent conflation in this area will invalidate an evaluation if carried into it. The same library appears in three distinct places with three distinct statuses, and one place where it does not appear at all.</p>
+
+<p><span class="ep ep-d">D</span> <strong>In Apache Cassandra 5.0 upstream: it does not.</strong> Upstream vector search through storage-attached indexing was specified and built on Lucene's Hierarchical Navigable Small World implementation. The enhancement proposal is explicit: the implementation leverages Lucene's HNSW library, characterised there as the best available ANN algorithm for Java at the time.<sup class="n"><a href="#n21">21</a></sup> Storage-attached indexing itself is a 5.0 feature.<sup class="n"><a href="#n22">22</a></sup></p>
+
+<p><span class="ep ep-d">D</span> <strong>In the DataStax distribution: as the shipped engine.</strong> JVector, a graph index of the DiskANN family supporting product and binary quantisation,<sup class="n"><a href="#n19">19</a></sup> is part of what the distribution adds atop the Cassandra 5.0 base,<sup class="n"><a href="#n5">5</a></sup> and the HCD documentation names it as the mechanism behind immediate searchability.<sup class="n"><a href="#n4">4</a></sup></p>
+
+<p><span class="ep ep-d">D</span> <strong>In OpenSearch: as an official plugin, not a core engine.</strong> The documented core k-NN engines are Lucene, Faiss and the deprecated NMSLIB, the latter superseded in favour of the first two;<sup class="n"><a href="#n17">17</a></sup> the default engine changed from NMSLIB to Faiss in the 2.18 line, and index creation on NMSLIB is blocked from OpenSearch 3.0.<sup class="n"><a href="#n18">18</a></sup> JVector is available separately as <code>opensearch-project/opensearch-jvector</code>, Apache-2.0 licensed and governed within the OpenSearch project, with a release train tracking OpenSearch versions.<sup class="n"><a href="#n20">20</a></sup> Its README claims thread-safe concurrent index construction, incremental merges in place of full graph rebuilds, and — directly relevant here — compatibility with Cassandra, "which allows to more easily transfer vector encoded data from Cassandra to OpenSearch and vice versa."<sup class="n"><a href="#n19">19</a></sup></p>
+
+<p>The practical consequence: a benchmark of "Cassandra vector search" tells you nothing about the DataStax distribution, and a benchmark of either tells you nothing about the OpenSearch plugin. Three artefacts, three governance models, three release cadences. Establish which one your evaluation actually exercised before you read its numbers.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: three systems and the vector index engine each actually runs — Apache Cassandra 5.0 on Lucene HNSW, the DataStax distribution on JVector as shipped engine, and OpenSearch on Lucene, Faiss and deprecated NMSLIB with JVector available as a separate plugin.">
+<rect x="0" y="0" width="900" height="330" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 3 — Three loci of the same library, and one place it does not appear</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Conflating these three invalidates an evaluation before the first measurement is taken</text>
+
+<rect x="20" y="66" width="272" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="20" y="66" width="272" height="34" rx="9" fill="#1F3864"/>
+<rect x="20" y="88" width="272" height="12" fill="#1F3864"/>
+<text x="156" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">APACHE CASSANDRA 5.0</text>
+<text x="156" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">upstream · Apache Software Foundation</text>
+<text x="38" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Vector ANN</text>
+<text x="38" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">Lucene HNSW</text>
+<text x="38" y="198" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Index framework</text>
+<text x="38" y="216" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">SAI — new in 5.0</text>
+<rect x="38" y="238" width="236" height="40" rx="6" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="156" y="255" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#514A5C">JVector: NOT PRESENT</text>
+<text x="156" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#514A5C">specified on Lucene HNSW — CEP-30</text>
+
+<rect x="306" y="66" width="272" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="306" y="66" width="272" height="34" rx="9" fill="#1F3864"/>
+<rect x="306" y="88" width="272" height="12" fill="#1F3864"/>
+<text x="442" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">DATASTAX DISTRIBUTION</text>
+<text x="442" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">HCD 2.x · based on Cassandra 5.0</text>
+<text x="324" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Vector ANN</text>
+<text x="324" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">JVector — shipped engine</text>
+<text x="324" y="198" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Family · compression</text>
+<text x="324" y="216" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">DiskANN · PQ and BQ</text>
+<rect x="324" y="238" width="236" height="40" rx="6" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="442" y="255" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1F3864">Added by the distribution</text>
+<text x="442" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#1F3864">atop the 5.0 base — immediate indexing</text>
+
+<rect x="592" y="66" width="288" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="592" y="66" width="288" height="34" rx="9" fill="#1F3864"/>
+<rect x="592" y="88" width="288" height="12" fill="#1F3864"/>
+<text x="736" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">OPENSEARCH 3.x</text>
+<text x="736" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">separate project · separate governance</text>
+<text x="610" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Core k-NN engines</text>
+<text x="610" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">Lucene · Faiss · NMSLIB</text>
+<text x="610" y="188" font-family="system-ui,sans-serif" font-size="10.5" fill="#8A6D00">NMSLIB deprecated; default moved to Faiss at 2.18</text>
+<text x="610" y="212" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">JVector</text>
+<rect x="610" y="222" width="252" height="56" rx="6" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="736" y="240" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">Separate plugin, not a core engine</text>
+<text x="736" y="255" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#6B5500">opensearch-project/opensearch-jvector</text>
+<text x="736" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5500">Apache-2.0 · release train tracks OpenSearch</text>
+
+<rect x="20" y="304" width="860" height="0.5" fill="#E4E9F0"/>
+</svg>
+<figcaption>Figure 3. The three loci. Every element shown is <strong>documented</strong>: Lucene HNSW upstream (note 21), SAI as a 5.0 feature (note 22), the distribution's base version (note 5), the DiskANN family and quantisation support (notes 19 and 4), the OpenSearch core engines and the NMSLIB deprecation (notes 17 and 18), and the plugin's licensing and release train (notes 19 and 20).</figcaption>
+</figure>
+
+<h2>3. The fifth operation and its designated successor</h2>
+
+<p>Of the five steps above, the last is a consensus round, and it alone has a named successor already in flight. Any reader holding a current view of the Cassandra roadmap will ask about it. The answer is more interesting than a simple replacement narrative, and it is worth developing with some care, because it both qualifies and reinforces the thesis of this article.</p>
+
+<h3>3.1 What Accord specifies</h3>
+
+<p><span class="ep ep-d">D</span> CEP-15 proposes Accord, a leaderless timestamp protocol for general-purpose distributed transactions. Its stated goals are transactions operating over any set of keys atomically, strict-serializable isolation, one wide-area round trip under normal conditions, failure tolerance unaffected by any minority of replica failures, absence of any introduced bottleneck, and — the goal most relevant here — support for live migration from Paxos. Two techniques are proposed as novel: a <em>reorder buffer</em> guaranteeing single-round-trip consensus under a timestamp protocol, and <em>fast path electorates</em> preserving leaderless fast-path availability under worst tolerated failure. Timestamps are hybrid logical clocks made globally unique by appending each replica's identifier. The proposal situates itself in the EPaxos lineage, claiming better properties than Caesar or Tempo.<sup class="n"><a href="#n23">23</a></sup></p>
+
+<p>The single round trip is a <em>design goal inscribed in the proposal</em>, not a measurement. <span class="ep ep-u">U</span> No benchmark figures published by the Apache Software Foundation were located. Practitioners will encounter a great many performance claims about Accord in secondary material; none that I could trace to a primary source.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Message-flow comparison. Paxos lightweight transactions require a documented prepare-promise phase, then a propose phase, then commit, against the replicas of one key. Accord targets a single wide-area round trip on its fast path, with a leaderless electorate; the round-trip count is a stated design goal of CEP-15 and not a measured result.">
+<defs>
+<marker id="mA" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1F3864"/></marker>
+<marker id="mB" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#1E5631"/></marker>
+</defs>
+<rect x="0" y="0" width="900" height="420" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 4 — Two ways to arbitrate a write</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Phases as documented. No latency is shown here: none is published for either protocol, and the one this study measured for Paxos at three replicas is in section 3.1.</text>
+
+<text x="20" y="78" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">A. PAXOS LIGHTWEIGHT TRANSACTION — in the field today</text>
+<g font-family="system-ui,sans-serif" font-size="10.5" fill="#4A5568">
+<text x="34" y="100">coordinator</text><text x="34" y="200">replicas of ONE key</text></g>
+<line x1="120" y1="92" x2="120" y2="210" stroke="#C6D8F2" stroke-width="1.5"/>
+<line x1="470" y1="92" x2="470" y2="210" stroke="#C6D8F2" stroke-width="1.5"/>
+<g stroke="#1F3864" stroke-width="1.8" marker-end="url(#mA)">
+<line x1="122" y1="108" x2="466" y2="108"/><line x1="468" y1="130" x2="124" y2="130"/>
+<line x1="122" y1="152" x2="466" y2="152"/><line x1="468" y1="174" x2="124" y2="174"/>
+<line x1="122" y1="196" x2="466" y2="196"/></g>
+<g font-family="system-ui,sans-serif" font-size="10.5" fill="#1B1F24">
+<text x="140" y="104">1 · prepare — proposal number</text>
+<text x="140" y="126">2 · promise — from a quorum of acceptors</text>
+<text x="140" y="148">3 · propose the value</text>
+<text x="140" y="170">4 · accept</text>
+<text x="140" y="192">5 · commit</text></g>
+<rect x="500" y="96" width="380" height="112" rx="7" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="516" y="118" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1F3864">Scope: one partition key.</text>
+<text x="516" y="138" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Multi-key atomicity is the application's problem.</text>
+<text x="516" y="158" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1E5631">measured: LOCAL_SERIAL · 3 client retries</text>
+<text x="516" y="176" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">A leader is elected per proposal; contention on</text>
+<text x="516" y="191" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">a hot key serialises through it.</text>
+
+<line x1="20" y1="232" x2="880" y2="232" stroke="#E4E9F0"/>
+
+<text x="20" y="262" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1E5631">B. ACCORD — CEP-15, alpha</text>
+<g font-family="system-ui,sans-serif" font-size="10.5" fill="#4A5568">
+<text x="34" y="284">coordinator</text><text x="34" y="360">replicas of ANY set of keys</text></g>
+<line x1="120" y1="276" x2="120" y2="370" stroke="#BFE3C8" stroke-width="1.5"/>
+<line x1="470" y1="276" x2="470" y2="370" stroke="#BFE3C8" stroke-width="1.5"/>
+<g stroke="#1E5631" stroke-width="2.2" marker-end="url(#mB)">
+<line x1="122" y1="300" x2="466" y2="300"/><line x1="468" y1="326" x2="124" y2="326"/></g>
+<g font-family="system-ui,sans-serif" font-size="10.5" fill="#1B1F24">
+<text x="140" y="296">1 · pre-accept with a hybrid logical timestamp</text>
+<text x="140" y="322">2 · fast-path electorate replies — commit</text></g>
+<text x="140" y="352" font-family="system-ui,sans-serif" font-size="10.5" font-style="italic" fill="#8A6D00">slow path on conflict: recovery round, not shown</text>
+<rect x="500" y="272" width="380" height="104" rx="7" fill="#E6F4EA" stroke="#BFE3C8"/>
+<text x="516" y="294" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1E5631">Scope: any set of keys, atomically.</text>
+<text x="516" y="314" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">Leaderless — no elected coordinator to serialise on.</text>
+<text x="516" y="332" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">Strict-serializable isolation.</text>
+<text x="516" y="352" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">One wide-area round trip is a STATED GOAL</text>
+<text x="516" y="367" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">of the proposal, not a published measurement.</text>
+
+<rect x="20" y="388" width="860" height="26" rx="6" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="34" y="405" font-family="system-ui,sans-serif" font-size="11" fill="#514A5C">Panel A phases from the vendor's Paxos documentation; consistency level and retry count measured on one build. Panel B from CEP-15 only. Neither panel asserts a latency.</text>
+</svg>
+<figcaption>Figure 4. Arbitration, not storage. <strong>Documented:</strong> the Paxos phase structure (note 13); Accord's leaderless character, strict-serializable target, hybrid logical timestamps, fast-path electorate and multi-key scope (note 23). <strong>Measured:</strong> <code>LOCAL_SERIAL</code> and the three-retry default on one build (notes 38 and 1). <strong>Explicitly not shown:</strong> any latency figure for either protocol. The single round trip in panel B is a design goal inscribed in the proposal; the Apache Software Foundation has published no measurement of it, and practitioner claims to the contrary trace to no primary source.</figcaption>
+</figure>
+
+<h3>3.2 Coexistence, not replacement</h3>
+
+<p><span class="ep ep-d">D</span> This is the point most frequently mangled in summary. The proposal is explicit on both horizons:</p>
+
+<blockquote class="src"><p>"This work is expected to replace Paxos for the project. In order to support live migration both protocols will be maintained for at least an interim period, after which it is expected that Paxos will be deprecated. The precise timing of this will be up to the community."</p>
+<cite>CEP-15, <em>General Purpose Transactions</em>, section "Long Term".<sup class="n"><a href="#n23">23</a></sup></cite></blockquote>
+
+<p>And, on the architecture of the coexistence: supporting the Paxos-based lightweight transaction and Accord side by side is cited in the proposal as an instance of the intended modularity.<sup class="n"><a href="#n23">23</a></sup> No deprecation of Paxos has been announced. Lightweight transactions remain the mechanism in the field.</p>
+
+<h3>3.3 What multi-key atomicity would change for an application</h3>
+
+<p>The architectural difference in Figure 4 has an application-level consequence that is worth drawing explicitly, because it is where the business value of Accord actually sits — not in speed, about which nothing is published, but in <em>what the database is willing to guarantee</em>.</p>
+
+<p><span class="ep ep-d">D</span> Today the guarantee stops at the partition: HCD does not adhere to ACID transactions with rollback or locking mechanisms, and a write is atomic at partition level.<sup class="n"><a href="#n33">33</a></sup> Any invariant spanning two records is therefore held by the application, in code someone must write, test and operate. <span class="ep ep-d">D</span> CEP-15 proposes transactions over any set of keys, atomically, at strict-serializable isolation.<sup class="n"><a href="#n23">23</a></sup> The following figure maps that shift onto the compensating machinery it would remove.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Comparison of application patterns. With partition-level atomicity, a two-record invariant requires application-level compensation: idempotency keys, outbox records, reconciliation jobs and manual repair runbooks. With multi-key atomic transactions, that machinery would be replaced by a single transaction, shifting effort from application code to the database.">
+<rect x="0" y="0" width="900" height="400" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 5 — Where the invariant lives, and who pays for it</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Example invariant: "debit account A and credit account B, or neither." Two partitions, one rule.</text>
+
+<rect x="20" y="66" width="420" height="300" rx="9" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="40" y="92" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#6B5500">TODAY — atomicity stops at the partition</text>
+<text x="40" y="112" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">The database guarantees each write. It does not</text>
+<text x="40" y="127" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">guarantee the pair. The application must.</text>
+<g font-family="system-ui,sans-serif" font-size="11" fill="#1B1F24">
+<rect x="40" y="144" width="380" height="30" rx="5" fill="#FFFFFF" stroke="#C8A96A"/><text x="54" y="164">Deterministic identifiers, so a retry is rejected</text>
+<rect x="40" y="180" width="380" height="30" rx="5" fill="#FFFFFF" stroke="#C8A96A"/><text x="54" y="200">An outbox or intent record, written first</text>
+<rect x="40" y="216" width="380" height="30" rx="5" fill="#FFFFFF" stroke="#C8A96A"/><text x="54" y="236">A worker that completes or compensates the pair</text>
+<rect x="40" y="252" width="380" height="30" rx="5" fill="#FFFFFF" stroke="#C8A96A"/><text x="54" y="272">A reconciliation job, and its own alerting</text>
+<rect x="40" y="288" width="380" height="30" rx="5" fill="#FFFFFF" stroke="#C8A96A"/><text x="54" y="308">A runbook for the state the worker cannot repair</text></g>
+<text x="40" y="344" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">Five artefacts to build, test, operate and staff —</text>
+<text x="40" y="359" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">and the reconciliation job never gets deleted.</text>
+
+<text x="452" y="220" text-anchor="middle" font-family="system-ui,sans-serif" font-size="26" fill="#C6D8F2">→</text>
+
+<rect x="470" y="66" width="410" height="300" rx="9" fill="#E6F4EA" stroke="#BFE3C8"/>
+<text x="490" y="92" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#1E5631">PROPOSED — transactions over any set of keys</text>
+<text x="490" y="112" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">The database guarantees the pair. Strict-serializable</text>
+<text x="490" y="127" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">isolation, per CEP-15.</text>
+<rect x="490" y="150" width="370" height="96" rx="6" fill="#FFFFFF" stroke="#BFE3C8"/>
+<text x="506" y="174" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#1E5631">BEGIN TRANSACTION</text>
+<text x="506" y="192" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#1E5631">  LET a = (SELECT … WHERE id = A);</text>
+<text x="506" y="210" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#1E5631">  IF a.balance &gt;= amount THEN … END IF</text>
+<text x="506" y="228" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#1E5631">COMMIT TRANSACTION</text>
+<text x="490" y="270" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">Effort moves from application code to the engine.</text>
+<text x="490" y="288" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">The compensating machinery is not tuned — it is</text>
+<text x="490" y="303" font-family="system-ui,sans-serif" font-size="11" fill="#1E5631">deleted, along with the failure modes it carried.</text>
+<rect x="490" y="320" width="370" height="36" rx="6" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="504" y="336" font-family="system-ui,sans-serif" font-size="10.5" font-weight="650" fill="#8A6D00">Syntax from alpha issue traffic, subject to change.</text>
+<text x="504" y="350" font-family="system-ui,sans-serif" font-size="10.5" font-weight="650" fill="#8A6D00">Nothing here is available in HCD 2.x today.</text>
+</svg>
+<figcaption>Figure 5. The business case for Accord is a <em>scope</em> argument, not a speed argument. <strong>Documented:</strong> the present partition-level guarantee (note 33); the proposed multi-key atomic scope and strict-serializable isolation (note 23); the transaction syntax as it appears in project issue traffic (note 29). <strong>Derived, not documented:</strong> the five artefacts in the left panel — these are the ordinary compensating patterns any team writes when the database stops at one partition, listed here from practice rather than from a source. The arrow is a proposal, not a migration path: no timetable exists, and section 3.4 says why.</figcaption>
+</figure>
+
+<h3>3.4 Release status, and the four things nobody can tell you</h3>
+
+<p><span class="ep ep-d">D</span> Apache Cassandra 6.0-alpha1 is tagged 3 April 2026 and 6.0-alpha2 is tagged 7 August 2026 in the project repository.<sup class="n"><a href="#n24">24</a></sup> The release announcement characterises the build without ambiguity: a quarterly alpha on the 6.0 series, and quarterly alphas are intended only for development and testing purposes.<sup class="n"><a href="#n25">25</a></sup></p>
+
+<p><span class="ep ep-d">D</span> The <code>NEWS.txt</code> of the 6.0-alpha2 tag enumerates, under the 6.0 new-features heading: JDK 21 with generational ZGC as default collector, CEP-37 Auto Repair, CEP-21 Transactional Cluster Metadata, CEP-42 Constraints Framework, CEP-24, CEP-43 and CEP-55, unified-compaction parallelisation, JMX configuration in YAML, and several new CQL functions. <strong>Accord is not among them.</strong> This absence is suggestive but not probative: the same file carries an explicit editorial placeholder, and its upgrade section still refers to the release as 5.1, evidencing a renumbering not yet reflected throughout.<sup class="n"><a href="#n26">26</a></sup></p>
+
+<p><span class="ep ep-d">D</span> The tracking epic for CEP-15 is titled "Accord Beta" and stands, at consultation, In Progress and Unresolved; the linked ticket for writing the CEP-15 documentation is likewise In Progress.<sup class="n"><a href="#n27">27</a></sup> <span class="ep ep-r">R</span> Documentation under review in the project describes the activation model: a global switch in <code>cassandra.yaml</code> (<code>accord: enabled: true</code>) and a per-table property (<code>WITH transactional_mode = 'full'</code>), under which ordinary CQL operations on that table execute through Accord.<sup class="n"><a href="#n28">28</a></sup> The explicit transaction surface — <code>BEGIN TRANSACTION</code>, <code>LET</code>, conditional block, <code>COMMIT TRANSACTION</code> — appears in project issue traffic.<sup class="n"><a href="#n29">29</a></sup> Alpha syntax, subject to change.</p>
+
+<p><span class="ep ep-d">D</span> <span class="ep ep-u">U</span> A qualification I owe the reader: I was unable to render the <code>cassandra.yaml</code> shipped at the 6.0-alpha2 tag, and therefore cannot assert from a primary source that the <code>accord</code> configuration block is present in that specific artefact. What is established is that Accord is absent from that tag's release notes, that its tracking epic is unresolved, and that where it is enabled it is enabled deliberately, per table, rather than by default.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Readiness timeline. The proposal was accepted in 2023 and alphas were tagged in April and August 2026, but Accord is absent from the alpha release notes, its tracking epic is unresolved, its documentation ticket is open, no general-availability date exists, and it is unavailable in the commercial distribution which is based on Cassandra 5.0.">
+<rect x="0" y="0" width="900" height="400" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 6 — Readiness, and the boundary of what is knowable</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Everything left of the dashed line is a fact with a source. Everything right of it is unknown, and no roadmap says otherwise.</text>
+
+<line x1="60" y1="120" x2="640" y2="120" stroke="#1F3864" stroke-width="2.5"/>
+<line x1="640" y1="120" x2="870" y2="120" stroke="#DEDAE4" stroke-width="2.5" stroke-dasharray="7 6"/>
+<line x1="640" y1="86" x2="640" y2="300" stroke="#C8A96A" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="648" y="82" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#8A6D00">today · 17 Sep 2026</text>
+
+<g font-family="system-ui,sans-serif">
+<circle cx="110" cy="120" r="7" fill="#1F3864"/>
+<text x="110" y="104" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1F3864">2023</text>
+<text x="110" y="146" text-anchor="middle" font-size="10.5" fill="#1B1F24">CEP-15</text>
+<text x="110" y="160" text-anchor="middle" font-size="10.5" fill="#1B1F24">accepted</text>
+
+<circle cx="330" cy="120" r="7" fill="#1F3864"/>
+<text x="330" y="104" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1F3864">3 Apr 2026</text>
+<text x="330" y="146" text-anchor="middle" font-size="10.5" fill="#1B1F24">6.0-alpha1 tagged</text>
+
+<circle cx="530" cy="120" r="7" fill="#1F3864"/>
+<text x="530" y="104" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1F3864">7 Aug 2026</text>
+<text x="530" y="146" text-anchor="middle" font-size="10.5" fill="#1B1F24">6.0-alpha2 tagged</text>
+<text x="530" y="160" text-anchor="middle" font-size="10.5" fill="#8A6D00">"development and</text>
+<text x="530" y="174" text-anchor="middle" font-size="10.5" fill="#8A6D00">testing purposes"</text>
+
+<circle cx="760" cy="120" r="7" fill="#FFFFFF" stroke="#DEDAE4" stroke-width="2.5"/>
+<text x="760" y="104" text-anchor="middle" font-size="10.5" font-weight="700" fill="#514A5C">no date</text>
+<text x="760" y="146" text-anchor="middle" font-size="10.5" fill="#514A5C">general availability</text>
+</g>
+
+<rect x="20" y="200" width="600" height="100" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="38" y="222" font-family="system-ui,sans-serif" font-size="11.5" font-weight="700" fill="#1F3864">WHAT THE RECORD SHOWS</text>
+<g font-family="system-ui,sans-serif" font-size="11" fill="#1B1F24">
+<text x="38" y="244">· Absent from the 6.0-alpha2 release notes — which carry an editorial placeholder</text>
+<text x="38" y="262">· Tracking epic "CEP-15: Accord Beta" — In Progress, Unresolved</text>
+<text x="38" y="280">· Documentation ticket — still open. Activation docs under review, not merged</text>
+<text x="38" y="296">· Where enabled: off by default, adopted per table, explicitly</text></g>
+
+<rect x="640" y="200" width="240" height="100" rx="8" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="658" y="222" font-family="system-ui,sans-serif" font-size="11.5" font-weight="700" fill="#514A5C">NOT KNOWABLE TODAY</text>
+<g font-family="system-ui,sans-serif" font-size="11" fill="#514A5C">
+<text x="658" y="244">· GA date</text>
+<text x="658" y="262">· Performance, at any scale</text>
+<text x="658" y="280">· Paxos deprecation date</text>
+<text x="658" y="296">· Arrival in any distribution</text></g>
+
+<rect x="20" y="322" width="860" height="58" rx="8" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="38" y="344" font-family="system-ui,sans-serif" font-size="11.5" font-weight="700" fill="#6B5500">CONSEQUENCE FOR PLANNING</text>
+<text x="38" y="364" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">Accord is a reason to follow the 6.0 line attentively. It is not a property of any system you can deploy this quarter, and it is not available in HCD 2.x, which is based on Cassandra 5.0. Any design that depends on multi-key atomicity needs an answer that works today.</text>
+</svg>
+<figcaption>Figure 6. Readiness as evidence rather than as roadmap. <strong>Documented:</strong> the proposal's accepted status (note 23); both alpha tag dates (note 24); the release classification quoted verbatim (note 25); the release-notes contents and their placeholder (note 26); the epic and documentation-ticket states (note 27); the base version of the commercial distribution (note 5). <strong>Reported:</strong> the activation model, from documentation still in review (note 28). The right-hand panel is not a gap in this article's research — it is a gap in the public record, and presenting it as anything else would be the failure mode section 4 exists to name.</figcaption>
+</figure>
+
+<h3>3.5 What Accord changes in the five-operation model — and what it does not</h3>
+
+<p>Here the analysis becomes unusually clean, because the proposal settles it by its own terms. Among the explicit <em>non-goals</em> of CEP-15 are SASI, SAI and local secondary indexes.<sup class="n"><a href="#n23">23</a></sup> Storage-attached indexing, which is step four of our five, falls outside the proposal's scope by declaration rather than by inference.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Step</th><th>Belongs to</th><th>Modified by Accord?</th></tr></thead>
+<tbody>
+<tr><td>1 — Read the whole document</td><td>Storage model</td><td>No</td></tr>
+<tr><td>2 — Modify in memory</td><td>Storage model</td><td>No</td></tr>
+<tr><td>3 — Rewrite document and derived columns</td><td>Storage model</td><td>No</td></tr>
+<tr><td>4 — Maintain storage-attached indexes</td><td>Storage model</td><td>No — excluded by CEP-15's stated non-goals</td></tr>
+<tr><td>5 — Guard with consensus</td><td>Consensus mechanism</td><td>Yes, and this step alone</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Accord alters how a write is <em>arbitrated</em>. It does not alter how a document is <em>decomposed and rewritten</em>. The thesis of this article is therefore not weakened by the arrival of a successor protocol; it is corroborated by it. A change of consensus mechanism, a genuine advance in distributed systems, formally specified and years in construction, leaves untouched the four steps that derive from physical layout. That is exactly what one should expect if the layout decision is the real predictor, and exactly what one should not expect if the five-step cost were an artefact of the consensus round. The successor protocol is, in this precise sense, a controlled experiment on the article's own hypothesis.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: a layered view in which the consensus stratum may be exchanged from Paxos lightweight transactions to Accord, while the storage stratum comprising decomposition, rewrite and storage-attached index maintenance remains unchanged and is explicitly outside the scope of CEP-15.">
+<defs>
+<marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+<path d="M0,0 L10,5 L0,10 z" fill="#8A6D00"/></marker>
+</defs>
+<rect x="0" y="0" width="900" height="372" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 7 — What a change of consensus protocol does and does not touch</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">The fifth operation has a designated successor; the first four do not</text>
+
+<rect x="20" y="66" width="860" height="112" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="38" y="90" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">CONSENSUS STRATUM — exchangeable</text>
+
+<rect x="38" y="102" width="366" height="62" rx="7" fill="#FFFFFF" stroke="#C6D8F2"/>
+<text x="54" y="124" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">Paxos lightweight transactions</text>
+<text x="54" y="142" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">single partition · prepare / promise / propose</text>
+<text x="54" y="157" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">3 client retries (upstream default) · in the field today</text>
+
+<line x1="418" y1="133" x2="486" y2="133" stroke="#8A6D00" stroke-width="2" marker-end="url(#ar3)"/>
+<text x="452" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#8A6D00">coexist,</text>
+<text x="452" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#8A6D00">then migrate</text>
+
+<rect x="496" y="102" width="366" height="62" rx="7" fill="#FFFFFF" stroke="#C6D8F2"/>
+<text x="512" y="124" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">Accord — CEP-15</text>
+<text x="512" y="142" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">multi-partition · leaderless · strict-serializable</text>
+<text x="512" y="157" font-family="system-ui,sans-serif" font-size="11" fill="#8A6D00">alpha · off by default · adopted per table</text>
+
+<rect x="20" y="194" width="860" height="130" rx="9" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="38" y="218" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#6B5500">STORAGE STRATUM — unchanged by either protocol</text>
+
+<g font-family="system-ui,sans-serif">
+<rect x="38" y="230" width="198" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="137" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">1–2 · READ / MODIFY</text>
+<text x="137" y="269" text-anchor="middle" font-size="10.5" fill="#6B5500">document fetched, changed in memory</text>
+
+<rect x="246" y="230" width="198" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="345" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">3 · REWRITE</text>
+<text x="345" y="269" text-anchor="middle" font-size="10.5" fill="#6B5500">whole document + derived columns</text>
+
+<rect x="454" y="230" width="408" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="658" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">4 · STORAGE-ATTACHED INDEX MAINTENANCE</text>
+<text x="658" y="269" text-anchor="middle" font-size="10.5" font-weight="650" fill="#6B5500">SASI, SAI and local secondary indexes are explicit NON-GOALS of CEP-15</text>
+</g>
+<text x="38" y="308" font-size="11" font-family="system-ui,sans-serif" fill="#6B5500">These four steps follow from the physical layout decision, not from the arbitration mechanism. No consensus protocol reaches them.</text>
+
+<rect x="20" y="338" width="860" height="26" rx="6" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="34" y="356" font-family="system-ui,sans-serif" font-size="11" fill="#514A5C">Accord is not available in the commercial distribution discussed here: HCD 2.x is based on Cassandra 5.0, and Accord targets the 6.0 line.</text>
+</svg>
+<figcaption>Figure 7. The stratification. <strong>Documented:</strong> Accord's leaderless, strict-serializable, multi-partition character and its explicit non-goals including SAI (note 23); Paxos coexistence and eventual deprecation without timetable (note 23); the retry default (note 1); the base version of the distribution (note 5). <strong>Reported:</strong> the per-table activation model, drawn from documentation still under review (note 28). <strong>Measured, not documented:</strong> the placement of steps 1–3 in the storage stratum, observed by query trace on one build (appendix, measurement M2) and inheriting the <span class="ep ep-m">M</span> marking of Part I, section 4.</figcaption>
+</figure>
+
+<p><span class="ep ep-d">D</span> One consequence for readers evaluating the commercial distribution: no mention of Accord appears in the HCD documentation consulted, and HCD 2.0 is based on Cassandra 5.0.<sup class="n"><a href="#n5">5</a></sup> Accord is therefore not available there today. Treat it as a reason to follow the 6.0 line attentively, not as a property of any system you can deploy to production this quarter.</p>
+
+<div class="epigraph">
+<p>"It would be nice if all of the data which sociologists require could be enumerated because then we could run them through IBM machines and draw charts as the economists do. However, not everything that can be counted counts, and not everything that counts can be counted."</p>
+<cite><b>William Bruce Cameron</b>, <em>Informal Sociology: A Casual Introduction to Sociological Thinking</em>, Random House, 1963, p. 13.</cite>
+<p class="gloss">Routinely attributed to Einstein, who did not write it. An article that grades its own sources should be careful to get right the epigraph it puts above the section on measurement.</p>
+</div>
+
+<h2>4. If you benchmark this yourself</h2>
+
+<p>None of what follows is mine, and the authors state it better than I can. The two failures that ruin most published comparisons of these systems are <em>coordinated omission</em> — driving load as fast as the system replies, which conceals precisely the stalls under investigation — and reporting an average where a distribution is required. Gil Tene named the first and wrote <code>wrk2</code> and HdrHistogram to correct it.<sup class="n"><a href="#n30">30</a></sup> The remaining pitfalls are, <em>inter alia</em>, the documented weaknesses of the Yahoo! Cloud Serving Benchmark on which most published NoSQL comparisons rest.<sup class="n"><a href="#n31">31</a></sup></p>
+
+<p>Four conditions decide whether anyone can interpret your numbers, and all four are disclosure rather than technique: hold durability equivalent between the systems and record the mapping; state the working set against available memory and run both an in-cache and a disk-bound regime; declare the topology, including any coordinating tier, since a stateless API tier is a provisioning decision; and run long enough to cross the background maintenance cycles rather than merely long enough to sustain the rate. The harness accompanying this article applies all of them to itself, and declares in its output record the one it failed to meet.</p>
+
+<p><span class="ep ep-u">U</span> That sentence was true of one harness and is not true of the campaigns as a whole, which is worth saying here rather than leaving a reader to find it. Measured against the six requirements above, this study satisfies about half. Load was driven at a fixed offered rate for the freshness probe alone; every mutation, read and comparison measurement ran closed-loop, one operation after the reply to the last — the very failure the first requirement names. One campaign out of seven reached a disk-bound regime and crossed a compaction; the rest are cache figures. Distributions rather than averages, a declared durability mapping and a declared topology are met throughout.</p>
+
+<p>A study that holds others to six rules and meets three of them has less authority than its apparatus suggests, and the right response is to say so in the section that states the rules. It is also the reason the disclosure below promises no benchmark figures in the body: the numbers live in the appendix, each with its conditions, because that is the only place they can honestly stand.<sup class="n"><a href="#n38">38</a></sup></p>
+
+<p><span class="ep ep-d">D</span> For a peer-reviewed comparison of these two database families, the reference is Haughian, Osman and Knottenbelt, <em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores</em>, DEXA 2016.<sup class="n"><a href="#n32">32</a></sup> <span class="ep ep-u">U</span> Read it for its stated limitations rather than its results — and note that I withdraw the specific characterisation of those limitations that appeared in an earlier draft of this article, having been unable to obtain the full text and being unwilling to paraphrase a methodology section from an abstract.</p>
+
+
+<h2>5. What to do this week</h2>
+
+<p><strong>Measure your write-to-searchable interval. Fifteen minutes.</strong><br>
+Run the probe from section 1 against whatever you already operate, once idle and once under write load, and <em>record the attempt count rather than the elapsed time</em> — a document found on the first query has no measurable lag, whatever the stopwatch says, and a rising attempt count is the only unambiguous signal that an index is behind. You will obtain a number you almost certainly do not have, and it is the number that decides whether index lag is a constraint you must design around. If you are building anything with retrieval in it, this is the highest-value quarter-hour in either part of this diptych.</p>
+
+<p><strong>And if you deploy across datacentres, measure it there.</strong><br>
+Every freshness figure in this part comes from replicas that share a host and answer in under a millisecond. The asymmetry between a quorum write and a single-replica vector read is real in the protocol and was bounded below the measurement floor on that ring. Tens of milliseconds between replicas is exactly the condition this bench could not reproduce, and exactly where the question is open.</p>
+
+<h2>6. Conclusion to Part II, and to the diptych</h2>
+
+<p><strong>Two kinds of index, and only one is contested.</strong> Ordinary secondary indexes are maintained synchronously by both engines: writing a document and querying it through one returned it on the first attempt in every cycle, on both sides. There is parity there and nothing for either party to claim. The asymmetry this part describes is confined to the <em>search</em> index — synchronous on one engine, maintained asynchronously through change streams on the other.</p>
+
+<p><strong>The asymmetry is architectural; the magnitude is a deployment property.</strong> The asynchronous path carries a periodic refresh: sampled across every phase of its cycle, the write-to-searchable lag spreads from 89 ms to 1 170, mean 646. The synchronous path has no such interval — its index sits on the write path, and no setting would give it one. The first figure this part published, a tight 1 015 ms, was an artefact of a probe that had synchronised itself to the cycle; it overstated the lag by about 1.6 times and is withdrawn.</p>
+
+<p><strong>Whether that costs anything depends entirely on the caller.</strong> At zero delay the asynchronous path misses every document and the synchronous one misses none; at half a second, one in two; from a second onward, none at all. The transition tracks the refresh interval of the deployment, not the identity of the product.</p>
+
+<p><strong>Which obliges this part to withdraw its own opening example.</strong> Every earlier revision motivated the argument with a conversational assistant. A turn driven by a language model takes seconds; the window closes before the read arrives, and the failure never occurs. What survives is narrower and sharper: where a write and a search are composed inside the refresh window, with no human and no model interposed, the difference is between a right answer and a wrong one, at a rate approaching certainty. Which real workloads sit there is a question this study did not ask.</p>
+
+<h3>6.1 The eight axes, and what decides between them</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Axis measured</th><th>Which engine</th><th>Margin, and its reservation</th><th>Direction, by separation of support</th></tr></thead>
+<tbody>
+<tr><td>Mutating one field</td><td>MongoDB</td><td>3&ndash;13× in latency; a memtable-regime figure; slopes fitted on one of two passes</td><td>certain &mdash; disjoint in 19 of 20 cells</td></tr>
+<tr><td>Fetching one document by identifier</td><td>MongoDB</td><td>≈ 20×; allocation between tier and engine unmeasured</td><td>certain &mdash; disjoint</td></tr>
+<tr><td>Filtering on a declared or wildcard-indexed field</td><td>MongoDB</td><td>≈ 24×</td><td>certain &mdash; disjoint</td></tr>
+<tr><td>Filtering on a field nobody declared</td><td>Decomposing engine</td><td>≈ 22× at the median, and only against the default configuration; what is established is predictability, not speed</td><td><strong>not established</strong> &mdash; supports overlap, ratio interval contains one</td></tr>
+<tr><td>Freshness of an ordinary secondary index</td><td>neither</td><td>index current on both; elapsed time is not</td><td>tie on attempts; elapsed time disjoint both ways</td></tr>
+<tr><td>Aggregating by group</td><td>MongoDB</td><td>a capability gap, not a ratio: no server-side pipeline through the interface; 134 s against 0.2 s by the only route left</td><td>certain &mdash; disjoint, on three observations</td></tr>
+<tr><td>Counting exactly</td><td>MongoDB</td><td>by capability: the interface caps exact counts at a documented threshold, and its estimator answered zero before the first flush</td><td>structural &mdash; no observations, the operation is refused</td></tr>
+<tr><td><strong>Freshness of the search index</strong> (Part II)</td><td><strong>Decomposing engine</strong></td><td>total inside the comparator&rsquo;s refresh window, void outside; that window measured ≈ 1 s here</td><td>certain by the miss-rate test; <strong>not established</strong> as a latency comparison</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-u">U</span> One caveat governs the table as a whole and is easy to miss because the rows read as commensurable. They are not. The mutation row comes from a three-replica ring in a cache-resident regime; the read and filter rows from a million-document collection against MongoDB 8.0 in a three-member replica set; the aggregation and counting rows from a two-hundred-thousand-document corpus on the same pairing; the search-freshness row from MongoDB 8.3.11 in a single-member deployment, through a different image. Four configurations, one table. The repository&rsquo;s register lists two further measurements with no comparator &mdash; where the mutation cost is charged, and vector freshness under a single-replica read &mdash; which are properties of one engine rather than axes of comparison and are not counted here. Each row is defensible on its own; no row is a controlled comparison against the others, and a reader should not compute across them. The score, if a reader wants one: five axes to MongoDB, two to the decomposing engine, one to neither.</p>
+
+<p><strong>When the decomposing engine wins.</strong> When a write and a search are composed inside the comparator&rsquo;s refresh window — below that boundary one architecture misses everything and the other misses nothing, and no configuration on either side changes it. When the query pattern is not yet known, so that the index you forgot to declare is the one you never pay for. And when the workload is append-dominant with retrieval over it, index maintenance being charged once, at insertion.</p>
+
+<p><strong>When MongoDB and its search engine win.</strong> When records are mutated repeatedly — counters, status machines, hot aggregates — where the targeted update writes what changed, maintains only the declared indexes, and pays no consensus round. When reads dominate and latency matters. When the query pattern <em>is</em> known and the index has been declared. When anything must be aggregated or counted server-side, which the interface does not do at all &mdash; Part I, section 4.5. And when the read arrives after the refresh window, which for anything conversational or human-paced it does.</p>
+
+<p><strong>Neither.</strong> Freshness of an ordinary secondary index. Both engines maintain those synchronously.</p>
+
+<blockquote><p>Two numbers decide the contested axis, and only one is about a database: the refresh interval of the deployment you run, and the delay your application leaves between writing and searching. Where the second is smaller than the first, the advantage is total. Where it is larger, there is none.</p></blockquote>
+
+<h3>6.2 The same result, arranged by workload</h3>
+
+<p>The table above is arranged by what was measured. This one is arranged by what a reader has. Each row names a workload profile, the engine the measurements favour for it, and the condition under which that preference holds &mdash; because every one of them has a condition, and a row read without it is a row misread.</p>
+
+<p><span class="ep ep-u">U</span> <strong>Do not count the rows.</strong> They are profiles, not points, and they do not tally with the eight axes above: three of MongoDB&rsquo;s axes are folded into two rows here, one of the decomposing engine&rsquo;s axes is split across two, and one row for the decomposing engine rests on an inference rather than a measurement. Read row by row, each is defensible. Summed, they would suggest a parity the measurements do not show &mdash; the score, if a reader wants one, is the table above: five axes, two, and one to neither. The last column says which measured axis each row rests on, and with what evidentiary status.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>If your workload is…</th><th>Choose</th><th>On what evidence, and under what condition</th><th>Rests on</th></tr></thead>
+<tbody>
+<tr>
+<td><strong>Write then search, composed within the refresh window</strong><br>a step that writes and a step that reads, with no human and no model in between</td>
+<td><strong>Decomposing engine</strong></td>
+<td>The only unconditional win in the diptych: 100 % of documents missed against 0 % at zero delay, still one in two at half a second. <em>Condition:</em> your application&rsquo;s write-to-search delay must be shorter than your deployment&rsquo;s refresh interval. Both are measurements you must take.</td>
+<td><span class="ep ep-m">M</span> search freshness, inside the window</td>
+</tr>
+<tr>
+<td><strong>Counters, status machines, hot aggregates</strong><br>the same record mutated repeatedly</td>
+<td><strong>MongoDB</strong></td>
+<td>Three to thirteen times cheaper per mutation, widening with indexed volume, and roughly nine tenths of the disadvantage is the engine rather than the interface. <em>Condition:</em> a memtable-regime figure; the gap changes shape once the read leaves memory.</td>
+<td><span class="ep ep-m">M</span> mutation</td>
+</tr>
+<tr>
+<td><strong>Read-dominated, latency-sensitive</strong><br>fetch by key, filter on known fields</td>
+<td><strong>MongoDB</strong></td>
+<td>About twenty times cheaper by identifier, about twenty-four on a declared or wildcard index. <em>Condition:</em> the split of that gap between the stateless interface and the engine was not measured on the read path.</td>
+<td><span class="ep ep-m">M</span> point read <em>and</em> declared-field filter &mdash; two axes, one row</td>
+</tr>
+<tr>
+<td><strong>Exploratory, schema still moving</strong><br>fields queried before anyone decided to index them</td>
+<td><strong>Decomposing engine</strong></td>
+<td>Twenty-two times faster than a comparator that must scan a million documents. <em>Condition:</em> the advantage is against a <em>default</em>. Declare a wildcard index on the other side and it is twenty-four times faster still; what you are buying is the absence of a decision, not speed.</td>
+<td><span class="ep ep-m">M</span> undeclared-field filter</td>
+</tr>
+<tr>
+<td><strong>Append-dominant with retrieval over it</strong><br>written once, read and searched many times</td>
+<td>Decomposing engine</td>
+<td>Index maintenance is charged once, at insertion, and the search index is current at acknowledgement. <em>Condition:</em> this is an inference from two measured properties, not a separately measured workload, and it carries no number of its own.</td>
+<td><span class="ep ep-u">U</span> inferred; no axis</td>
+</tr>
+<tr>
+<td><strong>Conversational, human-paced or model-paced</strong><br>anything where seconds pass between writing and reading</td>
+<td><strong>MongoDB</strong></td>
+<td>The freshness advantage vanishes entirely once the read arrives after the refresh window, and the mutation and read advantages remain. <em>Condition:</em> none &mdash; this is the case the diptych previously got wrong, and correcting it removed the platform&rsquo;s claim on this profile.</td>
+<td><span class="ep ep-m">M</span> search freshness, outside the window &mdash; the other half of row one</td>
+</tr>
+<tr>
+<td><strong>Analytical &mdash; aggregate, group, count</strong><br>anything that needs a sum, a group or an exact cardinality server-side</td>
+<td><strong>MongoDB</strong></td>
+<td>The interface has no aggregation pipeline and caps exact counts at a documented threshold; the only route pulls the collection to the client, 134 s against 0.2 s. <em>Condition:</em> through the Data API as exposed. An analytical engine attached to the same ring, or the engine&rsquo;s native query language over a table designed for the query, were not the object measured.</td>
+<td><span class="ep ep-m">M</span> aggregation <em>and</em> counting &mdash; two axes, one row</td>
+</tr>
+<tr>
+<td><strong>Read your own writes through an ordinary index</strong></td>
+<td>neither</td>
+<td>Both maintain ordinary secondary indexes synchronously; the index is current on both. Elapsed time differs, but that measures the query rather than the index.</td>
+<td><span class="ep ep-m">M</span> ordinary-index freshness</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p><span class="ep ep-u">U</span> Four caveats govern every row. The rows come from three different deployment configurations and are not commensurable with one another. Everything was measured on one host, one build of each engine, with almost no regime outside the cache. Nothing was measured under concurrency, and production is concurrent. And the profiles named in the first column are descriptions rather than measurements: no real application&rsquo;s write-to-search interval was timed, so a reader recognising their own system in a row is making a judgement the study cannot make for them.</p>
+
+<h3>6.3 On what this study is worth</h3>
+
+<p>It corrected itself four times in public, and each correction cost it something it had claimed. Index maintenance was said to cover the fields that changed; it covers every indexed field. A per-field rate was derived and published; the experiment had grown fields and bytes together and never licensed it. The per-kilobyte rate that replaced it was presented as regime-independent; forcing the read off the memtable halved it. The freshness argument was motivated by conversational retrieval; a sweep of turn latency showed the window closes first. A fifth correction was arithmetic rather than empirical: a sum presented as a replication was an identity, true by construction. Three of the four were found by the author&rsquo;s own follow-up rather than by an objection, which is the only reason they are in the text rather than in a comment thread.</p>
+
+<p><strong>The standard this study sets and does not meet.</strong> Section 4 lists six conditions for a defensible comparison; the campaigns satisfy about three. Load was driven closed-loop almost everywhere — one operation awaiting the reply to the last, which is the first thing that section tells a reader not to do. One campaign of seven left the cache. Distributions rather than averages, a declared durability mapping and a declared topology are met throughout. A study that holds others to six rules and meets three has less authority than its apparatus suggests, and saying so is accuracy rather than modesty.</p>
+
+<p><strong>What none of it transposes to.</strong> One host, a shared virtual machine whose storage class could not be established. One build of each engine. No concurrency, no multiple clients, no wide-area topology, no confidence interval anywhere. Five of the instruments were written by the person they were meant to constrain, and the verdicts resting on unmodified supplied code are the sounder ones. The comparator was exercised across two deployments, and the search paths compared were not the same object.</p>
+
+<p>The author is employed by a company that sells both engines, and works on one of them. Every figure above is therefore reported with the conditions that would let a reader dismantle it, every correction runs in the text rather than a footnote, and the axis the employer loses is measured in the same detail as the axis it wins. That is the only arrangement under which such a comparison is worth anyone&rsquo;s time — and the reader who concludes, from the five axes that go the other way, that this platform is the wrong choice for their workload will have used this study exactly as intended.</p>
+
+<div class="disclosure">
+<p><em>Disclosure.</em> I work at IBM, on the DataStax side of Software, Data &amp; AI. IBM also sells the comparator: <em>MongoDB Enterprise Advanced with IBM</em> is an IBM offering, generally available and supported by IBM,<sup class="n"><a href="#n53">53</a></sup> so my employer has no commercial interest in one of these two engines prevailing over the other. What is not neutral is my knowledge: I know one of these systems considerably better than the other, and that asymmetry &mdash; of expertise, not of interest &mdash; is the one the reader should weight both parts of this diptych by. Two deliberate constraints follow. <strong>First</strong>, no benchmark figures appear in the body of either part, because a number produced on my hardware with my workload would tell you nothing about yours; the measurement appendix reports one estate&rsquo;s observations, each with its conditions, and none of them licenses a comparison with anything. <strong>Second</strong>, every factual claim is graded for evidentiary status and sourced &mdash; including claims favourable to my employer, claims I was unable to verify, and two that measurement showed to be wrong.</p>
+<p>Corrections are welcome and will be applied with attribution. The apparatus exists so that an error can be demonstrated in minutes rather than argued about, and it is public: every raw measurement record, every probe, the two unmodified originals against which the patched ones can be diffed, the architecture decision record, and the adversarial audits written against this work are at <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a>.</p>
+<p><strong>David Leconte</strong> &mdash; Customer Success Engineer, IBM France &middot; Software, Data &amp; AI | Horizon</p>
+</div>
+
+<h2>Notes</h2>
+
+<p>Note numbers run continuously across both parts of this diptych, so a reference keeps its identity wherever it is cited. This part uses 25 of them, and the gaps below belong to the other part rather than to an omission. The appendix that follows carries, for every note, the full locator, the passage relied upon where one exists, and any caveat of scope or edition.</p>
+
+<ol class="notes">
+<li id="n4">DataStax, <em>About vector databases</em>, HCD 2.0.</li>
+<li id="n5">DataStax, <em>Cassandra drivers overview</em>, HCD 2.0: "HCD 2.x is based on Cassandra 5.0."</li>
+<li id="n14">MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em>, 15 January 2026. Source of the quoted passage, of the SSPL licensing and of the public-preview status.</li>
+<li id="n15">MongoDB, <em>MongoDB Search and Vector Search Now Run Anywhere</em>: <code>mongot</code> as a separate binary running alongside <code>mongod</code>.</li>
+<li id="n16">MongoDB, MongoDB.local San Francisco 2026: "mongot runs separately from mongod, MongoDB's core database process."</li>
+<li id="n17">OpenSearch documentation, k-NN methods and engines: NMSLIB deprecated in favour of Faiss and Lucene.</li>
+<li id="n18">OpenSearch documentation, breaking changes: default engine changed from NMSLIB to Faiss (2.18); NMSLIB index creation blocked from 3.0.</li>
+<li id="n19">GitHub, <code>opensearch-project/opensearch-jvector</code>, README. Source of the DiskANN characterisation, the PQ/BQ support, the thread-safety and incremental-merge claims, and the quoted Cassandra-compatibility passage.</li>
+<li id="n20">Maven Central, <code>org.opensearch.plugin:opensearch-jvector-plugin</code>, version 3.7.0.1. Evidences the release train tracking OpenSearch versions.</li>
+<li id="n21">Apache Software Foundation, CEP-30: integration of Lucene's HNSW for vector search in Apache Cassandra.</li>
+<li id="n22">Apache Cassandra project blog, Storage-Attached Indexes: SAI as a new feature in Apache Cassandra 5.0.</li>
+<li id="n23">Apache Software Foundation, CEP-15: General Purpose Transactions. Status: Accepted. Source of the goals, the non-goals (including SASI, SAI and local secondary indexes), the coexistence statement and the long-term Paxos passage quoted in section 3.2.</li>
+<li id="n24">GitHub, <code>apache/cassandra</code>, tags: <code>cassandra-6.0-alpha1</code> (3 April 2026, commit 1ee7ed7) and <code>cassandra-6.0-alpha2</code> (7 August 2026, commit e874e3a).</li>
+<li id="n25">Apache Cassandra release announcement, 6.0-alpha2, 7 August 2026: "This version is a quarterly alpha release on the 6.0 series. Quarterly alphas are intended only for development and testing purposes."</li>
+<li id="n26">GitHub, <code>apache/cassandra</code>, <code>NEWS.txt</code> at tag <code>cassandra-6.0-alpha2</code>. The 6.0 new-features enumeration, the editorial placeholder, and the residual references to 5.1 in the upgrade section.</li>
+<li id="n27">Apache issue tracker, CASSANDRA-17092, epic "CEP-15: Accord Beta", In Progress / Unresolved at consultation; linked CASSANDRA-18229, "Write docs for CEP-15", In Progress.</li>
+<li id="n28">Apache Cassandra pull request 4572, adding <code>doc/modules/cassandra/pages/developing/cql/transactions.adoc</code>. Source of <code>accord: enabled: true</code> and <code>WITH transactional_mode = 'full'</code>. Under review; merge status not established.</li>
+<li id="n29">Apache issue tracker, CASSANDRA-19759. Source of the <code>BEGIN TRANSACTION</code> / <code>LET</code> / <code>COMMIT TRANSACTION</code> syntax, and of the requirement that the table carry <code>transactional_mode='full'</code>.</li>
+<li id="n30">GitHub, <code>giltene/wrk2</code>. Coordinated omission, constant-throughput load generation, HdrHistogram.</li>
+<li id="n31">Cooper, Silberstein, Tam, Ramakrishnan and Sears, <em>Benchmarking cloud serving systems with YCSB</em>, SoCC 2010, pp. 143–154.</li>
+<li id="n32">Haughian, Osman and Knottenbelt, <em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores</em>, DEXA 2016, LNCS vol. 9828, pp. 152–166, Springer. Full text not consulted.</li>
+<li id="n33">DataStax, how transactions differ, HCD: HCD does not adhere to ACID transactions with rollback or locking mechanisms; a write operation is atomic at the partition level.</li>
+<li id="n38">Measurement record, single-node campaign: <code>findings.json</code>, run 2026-09-17T14:59Z, one node at RF = 1. Source of measurements M1 to M4 and M9, whose full entries are in Part I — the twelve columns and nine automatic indexes, the statement trace, the cost-against-unchanged-content probe with its read controls and payload sizes, the 8 000-byte indexed-string limit, the consistency levels, and the freshness decomposition. Conditions in the measurement appendix.</li>
+<li id="n39">Measurement record, three-replica campaign: <code>findings_rf3.json</code> and its report, 2026-09-17, six-node two-datacentre ring with the working keyspace at three replicas. Source of M5, the Paxos round and its coordinator-side figures, and of M6, the Data API tier's startup configuration showing the consistency properties and their asymmetry.</li>
+<li id="n40">Measurement record, vector freshness: <code>findings_vector_rf3.json</code> and <code>vector_freshness_rf3.py</code>, 2026-09-17, same three-replica ring. Source of M7 — 120 cycles in two regimes, with the similarity and rank controls that establish the probe was measuring what it claims.</li>
+<li id="n41">Measurement record, read and search axes: <code>probe_read_search.py</code>, 18 September 2026, one million documents per arm on one host, MongoDB as a three-member replica set at majority write concern. Source of the ordinary-secondary-index parity reported in section 1.1, and of the finding that MongoDB&rsquo;s search engine could not be deployed on a plain replica set, leaving the search-freshness axis unmeasured. Full entries in Part I, measurements M15 and M16.</li>
+<li id="n42">Measurement record, search freshness: <code>mongot_freshness.py</code> and the companion vector-freshness probe, 18 September 2026, one host and one session. MongoDB 8.3.11 through the vendor&rsquo;s packaged local image, which bundles the database with its search process; forty cycles each side. Source of measurement M17.</li>
+<li id="n43">Measurement record, the refresh interval: <code>mongot_floor.py</code>, 18 September 2026. Sixty cycles with a random delay of up to 1 200 ms before each write, so that every phase of the indexing cycle is sampled, then polling at 5 ms. Source of measurement M18, and of the correction to M17.</li>
+<li id="n44">Measurement record, the failure rate against turn latency: <code>turn_latency.py</code>, 18 September 2026. Nine delays between write and search, thirty cycles at each, both engines on one host. Source of measurement M19.</li>
+<li id="n45">MongoDB, <em>Supercharge Self-Managed Apps With Search And Vector Search Capabilities</em>, 30 September 2025. States that the managed service offers a production-ready version of the capabilities that were then entering self-managed public preview. https://www.mongodb.com/company/blog/product-release-announcements/supercharge-self-managed-apps-search-vector-search-capabilities</li>
+<li id="n46">MongoDB, <em>Release Notes &mdash; Self-Managed MongoDB Search and Vector Search</em>. Covers the public preview release 0.40.0 of October 2025 through the general availability release 1.70.1. https://www.mongodb.com/docs/search/self-managed/current/release-notes/</li>
+<li id="n49">MongoDB, <em>MongoDB Search and Vector Search with the Kubernetes Operator &mdash; FAQ</em>. States that 1.70.1 is the minimum <code>mongot</code> version for self-managed deployments and that earlier 0.x builds are preview releases not recommended for production. The page reachable at consultation was a Spanish-locale copy of the &ldquo;upcoming&rdquo; documentation version, which is weaker provenance than a current English page, and the claim is graded accordingly. https://www.mongodb.com/es/docs/kubernetes/upcoming/fts-vs/faq/</li>
+<li id="n50">Image provenance, recorded 18 September 2026 from the running container: <code>mongot</code> version 1.75.1 from the image label and from <code>/opt/mongot/mongot --version</code>; edition <code>localDev</code> from the image label and from <code>/etc/mongodb-atlas-local/mongot-edition</code>; <code>mongod</code> 8.3.11 Community from the image label; image digest <code>sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1</code> from the repository digests; build 2026-09-16T08:14:20Z, vcs-ref 28eadd3b, from the labels.</li>
+<li id="n51">MongoDB, <em>Search Nodes Now In Public Preview: Performance At Scale With Dedicated Infrastructure</em>, with its update of 25 June 2024. Source of the statement that Search Nodes provide dedicated infrastructure for Search and Vector Search workloads, separate from the database, and of their general availability on AWS, Google Cloud and Microsoft Azure. https://www.mongodb.com/company/blog/product-release-announcements/search-nodes-now-public-preview-performance-scale-dedicated-infrastructure</li>
+<li id="n52">MongoDB, <em>Configure mongot for MongoDB Vector Search Automated Embedding</em>. Source of the statement that, with Automated Embedding, the search process generates vector embeddings for text data at index time and for query text at query time, and of its preview status for self-managed deployments. https://www.mongodb.com/docs/search/self-managed/current/configuration/automated-embedding/</li>
+<li id="n53">IBM, <em>MongoDB Enterprise Advanced with IBM</em>, product page, and IBM Support, <em>MongoDB Enterprise Advanced with IBM 7.0.x</em> lifecycle page, which states that the 7.0.x offering is generally available as of 29 April 2025, can be purchased and is fully supported by IBM. https://www.ibm.com/products/mongodb-enterprise-advanced and https://www.ibm.com/support/pages/mongodb-enterprise-advanced-ibm70x</li>
+<li id="n54">Repository, <code>data/derived/inference.json</code> and <code>docs/STATISTICS.md</code>: re-analysis of every latency comparison from the surviving summary statistics by separation of support, and Fisher&rsquo;s exact test on the miss counts of measurement M19. The freshness comparison in its de-synchronised form is overlapping; the miss-rate at zero delay is exactly tested at a one-sided probability of about 10<sup>&minus;17</sup>. The same document records that the LLM-turn premise of section 1.2 is an assumption of the challenge author, unmeasured. https://github.com/davidleconte/shredding-cost-hcd-mongodb</li>
+<li id="n47">MongoDB, <em>Known Limitations for Self-managed mongot</em>. States that Search and Vector Search share the same engine on the managed service and on self-managed deployments, with consistent query behaviour, scoring and index semantics. https://www.mongodb.com/docs/search/self-managed/current/limitations/</li>
+<li id="n48">MongoDB, <em>MongoDB Search and MongoDB Vector Search on Self-Managed Deployments</em>. Designates the <code>mongodb/mongodb-atlas-local</code> image for evaluation only, as a single node without high availability and not a production deployment target. https://www.mongodb.com/docs/search/self-managed/current/</li>
+</ol>
+
+<h2>Appendix — sources</h2>
+
+<p>Each entry records what the source establishes, the edition or version to which it pertains, and the locator. All were consulted on 17 September 2026 unless otherwise stated. Numbering matches the notes above and is continuous across both parts.</p>
+
+<dl class="appendix">
+<dt>4 — DataStax, <em>About vector databases</em></dt>
+<dd>Establishes: immediate addition of newly inserted documents to the vector graph, attributed to JVector; quantisation support.</dd>
+<dd class="q">"When you insert data, JVector adds those new documents to the graph immediately, so you can efficiently search right away."</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/get-started/vector-concepts.html">https://docs.datastax.com/en/hyper-converged-database/2.0/get-started/vector-concepts.html</a></dd>
+
+<dt>5 — DataStax, Cassandra drivers overview</dt>
+<dd>Establishes: the base engine version of the distribution.</dd>
+<dd class="q">"HCD 2.x is based on Cassandra 5.0."</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html">https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html</a></dd>
+
+<dt>14 — MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em></dt>
+<dd>Establishes: the asynchronous indexing mechanism; the SSPL licensing; the public-preview status; the date.</dd>
+<dd class="q">"mongot builds and maintains these compute-intensive indexes outside of the transaction commit window by leveraging change streams to asynchronously replicate changes to source data, allowing customers to add search and vector search capabilities without fear of impacting existing transactional workloads."</dd>
+<dd>Date: 15 January 2026.</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/product-release-announcements/now-source-available-the-engine-powering-mongodb-search">https://www.mongodb.com/company/blog/product-release-announcements/now-source-available-the-engine-powering-mongodb-search</a></dd>
+
+<dt>15 — MongoDB, search and vector search running anywhere</dt>
+<dd>Establishes: <code>mongot</code> as a separate binary running alongside <code>mongod</code>.</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/product-release-announcements/mongodb-search-vector-search-now-run-anywhere">https://www.mongodb.com/company/blog/product-release-announcements/mongodb-search-vector-search-now-run-anywhere</a></dd>
+
+<dt>16 — MongoDB.local San Francisco 2026</dt>
+<dd>Establishes, independently: process separation.</dd>
+<dd class="q">"mongot runs separately from mongod, MongoDB's core database process"</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/events/mongodb-local-san-francisco-2026-ship-production-ai-faster">https://www.mongodb.com/company/blog/events/mongodb-local-san-francisco-2026-ship-production-ai-faster</a></dd>
+
+<dt>17 — OpenSearch, k-NN methods and engines</dt>
+<dd>Establishes: the three core engines and the deprecation of NMSLIB.</dd>
+<dd class="q">"While still supported, it has been deprecated in favor of the Faiss and Lucene engines."</dd>
+<dd>Version caveat: documentation published at the unpinned "latest" path; pinned by entry 18.</dd>
+<dd class="m"><a href="https://docs.opensearch.org/latest/mappings/supported-field-types/knn-methods-engines/">https://docs.opensearch.org/latest/mappings/supported-field-types/knn-methods-engines/</a></dd>
+
+<dt>18 — OpenSearch, breaking changes</dt>
+<dd>Establishes: the default-engine change and the version at which NMSLIB index creation is blocked.</dd>
+<dd class="q">"The default k-NN engine changed from NMSLIB to Faiss"</dd>
+<dd>Version: change at 2.18; blocking from 3.0.</dd>
+<dd class="m"><a href="https://docs.opensearch.org/latest/breaking-changes/">https://docs.opensearch.org/latest/breaking-changes/</a></dd>
+
+<dt>19 — <code>opensearch-project/opensearch-jvector</code>, README</dt>
+<dd>Establishes: DiskANN family, PQ and BQ support, thread safety, incremental merges, Apache-2.0 licensing, Cassandra compatibility.</dd>
+<dd class="q">"Compatibility - JVector is compatible with Cassandra. Which allows to more easily transfer vector encoded data from Cassandra to OpenSearch and vice versa."</dd>
+<dd class="m"><a href="https://github.com/opensearch-project/opensearch-jvector">https://github.com/opensearch-project/opensearch-jvector</a></dd>
+
+<dt>20 — Maven Central, OpenSearch JVector plugin</dt>
+<dd>Establishes: the release train tracking OpenSearch versions.</dd>
+<dd>Version: 3.7.0.1.</dd>
+<dd class="m"><a href="https://central.sonatype.com/artifact/org.opensearch.plugin/opensearch-jvector-plugin">https://central.sonatype.com/artifact/org.opensearch.plugin/opensearch-jvector-plugin</a></dd>
+
+<dt>21 — Apache Software Foundation, CEP-30</dt>
+<dd>Establishes: upstream Cassandra vector search built on Lucene HNSW, not JVector.</dd>
+<dd class="q">"Integrate Lucene's HNSW: The implementation will leverage Lucene's Hierarchical Navigable Small World (HNSW) library"</dd>
+<dd>Version: Apache Cassandra 5.0.</dd>
+<dd class="m"><a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255069753">https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255069753</a></dd>
+<dd class="m">CEP-30 page (Apache Confluence): <a href="https://cwiki.apache.org/confluence/download/attachments/188744725/Accord.pdf">https://cwiki.apache.org/confluence/download/attachments/188744725/Accord.pdf</a></dd>
+<dt>22 — Apache Cassandra project blog, Storage-Attached Indexes</dt>
+<dd>Establishes: SAI as a 5.0 feature.</dd>
+<dd class="q">"Storage Attached Indexes, or SAI, are a new feature in Apache Cassandra 5.0"</dd>
+<dd class="m"><a href="https://cassandra.apache.org/_/blog/Apache-Cassandra-5.0-Features-Storage-Attached-Indexes.html">https://cassandra.apache.org/_/blog/Apache-Cassandra-5.0-Features-Storage-Attached-Indexes.html</a></dd>
+
+<dt>23 — Apache Software Foundation, CEP-15: General Purpose Transactions</dt>
+<dd>Establishes: the goals (strict-serializable isolation, one wide-area round trip, live migration from Paxos); the non-goals (SASI, SAI and local secondary indexes); the Paxos coexistence and long-term deprecation language; the reorder buffer and fast-path electorate techniques; the EPaxos lineage.</dd>
+<dd class="q">"Initially, supporting the Paxos-based LWT and Accord side by side is also an example of such modularity and optionality."</dd>
+<dd>Status: Accepted. Tracking JIRA: CASSANDRA-17092.</dd>
+<dd class="m"><a href="https://cwiki.apache.org/confluence/display/CASSANDRA/CEP-15:+General+Purpose+Transactions">https://cwiki.apache.org/confluence/display/CASSANDRA/CEP-15:+General+Purpose+Transactions</a></dd>
+
+<dt>24 — GitHub, <code>apache/cassandra</code>, tags</dt>
+<dd>Establishes: the alpha tag dates.</dd>
+<dd>Versions: <code>cassandra-6.0-alpha1</code>, 3 April 2026, commit 1ee7ed7; <code>cassandra-6.0-alpha2</code>, 7 August 2026, commit e874e3a.</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/tags">https://github.com/apache/cassandra/tags</a></dd>
+
+<dt>25 — Apache Cassandra, release announcement 6.0-alpha2</dt>
+<dd>Establishes: the quarterly-alpha classification and its intended use.</dd>
+<dd class="q">"Quarterly alphas are intended only for development and testing purposes."</dd>
+<dd>Date: 7 August 2026. Scope caveat: consulted through a list mirror rather than the ASF archive directly.</dd>
+<dd class="m"><a href="http://www.mail-archive.com/user@cassandra.apache.org/msg64289.html">http://www.mail-archive.com/user@cassandra.apache.org/msg64289.html</a></dd>
+<dt>26 — GitHub, <code>apache/cassandra</code>, <code>NEWS.txt</code> at tag <code>cassandra-6.0-alpha2</code></dt>
+<dd>Establishes: the enumerated 6.0 new features, from which Accord is absent; the editorial placeholder that prevents this absence from being probative; the residual 5.1 references evidencing renumbering.</dd>
+<dd class="q">"[The following is a placeholder, to be revised asap]"</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/blob/cassandra-6.0-alpha2/NEWS.txt">https://github.com/apache/cassandra/blob/cassandra-6.0-alpha2/NEWS.txt</a></dd>
+
+<dt>27 — Apache issue tracker, CASSANDRA-17092 and CASSANDRA-18229</dt>
+<dd>Establishes: the CEP-15 tracking epic titled "CEP-15: Accord Beta", In Progress and Unresolved at consultation; the documentation ticket likewise In Progress.</dd>
+<dd class="m"><a href="https://issues.apache.org/jira/browse/CASSANDRA-17092">https://issues.apache.org/jira/browse/CASSANDRA-17092</a></dd>
+<dd class="m">Linked documentation ticket: <a href="https://issues.apache.org/jira/browse/CASSANDRA-18229">https://issues.apache.org/jira/browse/CASSANDRA-18229</a></dd>
+<dt>28 — Apache Cassandra pull request 4572</dt>
+<dd>Establishes: the Accord activation model — global <code>accord: enabled: true</code> and per-table <code>transactional_mode</code>.</dd>
+<dd class="q">"When a table has transactional_mode='full', your existing CQL statements are automatically executed through Accord."</dd>
+<dd>Status caveat: documentation under review; merge status not established. Consulted through the project's pull-request list mirror.</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/pull/4572">https://github.com/apache/cassandra/pull/4572</a></dd>
+
+<dt>29 — Apache issue tracker, CASSANDRA-19759</dt>
+<dd>Establishes: the explicit transaction syntax and the requirement that the table be marked transactional.</dd>
+<dd class="q">"the table was not marked as an Accord table; aka missing … WITH transactional_mode='full'"</dd>
+<dd>Version caveat: alpha syntax, subject to change before general availability.</dd>
+<dd class="m"><a href="https://issues.apache.org/jira/browse/CASSANDRA-19759">https://issues.apache.org/jira/browse/CASSANDRA-19759</a></dd>
+
+<dt>30 — GitHub, <code>giltene/wrk2</code></dt>
+<dd>Establishes: the attribution of coordinated omission and the corrective design of the tool.</dd>
+<dd class="q">"The model I chose for avoiding Coordinated Omission in wrk2 combines the use of constant throughput load generation with latency measurement that takes the intended constant throughput into account."</dd>
+<dd class="m"><a href="https://github.com/giltene/wrk2">https://github.com/giltene/wrk2</a></dd>
+
+<dt>31 — Cooper, Silberstein, Tam, Ramakrishnan, Sears</dt>
+<dd><em>Benchmarking cloud serving systems with YCSB.</em> 1st ACM Symposium on Cloud Computing (SoCC), Indianapolis, 2010, pp. 143–154. DOI 10.1145/1807128.1807152.</dd>
+<dd>Establishes: the origin and documented limitations of YCSB.</dd>
+<dd class="m"><a href="https://doi.org/10.1145/1807128.1807152">https://doi.org/10.1145/1807128.1807152</a></dd>
+<dd class="m">Open copy of the paper: <a href="https://courses.cs.duke.edu/fall13/compsci590.4/838-CloudPapers/ycsb.pdf">https://courses.cs.duke.edu/fall13/compsci590.4/838-CloudPapers/ycsb.pdf</a></dd>
+<dt>32 — Haughian, Osman, Knottenbelt</dt>
+<dd><em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores.</em> DEXA 2016, LNCS vol. 9828, pp. 152–166, Springer, Cham. DOI 10.1007/978-3-319-44406-2_12.</dd>
+<dd>Establishes: the bibliographic reference only. Scope caveat: full text not consulted; no characterisation of the paper's methodology or stated limitations is made in this article.</dd>
+<dd class="m"><a href="https://doi.org/10.1007/978-3-319-44406-2_12">https://doi.org/10.1007/978-3-319-44406-2_12</a></dd>
+<dt>33 — DataStax, how transactions differ</dt>
+<dd>Establishes: the absence of ACID transactions with rollback or locking; partition-level write atomicity; row-level isolation.</dd>
+<dd>Version: HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html">https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html</a></dd>
+
+<dt>45 — MongoDB, product announcement, self-managed search preview</dt>
+<dd>Establishes: at the self-managed public preview of 30 September 2025, the managed service already offered a production-ready version of the same capabilities. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/company/blog/product-release-announcements/supercharge-self-managed-apps-search-vector-search-capabilities</dd>
+<dt>46 — MongoDB, self-managed search release notes</dt>
+<dd>Establishes: the self-managed capability moved from public preview (0.40.0, October 2025) to general availability (1.70.1). Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/docs/search/self-managed/current/release-notes/</dd>
+<dt>47 — MongoDB, known limitations for self-managed mongot</dt>
+<dd>Establishes: the search engine is shared between the managed service and self-managed deployments, with consistent query behaviour, scoring and index semantics. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/docs/search/self-managed/current/limitations/</dd>
+<dt>48 — MongoDB, self-managed search overview</dt>
+<dd>Establishes: the packaged local image is for evaluation only, single-node, without high availability, and is not a production deployment target. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/docs/search/self-managed/current/</dd>
+<dt>49 — MongoDB, Kubernetes operator FAQ for Search and Vector Search</dt>
+<dd>Establishes: 1.70.1 as the minimum self-managed <code>mongot</code> version, 0.x builds being preview releases not recommended for production. Reached only as a Spanish-locale copy of the &ldquo;upcoming&rdquo; documentation version; graded R rather than D on that account. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/es/docs/kubernetes/upcoming/fts-vs/faq/</dd>
+<dt>51 — MongoDB, Search Nodes announcement</dt>
+<dd>Establishes: Search Nodes as dedicated infrastructure for Search and Vector Search on the managed service, separate from the database, generally available on AWS, Google Cloud and Azure per the post&rsquo;s June 2024 update. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/company/blog/product-release-announcements/search-nodes-now-public-preview-performance-scale-dedicated-infrastructure</dd>
+<dt>52 — MongoDB, Automated Embedding configuration for self-managed mongot</dt>
+<dd>Establishes: with Automated Embedding, the search process generates embeddings at index time and at query time in place of the application; the feature is in preview for self-managed deployments and may change. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.mongodb.com/docs/search/self-managed/current/configuration/automated-embedding/</dd>
+<dt>53 — IBM, MongoDB Enterprise Advanced with IBM</dt>
+<dd>Establishes: that IBM sells and supports the comparator under its own name, the 7.0.x offering being generally available as of 29 April 2025 per IBM&rsquo;s lifecycle page. Bears on the disclosure only. Consulted 18 September 2026.</dd>
+<dd class="m">https://www.ibm.com/products/mongodb-enterprise-advanced &middot; https://www.ibm.com/support/pages/mongodb-enterprise-advanced-ibm70x</dd>
+</dl>
+
+<h2>Appendix B — measurements</h2>
+
+<p>Each entry records what was observed, on which build, under which conditions, and where the raw record lives. A measurement establishes what one build did on one day; it is not a vendor’s documentation and does not license comparison with any other product. Identifiers M1 to M8 are the same identifiers used in the architecture decision record that accompanies the raw files, and they are continuous across both parts of this diptych.</p>
+
+<dl class="appendix">
+<dt>Common conditions</dt>
+<dd>IBM DataStax HCD 2.0.6, release string <code>5.0.7.0-ea50e91ba01f</code> read from the running node (<code>nodetool version</code>, <code>system.local</code>); Data API <code>stargateio/data-api</code> v1.0.33; astrapy 2.3.1. One node, one datacentre, RF 1 (<code>NetworkTopologyStrategy {dc1: 1}</code>), 16 vnodes. Virtual machine, 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz, 220 GiB RAM; the database container limited to 3 GiB with a 2 GiB heap; storage class of the backing media not determinable from the guest. <code>commitlog_sync periodic</code>, 10 000 ms. Working set memtable-resident throughout: no SSTable was flushed and no compaction crossed. Load driven at a fixed offered rate of 50 writes/s for 120 s, open loop, schedule slip under 0.06 s. Client on the same host over loopback. Harness <code>verify_storage_claims.py</code> 1.0 with two mechanical fixes (client environment set to HCD; probe-3 ballast excluded from indexing because the Data API refuses any indexed string above 8 000 bytes). 17 September 2026.</dd>
+<dd class="m">Full record: <code>findings.json</code>.</dd>
+
+<dt>M2 — The write path of a single-field update</dt>
+<dd>Establishes: with query tracing at probability 1.0 on the node, each of ten <code>updateOne</code> operations carrying one <code>$set</code> produced, in order, a <code>SELECT</code> of the whole document by key and then one <code>UPDATE</code> rewriting every derived column and <code>doc_json</code>, conditioned on <code>tx_id</code>. Each <code>deleteOne</code> produced a <code>SELECT</code> of <code>key, tx_id</code> then <code>DELETE … IF tx_id = ?</code>. Each <code>insertOne</code> produced one <code>INSERT … IF NOT EXISTS</code>. Tracing was reset to 0.0 afterwards. Ten of ten updates showed the pair.</dd>
+<dd class="q">SELECT key, tx_id, doc_json FROM … WHERE key = ? LIMIT 1 — then — UPDATE … SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_dbl_values = ?, query_text_values = ?, query_null_values = ?, query_timestamp_values = ?, query_lexical_value = ?, doc_json = ? WHERE key = ? IF tx_id = ?</dd>
+
+<dt>Conditions for M5 to M8 — the three-replica ring and the nested-document read</dt>
+<dd>M7, M8 and M9 were taken on a six-node, two-datacentre ring, the working keyspace at three replicas in one datacentre, one replica per rack; nodes larger than the single-node host used for M1 to M6 (8 GiB with a 4 GiB heap against 3 GiB with a 2 GiB heap), which means end-to-end latencies across the two campaigns mix a replication effect with a hardware difference and must not be compared directly. Coordinator-side figures and protocol traces are structural and do not carry that confound. M8 was read on the single node. Every regime memtable-resident; tracing raised to 1.0 and restored to 0.0 on every node touched; keyspaces dropped and snapshots cleared afterwards. 17 September 2026.</dd>
+
+<dt>M6 — The Data API's consistency levels are configuration, and they are asymmetric</dt>
+<dd>Establishes, from the tier's own startup configuration: writes, ordinary reads and schema changes default to <code>LOCAL_QUORUM</code>; serial consistency to <code>LOCAL_SERIAL</code>; the lightweight-transaction retry count to three; and <em>vector search to <code>LOCAL_ONE</code></em>. All are settable properties rather than fixed behaviour. The asymmetry between a quorum write and a single-replica vector read is the subject of M7.</dd>
+
+<dt>M7 — Vector-search freshness under that asymmetry</dt>
+<dd>Establishes: on the three-replica ring, with a sixteen-dimension cosine collection, the just-written vector was the top match on the first <code>LOCAL_ONE</code> query in 120 of 120 cycles — sixty idle, sixty under forty vector writes per second — and in no cycle did the quorum key read find the document while the vector search missed it. Insert-to-visible median 74 ms, HTTP-bound. Validity controls: the marker returned at cosine similarity 1.0 in rank one, background vectors at 0.83 or below, and an unrelated query returned a different top match.</dd>
+<dd>Verdict: <strong>not detectable</strong>. This neither confirms nor refutes the searchability claim of section 5. It bounds the window below the measurement floor on a ring whose replicas share one host and answer in under a millisecond, and it names the wide-area topology this bench cannot reproduce as the place where the question is actually open.</dd>
+
+<dt>M17 — Search freshness, both engines, one session</dt>
+<dd>Establishes: writing a document and then querying for it through the search index, forty cycles each side on one host. The decomposing engine returned it on the first query in every cycle, at a median of 45 ms write-to-searchable, which bounds its index lag below one HTTP round trip without establishing that the lag is nil; its dispersion is wider than the comparator’s, at a ninety-fifth percentile of 85 ms and a maximum of 574. MongoDB&rsquo;s <code>$search</code> required a median of thirty-four polling attempts and 1 015 ms; no cycle failed to become visible within the timeout. That figure was later shown to be an artefact of the probe and is superseded by measurement M18. The same documents were retrievable by identifier on MongoDB in 1.3 ms throughout, which isolates the lag to the search index rather than to the write.</dd>
+<dd>Method: MongoDB 8.3.11 Community through the vendor&rsquo;s packaged local image, bundling <code>mongot</code> 1.75.1 in its <code>localDev</code> edition (image digest <code>sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1</code>, built 16 September 2026) &mdash; a generally-available-line version of the engine, in an edition the image labels as for local development; a search index was created and confirmed ready, and a query validated against it, before any measurement was taken.</dd>
+<dd>Not established: the magnitude of the asynchronous lag on any other deployment — the image used is the vendor’s development and testing build, and a quantity that depends on the deployment cannot be vouched for by one of them; behaviour under load, the figure being an idle one, which would widen the lag rather than narrow it; the effect of replica count, the packaged image running a single member so that a majority write concern is satisfied trivially there; the index lag of the decomposing engine, which is bounded below the measurement floor rather than measured; and equivalence of the search paths, a vector index having been exercised on one side and a text index on the other, so that the comparison of ingestion architectures is an inference rather than an observation. What the two share, and what is being compared, is that one maintains its index on the write path and the other replicates to it asynchronously.</dd>
+<dd class="m">Raw record: <code>findings_mongot_freshness.json</code>, <code>findings_hcd_vec_freshness.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>What the measurements do not establish</dt>
+<dd>Any disk-bound behaviour: every regime was memtable-resident and no compaction was crossed. The separation of a per-field from a per-byte cost in the indexing term, which Part I now resolves in favour of bytes. The internal decomposition of the Data API tier's own cost, which Part I separates from storage but does not break down into parsing, shredding and serialisation. The vector-search window under real wide-area latency, M9 having been taken on co-located replicas, and with it the separation of replication lag from index-build lag — M9 saw no misses, so the two could not be told apart. A client-side figure for the Paxos round. Anything about another version of HCD or the Data API, about Apache Cassandra 5.0 or 6.0, or about MongoDB.</dd>
+
+<dt>M18 — The asynchronous lag is a refresh interval, and the first figure overstated it</dt>
+<dd>Establishes: inserting a random delay of up to 1 200 ms before each write, so that every phase of the indexing cycle is sampled rather than one, gives a lag spread from 89 ms to 1 170 ms with a mean of 646 and a standard deviation of 291 across sixty cycles. The signature is a periodic refresh of roughly a second, not a fixed pipeline delay.</dd>
+<dd><strong>What it corrects.</strong> The probe behind M17 wrote, polled until the document appeared, and wrote again — a loop that synchronises itself to the cycle, so that every write landed just after a commit and waited a full period. Its tight 1 015 ms was the worst phase of the cycle, and overstated the lag by about 1.6 times. The error was the measurer&rsquo;s, found by his own follow-up rather than by an objection.</dd>
+<dd>Consequence for the comparison: the mean gap against the synchronous index is about fourteen times rather than twenty-two, and the best-case gap about two &mdash; 89 ms against a 45 ms floor. The direction is unchanged and the margin is narrower.</dd>
+<dd>Not established: the interval on any other deployment or edition. The engine measured is <code>mongot</code> 1.75.1 in its <code>localDev</code> edition; no configuration knob for the interval was found in the packaged image, so it is that edition&rsquo;s internal default, and whether the managed service or a self-managed production edition commits on the same period is not known.</dd>
+<dd class="m">Raw record: <code>findings_mongot_floor.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+<dt>M19 — What the window costs, against how soon the read arrives</dt>
+<dd>Establishes: sweeping the delay between the write and the search, thirty cycles at each of nine delays, both engines on one host. The decomposing engine missed no document at any delay, including zero. The asynchronous path missed every document at zero delay, 93 % at 100 ms, 83 % at 250, 50 % at 500, 33 % at 750, and none from 1 000 ms onward. The transition sits at the refresh interval measured in M18, and is located only to within a quarter of a second, the flanking points being 750 ms and 1 000 ms. Thirty cycles per point gives a confidence interval of roughly eighteen points around the middle values. The zero-delay row compares a native driver against an HTTP interface and therefore not the same instant; corrected for the forty-five millisecond difference it would read about 97 %.</dd>
+<dd><strong>What it withdraws.</strong> Earlier revisions of this part motivated the freshness argument with conversational retrieval — an assistant writing a fact and searching for it on the following turn. A turn driven by a language model takes seconds, so the window closes before the read arrives and the failure never occurs. That motivation is withdrawn. The advantage holds for writes composed with searches inside the refresh window, with no human and no model interposed. Which real workloads sit there is a question this study did not ask: no application&rsquo;s write-to-search interval was measured, and naming candidate workloads &mdash; tool chains, ingestion loops &mdash; would repeat, one line later, the error this measurement just corrected.</dd>
+<dd>Not established: the position of the transition on any other deployment, since it follows the refresh interval of this one; and whether any particular production workload sits below or above it, which is a property of the application rather than of either engine.</dd>
+<dd class="m">Raw record: <code>findings_turn_mongodb.json</code>. &mdash; published in the repository, <a href="https://github.com/davidleconte/shredding-cost-hcd-mongodb">github.com/davidleconte/shredding-cost-hcd-mongodb</a></dd>
+
+</dl>
+
+<h2>Limitations</h2>
+
+<p>Stated here rather than buried, because work that grades its claims owes the reader an account of where the grading came out badly. These limitations apply to the diptych as a whole.</p>
+
+<p><strong>Four substantive claims could not be verified</strong> against sources of acceptable rank, and three of the four concern the decomposing engine rather than its comparator: the enumeration of generic column names, the read-modify-write cycle, the consistency levels at which Data API writes execute, and the current general-availability status of MongoDB search per edition, since resolved from the vendor&rsquo;s pages (section 1.3). The first three were subsequently measured and hold on the builds named; they carry the <span class="ep ep-m">M</span> marker, which is weaker than <span class="ep ep-d">D</span>: an observation of a build is not a vendor&rsquo;s commitment. The fourth has since been resolved from the vendor&rsquo;s own pages, and the paragraph above is corrected accordingly.</p>
+
+<p>That the unverified residue falls almost entirely on one side is itself a finding, and it cuts against the side I work for. MongoDB&rsquo;s mutation semantics, its index policy and its asynchronous search path are documented in version-pinned reference material and were confirmed verbatim. The equivalent statements about the Data API&rsquo;s physical representation are not published anywhere I could reach. A reader may reasonably conclude that the system I know better is the one whose mechanism is harder to verify, and may weight the comparison accordingly. An earlier revision added that the asymmetry ran further still, nine measurements having been taken on one side and none on the other. That is no longer so: the comparator has since been measured on eight axes, and the results are in the tables of section 6. The documentary asymmetry above remains; the measurement asymmetry does not.</p>
+
+<p><strong>The write-cost measurement that Part I reports has since been resolved in one direction.</strong> A later campaign separated the two terms that the original run had grown together and found the cost carried by indexed <em>bytes</em> rather than by field count, at roughly 0.77 ms per indexed kilobyte. Readers who met an earlier revision of either part will have seen a per-field rate; it was withdrawn, and the correct unit is in Part I. Later campaigns separated where that cost is paid — a minority in the stateless tier, the majority in the stateful engine, the exact share unsettled between a tenth and a third — then found the rate’s boundary: it is a memtable-regime quantity that collapses behind a large fixed read cost once the cycle’s internal read leaves memory. They also measured the comparator at last: on the mutation axis the decomposing engine costs between roughly three and thirteen times a capability-matched MongoDB, the gap widening with indexed volume. All of that is in Part I.</p>
+
+<p><strong>This study does not meet the standard it sets in section 4.</strong> Of the six requirements listed there, roughly three are met across the campaigns: distributions are reported, durability is mapped and declared, topology is declared. Load was driven closed-loop almost everywhere, one operation awaiting the reply to the last, which is the first thing that section tells a reader not to do; and only one campaign of seven left the cache. The directions reported in both parts survive that; the magnitudes are worth less than their decimal places suggest, and a reader should treat every figure here as an observation of one build on one machine rather than as a property of a product.</p>
+
+<p><strong>The axis on which this part rests was measured late, and on one deployment.</strong> An earlier revision recorded that it had never been measured at all, MongoDB&rsquo;s search process appearing undeployable outside its managed service; the vendor&rsquo;s own packaged local image made it available, and section 1.1 reports the result. The figure that matters — a periodic refresh averaging two thirds of a second, against none — rests on a single-member deployment, an idle system, a development edition of the engine (<code>mongot</code> 1.75.1, <code>localDev</code>), and two different search paths, a vector index against a text one. The architecture being compared is the same on both; the objects being searched are not. Load would widen the lag rather than narrow it, which means the reservation runs in the direction favourable to the conclusion, and a reader should discount accordingly rather than the reverse.</p>
+
+<p><strong>Every figure in this part was taken in a memtable-resident regime, and Part I has since shown that this is not a detail: the write-cost rate it reports collapses once the read leaves memory, so no quantity in either part should be read as a disk-regime figure.</strong> No SSTable was flushed and no compaction was crossed for any measurement reported here, so these are in-memory latencies. A disk-bound run at three replicas has since been executed for the write-cost measurements of Part I, where the indexed-content coefficient did not collapse; the freshness and consensus measurements of this part were not repeated there. A page-cache confound also survives in that later run, the operating system cache never having been dropped.</p>
+
+<p><strong>Two product pages could not be rendered</strong> during verification — the HCD 2.0 Data API limits page and the HCD 2.0 data-model page — so several product figures rest on the equivalent commercial documentation for the same API surface rather than on the exact edition under discussion. These substitutions are marked in the appendix entry concerned.</p>
+
+<p><strong>Everything concerning Cassandra 6.0 describes software in alpha</strong>, explicitly designated by its publishers as unsuitable for anything beyond development and testing. Its configuration surface, its syntax and its feature scope may all change before general availability.</p>
+
+<p><strong>Two sources were consulted through list mirrors</strong> rather than the Apache archive directly, and one through the project&rsquo;s pull-request traffic rather than published documentation. Where that provenance bears on the weight of a claim, the claim carries the <span class="ep ep-r">R</span> marker rather than <span class="ep ep-d">D</span> — with one exception I would rather name than let a reader find. The alpha classification quoted in Part II is marked <span class="ep ep-d">D</span> although the only reachable copy of that announcement was a list mirror. The quotation is verbatim and the tag dates corroborate it from the project repository itself, but by the rule stated in this very paragraph it ought to carry <span class="ep ep-r">R</span>. Consistency is a property of a system of markers, not of any one of them, and this is where mine failed.</p>
+<p><strong>The interactive control in section 1 measures nothing.</strong> Its six index-lag values are plausible orders of magnitude chosen to span the space; they come from the author, not from any system, and the zero-lag setting corresponds to a behaviour this work could establish only below a detection floor of roughly one network round trip. It is a demonstrator of a mechanism, and the rule about diagrams carrying unearned authority applies to it with more force than to any static figure.</p>
+
+</div></main>
+</div>
+</body></html>

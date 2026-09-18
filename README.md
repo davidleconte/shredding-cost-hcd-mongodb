@@ -203,7 +203,7 @@ constrains *precision*, not *permission*.
 | [`docs/campaigns/`](docs/campaigns/) | The seven campaign reports, in French, as written at the time — except [06](docs/campaigns/06-freshness-read-search.fr.md), amended additively on 18 September 2026 to retract its own mongot claim. Nothing deleted, nothing reworded |
 | [`docs/audit-adversarial.fr.md`](docs/audit-adversarial.fr.md) · [`docs/challenges.fr.md`](docs/challenges.fr.md) · [`docs/challenges-campagne7.fr.md`](docs/challenges-campagne7.fr.md) | The hostile record, in French; promoted to English in `LIMITATIONS.md`. **French is authoritative where the two diverge** |
 | [`docs/adr/ADR-001-modelling-policy.md`](docs/adr/ADR-001-modelling-policy.md) | The modelling policy and the evidence register for M1–M8, M10–M19. **M20–M23 were never entered in it**; they live in `RESULTS.md` §3 |
-| [`docs/article/`](docs/article/) | The article under verification. Out of scope for correction here |
+| [`docs/article/`](docs/article/) | The article under verification, in its current two-volet form: [Part I](docs/article/article-part1-what-a-mutation-costs.html) (what a mutation costs) and [Part II](docs/article/article-part2-when-the-index-is-current.html) (when the index is current). Both carry the corrections this repository forced, including the separation-of-support verdicts and the pass-one disclosure. The single-file `article-corrected.html` they replace is removed |
 | [`.github/workflows/`](.github/workflows/) | CI. A green check asserts internal consistency only — hashes, links, JSON validity, probe syntax, and the derived inference numbers. It re-measures nothing |
 
 ## How to quote a number from this repository

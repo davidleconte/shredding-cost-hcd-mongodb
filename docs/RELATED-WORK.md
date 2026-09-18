@@ -50,7 +50,7 @@ Arpaci-Dusseau (*WiscKey*, USENIX FAST '16) is the standard reference for measur
 amplification directly, in bytes written to the device per byte of logical update.
 
 HCD 2.0.6 is a Cassandra-lineage engine — the vendor states that "HCD 2.x is based on Cassandra
-5.0" (`docs/article/article-corrected.html`, appendix entry 5) — and Cassandra's storage engine is
+5.0" (`docs/article/article-part1-what-a-mutation-costs.html`, appendix entry 5) — and Cassandra's storage engine is
 LSM-structured (Lakshman and Malik, *ACM SIGOPS Operating Systems Review* 44(2), 2010, pp. 35–40).
 MongoDB 8.x's default storage engine is not. **The mutation axis of this dossier is therefore, in
 part, an LSM store measured against a B-tree-structured store, and no document in this repository
@@ -353,7 +353,7 @@ This bears on the repository in two ways, and both are uncomfortable:
 Datastores*, DEXA 2016, LNCS vol. 9828, pp. 152–166, Springer.**
 
 This is the only published peer-reviewed comparison of the two engine *families* the author could
-identify, and `docs/article/article-corrected.html` cites it (reference 32) with the annotation
+identify, and the diptych cites it (Part II, reference 32) with the annotation
 "full text not consulted". **The full text was read while writing this document.** What it did, in
 its own terms:
 
