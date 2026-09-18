@@ -130,6 +130,16 @@ tie on first-query hits, attempts `{1: 40}` on every arm); and **vector freshnes
 `LOCAL_ONE`** (120/120 first-attempt hits; verdict **NOT DETECTABLE**, because any window is bounded
 below a ~74 ms measurement floor).
 
+**Why this count is ten and the article's is eight.** The diptych's tables report *eight* axes —
+[Part I §4.4](docs/article/article-part1-what-a-mutation-costs.html) and
+[Part II §6.1](docs/article/article-part2-when-the-index-is-current.html) — because two of the
+measurements counted here have no comparator: **where the per-byte cost is charged** compares one
+engine's own tier against its own storage, and **vector freshness under `LOCAL_ONE`** measures one
+engine against its own acknowledgement. Both are properties of a single engine rather than axes on
+which two engines are set against each other, and the article says so beneath its own tables. This
+register counts them because it registers *measurements*; the article counts *comparisons*. Ten
+minus those two is eight, and neither figure is wrong inside its own scope.
+
 ⛔ marks a reserve that **voids the claim as stated**; ⚠︎ one that **bounds its magnitude**. The
 grading is developed in [docs/THREATS-TO-VALIDITY.md §2.2](docs/THREATS-TO-VALIDITY.md).
 
