@@ -1,0 +1,55 @@
+{
+  "probe": "probe_read_search.py",
+  "engine": "hcd",
+  "n": 1000000,
+  "reps": 50,
+  "run_at_utc": "2026-09-18T07:35:40.370231+00:00",
+  "arms": {
+    "hcd": {
+      "n_loaded": 1000000,
+      "load_seconds": 1057.2,
+      "indexes": [
+        "automatic \u2014 nine SAI incl. query_text_values covering qcol"
+      ],
+      "A_filtered_read_qcol": {
+        "n": 50,
+        "min_ms": 13.113,
+        "p50_ms": 17.376,
+        "p95_ms": 23.758,
+        "p99_ms": 27.113,
+        "max_ms": 28.697,
+        "stdev_ms": 3.618
+      },
+      "B_point_read_id": {
+        "n": 50,
+        "min_ms": 8.04,
+        "p50_ms": 10.382,
+        "p95_ms": 14.452,
+        "p99_ms": 14.86,
+        "max_ms": 14.88,
+        "stdev_ms": 1.822
+      },
+      "C_freshness_secondary": {
+        "insert_to_found_ms": {
+          "n": 40,
+          "min_ms": 24.439,
+          "p50_ms": 33.24,
+          "p95_ms": 42.494,
+          "p99_ms": 81.56,
+          "max_ms": 97.558,
+          "stdev_ms": 11.644
+        },
+        "find_attempts_histogram": {
+          "1": 40
+        }
+      }
+    }
+  },
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80,
+    "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+  },
+  "mongot_note": "HCD's structural freshness edge is its SYNCHRONOUS search/vector index (JVector) vs MongoDB's ASYNCHRONOUS mongot. mongot/Atlas Search is not deployable on a plain replica set, so axis C here measures only regular SECONDARY-index freshness, where BOTH engines are synchronous. A tie on C is parity on regular indexes, NOT evidence against HCD's search-freshness claim, which remains unmeasured."
+}

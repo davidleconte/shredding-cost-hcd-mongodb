@@ -1,0 +1,17 @@
+{
+  "probe": "mongot_floor.py",
+  "run_at_utc": "2026-09-18T08:05:09.148201+00:00",
+  "method": "random 0-1200 ms pre-insert sleep to sample all commit-cycle phases, then 5 ms polling",
+  "de_synchronised_lag_ms": {
+    "n": 60,
+    "min_ms": 89.1,
+    "p10_ms": 254.5,
+    "p50_ms": 664.3,
+    "p90_ms": 988.7,
+    "max_ms": 1170.2,
+    "mean_ms": 646.3,
+    "stdev_ms": 290.8
+  },
+  "verdict": "REFRESH INTERVAL \u2014 lag is broadly spread and the minimum approaches zero, so the true best-case freshness floor is near 0 and the ~1 s was the worst phase of a periodic commit; mean lag \u2248 interval/2",
+  "first_measurement_was": "~1015 ms tight (self-synchronised, worst phase)"
+}

@@ -1,0 +1,78 @@
+{
+  "comparison": "probe_comparative.py merge",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:14:12.531755+00:00",
+  "cross_engine_comparison_permitted": true,
+  "why": "permitted only when every record comes from the same host and the same series shape; otherwise the ratio mixes engines with hardware and is the confound this study exists to avoid",
+  "same_host": true,
+  "same_series_shape": true,
+  "hosts": [
+    {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    }
+  ],
+  "arms": {
+    "mongo-default": {
+      "slope": {
+        "ms_per_KiB": 0.0098,
+        "r2": 0.7809,
+        "endpoint_ratio": 1.144,
+        "y_range_ms": [
+          5.67,
+          6.484
+        ]
+      },
+      "indexes_present": [
+        "_id_"
+      ]
+    },
+    "mongo-wildcard": {
+      "slope": {
+        "ms_per_KiB": 0.0176,
+        "r2": 0.8794,
+        "endpoint_ratio": 1.375,
+        "y_range_ms": [
+          5.544,
+          7.621
+        ]
+      },
+      "indexes_present": [
+        "_id_",
+        "wildcard_all"
+      ]
+    },
+    "hcd": {
+      "slope": {
+        "ms_per_KiB": 0.7775,
+        "r2": 0.997,
+        "endpoint_ratio": 3.198,
+        "y_range_ms": [
+          40.9,
+          130.787
+        ]
+      },
+      "indexes_present": [
+        "automatic — nine SAI per collection"
+      ]
+    }
+  },
+  "reading_guide": "mongo-default is MongoDB as a team would deploy it: nothing indexed that was not asked for. mongo-wildcard is MongoDB doing HCD's job: every field queryable without declaration. Quoting the first against HCD overstates MongoDB's advantage; quoting only the second understates how MongoDB is actually used. Report both or report neither.",
+  "VERDICT": {
+    "who_costs_more": "HCD, decisively, on the single-field-mutation axis.",
+    "by_how_much": "per indexed KiB: HCD 0.7775 ms vs mongo-wildcard 0.0176 ms (44x) and mongo-default 0.0098 ms (79x). Absolute update p50: HCD 41-131 ms rising with size; MongoDB ~5.5-7.6 ms, essentially flat.",
+    "why": "MongoDB $set mutates the targeted field without rewriting the document and maintains only declared indexes; even with a wildcard index (HCD's job), its per-byte mutation cost stays near zero. HCD reads, rewrites the whole document plus eleven derived columns, maintains nine SAI, and guards with a Paxos round — all growing with indexed bytes.",
+    "durability_matched": "MongoDB w:majority+j:true (2-of-3) vs HCD LOCAL_QUORUM+LOCAL_SERIAL (2-of-3); the mapping is a declared judgement. The Paxos-vs-document-atomicity asymmetry is a design difference, not aligned.",
+    "expected_direction": "This is the result the article's own reasoning predicts; MongoDB's documented in-place update is structurally cheaper on this axis."
+  }
+}

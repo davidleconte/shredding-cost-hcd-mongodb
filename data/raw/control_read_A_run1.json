@@ -1,0 +1,79 @@
+{
+  "variant": "A",
+  "collection": "storage_probe_rf3",
+  "reps": 30,
+  "warmup": 5,
+  "read": {
+    "1kb": {
+      "n": 30,
+      "min_ms": 8.139,
+      "p50_ms": 9.748,
+      "p95_ms": 13.588,
+      "p99_ms": 14.461,
+      "p999_ms": 14.768,
+      "max_ms": 14.803,
+      "stdev_ms": 1.686
+    },
+    "8kb": {
+      "n": 30,
+      "min_ms": 9.584,
+      "p50_ms": 12.647,
+      "p95_ms": 16.737,
+      "p99_ms": 17.423,
+      "p999_ms": 17.643,
+      "max_ms": 17.668,
+      "stdev_ms": 1.92
+    },
+    "32kb": {
+      "n": 30,
+      "min_ms": 10.484,
+      "p50_ms": 13.475,
+      "p95_ms": 23.815,
+      "p99_ms": 30.863,
+      "p999_ms": 33.064,
+      "max_ms": 33.309,
+      "stdev_ms": 4.842
+    },
+    "128kb": {
+      "n": 30,
+      "min_ms": 14.304,
+      "p50_ms": 18.179,
+      "p95_ms": 32.109,
+      "p99_ms": 44.229,
+      "p999_ms": 47.214,
+      "max_ms": 47.546,
+      "stdev_ms": 6.565
+    }
+  },
+  "wire_bytes": {
+    "1kb": {
+      "updateOne_req": 122,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 80,
+      "findOne_resp": 1135
+    },
+    "8kb": {
+      "updateOne_req": 122,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 80,
+      "findOne_resp": 8303
+    },
+    "32kb": {
+      "updateOne_req": 123,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 81,
+      "findOne_resp": 32880
+    },
+    "128kb": {
+      "updateOne_req": 124,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 82,
+      "findOne_resp": 131185
+    }
+  },
+  "read_p50_growth_factor": 1.86
+}

@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+title: >-
+  Shredding cost: what physical storage layout does to write cost,
+  index freshness and concurrency in document databases
+message: >-
+  If you cite a figure from this repository, please read LIMITATIONS.md
+  first and cite the measurement identifier (Mxx) alongside the number,
+  so that the regime the number belongs to travels with it.
+type: dataset
+authors:
+  - family-names: Leconte
+    given-names: David
+repository-code: https://github.com/davidleconte/shredding-cost-hcd-mongodb
+abstract: >-
+  An adversarial self-verification of a technical article comparing the
+  physical storage layout of IBM DataStax HCD 2.0.6 (Data API v1.0.33) and
+  MongoDB 8.x. Seven measurement campaigns, 23 numbered measurements, with
+  the raw JSON evidence, the probe source, an adversarial audit of the
+  dossier's own integrity, and the points at which the measurements
+  contradicted the article they were written to verify.
+keywords:
+  - document database
+  - storage engine
+  - Apache Cassandra
+  - DataStax HCD
+  - MongoDB
+  - storage-attached index
+  - write amplification
+  - benchmark methodology
+license: CC-BY-4.0
+license-url: https://creativecommons.org/licenses/by/4.0/
+date-released: '2026-09-18'

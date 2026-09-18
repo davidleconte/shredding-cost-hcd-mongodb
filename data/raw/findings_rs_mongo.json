@@ -1,0 +1,95 @@
+{
+  "probe": "probe_read_search.py",
+  "engine": "mongodb",
+  "n": 1000000,
+  "reps": 50,
+  "run_at_utc": "2026-09-18T07:17:06.155963+00:00",
+  "arms": {
+    "mongo-default": {
+      "n_loaded": 1000000,
+      "load_seconds": 17.0,
+      "indexes": [
+        "_id_"
+      ],
+      "A_filtered_read_qcol": {
+        "n": 50,
+        "min_ms": 13.335,
+        "p50_ms": 376.698,
+        "p95_ms": 804.484,
+        "p99_ms": 860.088,
+        "max_ms": 863.381,
+        "stdev_ms": 257.749
+      },
+      "B_point_read_id": {
+        "n": 50,
+        "min_ms": 0.456,
+        "p50_ms": 0.616,
+        "p95_ms": 1.092,
+        "p99_ms": 1.242,
+        "max_ms": 1.309,
+        "stdev_ms": 0.19
+      },
+      "C_freshness_secondary": {
+        "insert_to_found_ms": {
+          "n": 40,
+          "min_ms": 868.97,
+          "p50_ms": 894.213,
+          "p95_ms": 940.127,
+          "p99_ms": 957.316,
+          "max_ms": 964.006,
+          "stdev_ms": 21.923
+        },
+        "find_attempts_histogram": {
+          "1": 40
+        }
+      }
+    },
+    "mongo-wildcard": {
+      "n_loaded": 1000000,
+      "load_seconds": 25.0,
+      "indexes": [
+        "_id_",
+        "wildcard_all"
+      ],
+      "A_filtered_read_qcol": {
+        "n": 50,
+        "min_ms": 0.582,
+        "p50_ms": 0.732,
+        "p95_ms": 0.968,
+        "p99_ms": 1.015,
+        "max_ms": 1.039,
+        "stdev_ms": 0.113
+      },
+      "B_point_read_id": {
+        "n": 50,
+        "min_ms": 0.417,
+        "p50_ms": 0.53,
+        "p95_ms": 0.657,
+        "p99_ms": 0.963,
+        "max_ms": 1.146,
+        "stdev_ms": 0.107
+      },
+      "C_freshness_secondary": {
+        "insert_to_found_ms": {
+          "n": 40,
+          "min_ms": 4.31,
+          "p50_ms": 7.072,
+          "p95_ms": 9.751,
+          "p99_ms": 11.07,
+          "max_ms": 11.435,
+          "stdev_ms": 1.546
+        },
+        "find_attempts_histogram": {
+          "1": 40
+        }
+      }
+    }
+  },
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80,
+    "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+  },
+  "mongot_note": "HCD's structural freshness edge is its SYNCHRONOUS search/vector index (JVector) vs MongoDB's ASYNCHRONOUS mongot. mongot/Atlas Search is not deployable on a plain replica set, so axis C here measures only regular SECONDARY-index freshness, where BOTH engines are synchronous. A tie on C is parity on regular indexes, NOT evidence against HCD's search-freshness claim, which remains unmeasured."
+}

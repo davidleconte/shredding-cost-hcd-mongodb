@@ -1,0 +1,222 @@
+{
+  "probe": "probe_comparative.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:12:46.794036+00:00",
+  "smoke_test": true,
+  "engine": "mongodb",
+  "arms": {
+    "mongo-default": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 5,
+            "min_ms": 4.918,
+            "p50_ms": 9.299,
+            "p95_ms": 12.959,
+            "p99_ms": 13.556,
+            "max_ms": 13.705,
+            "stdev_ms": 3.061
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 5,
+            "min_ms": 6.169,
+            "p50_ms": 8.035,
+            "p95_ms": 9.133,
+            "p99_ms": 9.196,
+            "max_ms": 9.212,
+            "stdev_ms": 1.265
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 5,
+            "min_ms": 5.218,
+            "p50_ms": 6.048,
+            "p95_ms": 6.674,
+            "p99_ms": 6.791,
+            "max_ms": 6.82,
+            "stdev_ms": 0.553
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 5,
+            "min_ms": 4.578,
+            "p50_ms": 5.995,
+            "p95_ms": 6.716,
+            "p99_ms": 6.807,
+            "max_ms": 6.829,
+            "stdev_ms": 0.748
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 5,
+            "min_ms": 5.029,
+            "p50_ms": 5.239,
+            "p95_ms": 6.788,
+            "p99_ms": 6.91,
+            "max_ms": 6.941,
+            "stdev_ms": 0.738
+          }
+        }
+      },
+      "indexes_present": [
+        "_id_"
+      ]
+    },
+    "mongo-wildcard": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 5,
+            "min_ms": 6.315,
+            "p50_ms": 6.484,
+            "p95_ms": 8.562,
+            "p99_ms": 8.563,
+            "max_ms": 8.564,
+            "stdev_ms": 1.067
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 5,
+            "min_ms": 4.446,
+            "p50_ms": 5.775,
+            "p95_ms": 8.803,
+            "p99_ms": 9.269,
+            "max_ms": 9.386,
+            "stdev_ms": 1.69
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 5,
+            "min_ms": 5.791,
+            "p50_ms": 6.992,
+            "p95_ms": 7.143,
+            "p99_ms": 7.166,
+            "max_ms": 7.172,
+            "stdev_ms": 0.56
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 5,
+            "min_ms": 4.573,
+            "p50_ms": 5.691,
+            "p95_ms": 5.963,
+            "p99_ms": 5.99,
+            "max_ms": 5.997,
+            "stdev_ms": 0.528
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 5,
+            "min_ms": 5.402,
+            "p50_ms": 5.974,
+            "p95_ms": 8.074,
+            "p99_ms": 8.434,
+            "max_ms": 8.524,
+            "stdev_ms": 1.099
+          }
+        }
+      },
+      "indexes_present": [
+        "_id_",
+        "wildcard_all"
+      ]
+    }
+  },
+  "durability_mapping": {
+    "engine": "mongodb",
+    "write_concern": "majority",
+    "journal": true,
+    "mapped_to": "HCD LOCAL_QUORUM + commitlog",
+    "mapping_is_a_judgement": true
+  },
+  "conditions": {
+    "host": {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    "reps": 5,
+    "passes": 1,
+    "warmup_discarded": 5,
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "deployment_shape": "single node or cluster; replication factor; for MongoDB, replica set size",
+      "regime": "memtable/cache-resident or disk-bound, with evidence",
+      "resource_limits": "CPU and memory limits of every process involved",
+      "colocation": "client and server on the same host?"
+    }
+  },
+  "warning": "A single-record file is not a comparison. Merge with --compare, which refuses to emit a ratio unless both engines were measured on the same host with the same series shape.",
+  "publication_note": "SMOKE TEST. Five repetitions on an unqualified machine. This validates that the instrument runs; it measures nothing and must never be quoted."
+}

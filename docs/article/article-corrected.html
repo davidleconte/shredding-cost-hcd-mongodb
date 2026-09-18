@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>One field, five operations: how physical storage layout predicts write cost, index freshness and concurrency in document databases</title>
+<meta name="description" content="A single decision about how a document is laid out on disk determines the cost of a mutation, the freshness of an index and the semantics of concurrency. Examined across the IBM DataStax HCD 2.0 Data API and MongoDB 8.x, with Apache Cassandra 6.0 and the Accord protocol in view — and an explicit account of what is documented, what is reported, and what remains unverified.">
+<meta name="author" content="David Leconte">
+<style>
+:root{--ink:#1B1F24;--soft-ink:#4A5568;--navy:#1F3864;--steel:#2E5496;
+--amber:#8A6D00;--line:#E4E9F0;--tint:#F7F9FC;--bg:#fff}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#F0F3F7;color:var(--ink);
+font:19px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+-webkit-font-smoothing:antialiased}
+.sheet{max-width:1000px;margin:0 auto;background:var(--bg);padding:0 0 90px;
+box-shadow:0 1px 3px rgba(16,24,40,.09),0 16px 48px rgba(16,24,40,.07)}
+.wrap{max-width:952px;margin:0 auto;padding:0 26px}
+header{padding:64px 26px 34px;border-bottom:1px solid var(--line);margin-bottom:44px}
+header .wrap{padding:0;max-width:690px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+color:var(--steel);margin:0 0 18px}
+h1{font-size:41px;line-height:1.16;letter-spacing:-.021em;margin:0 0 16px;color:var(--navy);font-weight:800}
+.deck{font-size:21px;line-height:1.5;color:var(--soft-ink);margin:0 0 26px;font-weight:400}
+.byline{font-size:14.5px;color:var(--soft-ink);line-height:1.7;
+padding-top:20px;border-top:1px solid var(--line)}
+.byline strong{color:var(--ink)}
+main .wrap>p,main .wrap>h2,main .wrap>h3,main .wrap>ul,main .wrap>ol,
+main .wrap>blockquote,main .wrap>hr,main .wrap>table,
+main .wrap>.disclosure,main .wrap>.abstract,main .wrap>.legend,
+main .wrap>.notes,main .wrap>.appendix{max-width:690px;margin-left:auto;margin-right:auto}
+h2{font-size:27px;line-height:1.28;letter-spacing:-.014em;color:var(--navy);
+margin:58px 0 16px;font-weight:700}
+h3{font-size:20px;color:var(--navy);margin:36px 0 10px;font-weight:700}
+p{margin:0 0 20px}
+strong{font-weight:650;color:#111}
+a{color:var(--steel);text-decoration:none;border-bottom:1px solid rgba(46,84,150,.32)}
+a:hover{border-bottom-color:var(--steel)}
+ul,ol{margin:0 0 22px;padding-left:26px}li{margin:0 0 10px}
+hr{border:0;height:1px;background:var(--line);margin:46px 0}
+blockquote{margin:32px 0;padding:20px 26px;background:var(--tint);
+border-left:4px solid var(--steel);border-radius:0 8px 8px 0;
+font-size:20px;line-height:1.58;color:var(--navy)}
+blockquote p{margin:0}
+blockquote strong{color:var(--navy)}
+blockquote.src{font-size:17px;line-height:1.62;border-left-color:var(--amber);color:var(--ink)}
+blockquote.src cite{display:block;margin-top:10px;font-style:normal;font-size:13.5px;color:var(--soft-ink)}
+code{background:#F1F4F8;border:1px solid #E1E7EF;border-radius:4px;padding:1.5px 6px;
+font:.86em/1.5 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;color:#0F2A5C}
+pre{background:#F8FAFC;border:1px solid var(--line);border-radius:10px;
+padding:20px 24px;overflow-x:auto;margin:0 auto 26px;max-width:816px;
+font:14px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+pre code{background:none;border:0;padding:0;font-size:inherit;color:#1B2733}
+pre .c{color:#6B7C93;font-style:italic}
+table{border-collapse:collapse;width:100%;font-size:16px;margin:0 0 26px}
+th{background:var(--navy);color:#fff;text-align:left;padding:11px 14px;font-weight:600}
+td{padding:10px 14px;border-top:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#FAFCFE}
+.tablewrap{max-width:900px;margin:0 auto 30px;overflow-x:auto}
+figure.wide{max-width:900px;margin:48px auto 42px;padding:20px;
+background:var(--tint);border:1px solid var(--line);border-radius:12px}
+figure.wide svg{width:100%;height:auto;display:block}
+figcaption{margin-top:14px;font-size:14px;color:var(--soft-ink);text-align:center;font-style:italic}
+.disclosure{margin:52px auto 0;max-width:690px;padding:22px 26px;background:var(--tint);
+border:1px solid var(--line);border-radius:10px;font-size:15px;line-height:1.65;color:var(--soft-ink)}
+.disclosure em{font-style:normal}
+.disclosure p{margin:0 0 12px}.disclosure p:last-child{margin:0}
+.abstract{margin:0 auto 34px;padding:24px 28px;background:var(--tint);
+border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:0 10px 10px 0;
+font-size:17.5px;line-height:1.62}
+.abstract p{margin:0 0 14px}.abstract p:last-child{margin:0}
+.abstract .lbl{display:block;font-size:11.5px;font-weight:700;letter-spacing:.14em;
+text-transform:uppercase;color:var(--steel);margin-bottom:12px}
+.legend{margin:0 auto 30px;padding:18px 24px;border:1px solid var(--line);
+border-radius:10px;font-size:15.5px;line-height:1.6;background:#fff}
+.legend p{margin:0 0 10px}.legend p:last-child{margin:0}
+sup.n{font-size:.66em;font-weight:700;color:var(--steel);line-height:0;
+vertical-align:super;margin-left:1px}
+sup.n a{border:0;color:inherit}
+sup.n a:hover{border-bottom:1px solid var(--steel)}
+.ep{display:inline-block;font:700 10.5px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+letter-spacing:.06em;padding:1.5px 6px;border-radius:3px;vertical-align:2px;margin-right:2px}
+.ep-d{background:#E8F0FB;color:#1F3864;border:1px solid #C6D8F2}
+.ep-r{background:#FBF3DE;color:#6B5500;border:1px solid #EBDCAE}
+.ep-u{background:#F2F0F4;color:#514A5C;border:1px solid #DEDAE4}
+.ep-m{background:#E6F4EA;color:#1E5631;border:1px solid #BFE3C8}
+.notes{margin-top:26px;font-size:15.5px;line-height:1.62;color:var(--soft-ink)}
+.notes li{margin:0 0 13px}
+.notes li:target{background:#FBF3DE;border-radius:4px;padding:2px 6px;margin-left:-6px}
+.notes code{font-size:.8em}
+.appendix{font-size:15.5px;line-height:1.6}
+.appendix dt{font-weight:650;color:var(--ink);margin:22px 0 4px}
+.appendix dd{margin:0 0 6px;color:var(--soft-ink)}
+.appendix dd.q{color:var(--ink);padding-left:14px;border-left:2px solid var(--line);font-style:italic}
+.appendix dd.m{font-size:14px;word-break:break-word}
+@media(max-width:980px){figure.wide{max-width:100%}pre{max-width:100%}.tablewrap{max-width:100%}}
+@media(max-width:640px){body{font-size:17.5px}h1{font-size:30px}h2{font-size:22px}
+header{padding:44px 20px 28px}.wrap{padding:0 20px}.deck{font-size:19px}}
+@media print{body{background:#fff;font-size:11pt}.sheet{box-shadow:none;max-width:none}
+figure.wide{break-inside:avoid}h2{break-after:avoid}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header><div class="wrap">
+<p class="kicker">Databases · storage architecture · distributed consensus</p>
+<h1>One field, five operations: how physical storage layout predicts write cost, index freshness and concurrency in document databases</h1>
+<p class="deck">A comparison of the IBM DataStax HCD 2.0 Data API and MongoDB 8.x, with Apache Cassandra 6.0 and the Accord protocol in view — and an explicit account, claim by claim, of what is documented, what is reported and what remains unverified</p>
+<p class="byline"><strong>David Leconte</strong> — Customer Success Engineer, IBM France | Software, Data &amp; AI | Horizon<br>
+Roughly eighteen minutes to read. The three exercises at the end take an afternoon between them.</p>
+</div></header>
+
+<main><div class="wrap">
+
+<div class="abstract">
+<span class="lbl">Abstract</span>
+<p>Two document databases that expose near-identical interfaces — JSON in, JSON out — diverge sharply in their write-path behaviour. This paper argues that the divergence is not incidental but derivable: it follows from one decision about how a document is laid out on disk, and that decision predicts four observable properties that practitioners usually meet one surprise at a time. Those properties are the marginal cost of a single-field mutation, the data-modelling regime the engine rewards, the interval between a write completing and the corresponding index entry becoming visible, and the interpretability of any published benchmark.</p>
+<p>The third property deserves particular emphasis and receives it here. For systems performing retrieval-augmented generation, the write-to-searchable interval is not a performance characteristic to be optimised opportunistically. It is a correctness property, and belongs in acceptance criteria rather than in a dashboard.</p>
+<p>The paper closes by examining the fifth and least-discussed of the five operations — the consensus round that guards a conditional write — and its designated successor in Apache Cassandra, the Accord protocol specified in CEP-15. The analysis finds that Accord modifies the arbitration of a write while leaving its decomposition untouched, a result that strengthens rather than weakens the central thesis.</p>
+</div>
+
+<div class="legend">
+<p><strong>A note on epistemic status.</strong> Comparative writing about competing databases fails most often not through malice but through the silent promotion of plausible mechanism to documented fact. Every substantive claim below therefore carries one of four markers, and the appendix records the exact passage on which each rests.</p>
+<p><span class="ep ep-d">D</span> <strong>Documented.</strong> Established by the vendor's own version-pinned documentation, by the project's source of record, or by peer-reviewed publication. Quoted verbatim in the appendix.</p>
+<p><span class="ep ep-r">R</span> <strong>Reported.</strong> Described publicly by the engineers who built the system, or by the upstream project, but not restated in the versioned documentation of the shipped product. Directionally reliable; not a contractual guarantee.</p>
+<p><span class="ep ep-u">U</span> <strong>Unverified.</strong> Asserted here on structural grounds, or widely repeated in the practitioner literature, but not established by any source of acceptable rank that I was able to consult. Treat as a hypothesis to be tested against your own build.</p>
+<p><span class="ep ep-m">M</span> <strong>Measured.</strong> Observed on a named build under stated conditions, by a harness reproduced in the appendix. Stronger than <span class="ep ep-u">U</span>, weaker than <span class="ep ep-d">D</span>: it establishes what one build did on one day, not what the vendor commits to. Every <span class="ep ep-m">M</span> claim names its measurement (M1–M4) and every measurement names its conditions.</p>
+<p><em>Nota bene on the figures.</em> A diagram carries more apparent authority than a paragraph: it resembles an architecture specification even when it is an argument. Every figure below therefore declares in its caption which of its elements are documented and which are not. Where a figure depicts something marked <span class="ep ep-u">U</span>, the caption says so, and the reader should read the box as a hypothesis drawn in rectangles rather than as a contract.</p>
+</div>
+
+<h2>1. The phenomenon</h2>
+
+<p>A pattern recurs in design reviews with sufficient regularity to warrant formal treatment.</p>
+
+<p>A team ships a service backed by a document store. Initial performance is satisfactory. Over some months the document schema accretes: a status enumeration, two or three timestamps, a nested object carrying audit provenance. Read latency remains stable. Write latency degrades — and degrades disproportionately to the additional bytes committed. Because no one has altered the write pattern, no one examines the write path. The investigation goes to the application tier, to the network, to garbage collection, and returns empty-handed.</p>
+
+<p>The explanation is neither a defect, nor a tuning deficiency, nor a regression introduced by a release. It is the deterministic consequence of a decision taken long before the team arrived: <strong>how the engine physically represents a document on disk</strong>. Recover that decision and the remainder of the system becomes predictable rather than surprising — including behaviours with no apparent connection to writes at all, such as the latency with which a newly written document becomes retrievable.</p>
+
+<p>The argument is developed through two systems that resolve the same design question in opposite directions: the JSON document interface layered over a Cassandra-derived engine (the IBM DataStax HCD 2.0 Data API<sup class="n"><a href="#n5">5</a></sup>) and MongoDB 8.x.</p>
+
+<h2>2. Two resolutions of the decomposition problem</h2>
+
+<h3>2.1 Decomposition: one document, one row, many derived columns</h3>
+
+<p>The intuitive model holds that a document database stores documents. Some do. This one does something considerably more interesting, and the difference is the hinge of everything that follows.</p>
+
+<p><span class="ep ep-r">R</span> A JSON document submitted to the Data API is <em>shredded</em>: decomposed into a single database row bearing a generic column layout that captures, separately, the original document text, the set of paths present within it, typed value maps for each JSON scalar type, array membership and array cardinality.<sup class="n"><a href="#n11">11</a></sup> Indexes are then constructed over the filterable columns.</p>
+
+<p><span class="ep ep-m">M</span> The specific column names commonly cited in the practitioner literature — <code>doc_json</code>, <code>exist_keys</code>, <code>array_contains</code>, <code>array_size</code>, and the several <code>query_*_values</code> maps — are widely repeated but do not appear, so far as I could establish, in any version-pinned DataStax documentation or in a readable source file of the upstream project. I reproduce them below because they are useful as a mental model and because naming them makes the claim falsifiable. They should not be treated as an interface. On HCD 2.0.6 with Data API v1.0.33 (appendix, measurement M1) all nine appear under exactly these names, alongside three that the practitioner literature omits: <code>key</code>, the typed partition key; <code>tx_id</code>, a timeuuid that guards every conditional write; and <code>query_lexical_value</code>, the lexical column. Nine storage-attached indexes were created on that collection, which declared no vector option. That is one build's answer, not an interface; verify against the build you deploy.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: a JSON document is shredded into one database row with generic columns, over which storage-attached indexes are automatically created; the resulting cost of a single-field update is five operations, contrasted with MongoDB's single in-place update.">
+<defs>
+<marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#2E5496"/></marker>
+</defs>
+<rect x="0" y="0" width="900" height="520" fill="#FFFFFF"/>
+
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 1 — Decomposition and its consequences</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">One layout decision, four observable properties</text>
+
+<rect x="20" y="62" width="250" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="34" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">CLIENT</text>
+<text x="34" y="102" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#4A5568">astrapy · astra-db-ts · HTTP</text>
+<text x="34" y="126" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">{ "_id": "pmt-1",</text>
+<text x="34" y="141" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "payer": "acct-9",</text>
+<text x="34" y="156" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "amount": 1250,</text>
+<text x="34" y="171" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">  "tags": ["sepa"] }</text>
+<text x="34" y="188" font-family="system-ui,sans-serif" font-size="10" fill="#8A6D00">HTTP + JSON overhead is IN scope</text>
+
+<line x1="272" y1="128" x2="308" y2="128" stroke="#2E5496" stroke-width="1.6" marker-end="url(#ar)"/>
+
+<rect x="312" y="62" width="250" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="326" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">DATA API TIER</text>
+<text x="326" y="102" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">stateless · scales horizontally</text>
+<text x="326" y="126" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#1B2733">shred → N CQL statements</text>
+<text x="326" y="147" font-family="system-ui,sans-serif" font-size="10.5" fill="#514A5C">consistency levels: not established</text>
+<text x="326" y="162" font-family="system-ui,sans-serif" font-size="10.5" fill="#514A5C">by any source consulted here</text>
+<text x="326" y="183" font-family="system-ui,sans-serif" font-size="10" fill="#8A6D00">verify against your own build</text>
+
+<line x1="564" y1="128" x2="600" y2="128" stroke="#2E5496" stroke-width="1.6" marker-end="url(#ar)"/>
+
+<rect x="604" y="62" width="276" height="132" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="618" y="84" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">STORAGE — ONE ROW</text>
+<text x="618" y="104" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">doc_json · exist_keys</text>
+<text x="618" y="119" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">array_contains · array_size</text>
+<text x="618" y="134" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_text_values · query_dbl_values</text>
+<text x="618" y="149" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_bool_values · query_null_values</text>
+<text x="618" y="164" font-family="ui-monospace,Menlo,monospace" font-size="10" fill="#1B2733">query_timestamp_values</text>
+<text x="618" y="185" font-family="system-ui,sans-serif" font-size="10" fill="#514A5C">column names: reported, not documented</text>
+
+<rect x="20" y="212" width="860" height="52" rx="8" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="34" y="234" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#6B5500">STORAGE-ATTACHED INDEXES — created automatically over filterable columns</text>
+<text x="34" y="253" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">Upstream default: 10 indexes required per collection · 50 available per database. Product guardrail on HCD: 100 SAI indexes total.</text>
+
+<text x="20" y="298" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#1F3864">CONSEQUENCE — the cost of "update one nested field"</text>
+
+<rect x="20" y="312" width="530" height="186" rx="8" fill="#FFFFFF" stroke="#E4E9F0"/>
+<circle cx="46" cy="340" r="11" fill="#1F3864"/><text x="46" y="344" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">1</text>
+<text x="66" y="338" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">READ</text>
+<text x="66" y="353" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">fetch the entire document</text>
+<circle cx="46" cy="372" r="11" fill="#1F3864"/><text x="46" y="376" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">2</text>
+<text x="66" y="370" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">MODIFY</text>
+<text x="66" y="385" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">apply the change in memory</text>
+<circle cx="46" cy="404" r="11" fill="#1F3864"/><text x="46" y="408" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">3</text>
+<text x="66" y="402" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">REWRITE</text>
+<text x="66" y="417" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">whole document, plus every derived column</text>
+<circle cx="46" cy="436" r="11" fill="#8A6D00"/><text x="46" y="440" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">4</text>
+<text x="66" y="434" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">INDEX</text>
+<text x="66" y="449" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">maintain the indexes covering mutated paths</text>
+<circle cx="46" cy="468" r="11" fill="#2E5496"/><text x="46" y="472" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="#fff">5</text>
+<text x="66" y="466" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">GUARD</text>
+<text x="66" y="481" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">consensus-based conditional write · 3 client retries (upstream default)</text>
+
+<rect x="566" y="312" width="314" height="186" rx="8" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="582" y="338" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">MONGODB 8.x — the same change</text>
+<circle cx="600" cy="372" r="13" fill="#2E5496"/><text x="600" y="377" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#fff">1</text>
+<text x="622" y="370" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">UPDATE</text>
+<text x="622" y="385" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">single-document atomic mutation</text>
+<text x="582" y="414" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Only declared indexes are maintained.</text>
+<text x="582" y="432" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Search and vector indexes are maintained</text>
+<text x="582" y="447" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">outside the commit window, asynchronously.</text>
+<text x="582" y="472" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">Trade-off: you design the indexes.</text>
+<text x="582" y="488" font-family="system-ui,sans-serif" font-size="11" font-weight="650" fill="#8A6D00">Trade-off: the index lags the write.</text>
+</svg>
+<figcaption>Figure 1. The decomposition decision and the four properties it determines. Column names and consistency levels are not documented by the vendor; both were measured on one build (appendix, measurements M1 and M4), and the boxes should be read as observations of that build, not as a contract.</figcaption>
+</figure>
+
+<p><span class="ep ep-d">D</span> The benefit of decomposition is real, immediate and easily underestimated. Any field becomes filterable without anyone declaring an index for it. There is no migration to add a predicate, no ticket to a database administrator to render a new attribute searchable. The upstream project's configuration record fixes the arithmetic: ten indexes are required per collection, against fifty available per database by default<sup class="n"><a href="#n1">1</a></sup> — five collections before exhaustion, on the upstream defaults. (That figure is the budget the API checks at creation; the collection measured in the appendix, created without a vector option, received nine — measurement M1.) The shipped HCD product raises the ceiling through a guardrail set to one hundred total storage-attached indexes.<sup class="n"><a href="#n3">3</a></sup> For a team iterating rapidly on an evolving schema, this is a genuine accelerant.</p>
+
+<p>Everything that follows is the invoice for it.</p>
+
+<h3>2.2 In-place mutation</h3>
+
+<p><span class="ep ep-d">D</span> MongoDB resolves the question in the opposite direction, and its documentation is explicit on all three components of that resolution.</p>
+
+<p><em>Atomicity.</em> "In MongoDB, write operations are atomic on the single-document level, even if modifying multiple values."<sup class="n"><a href="#n34">34</a></sup> The guarantee is bounded at the document, and the documentation is equally explicit that it stops there: when a single operation modifies several documents, each modification is atomic but the operation as a whole is not.<sup class="n"><a href="#n34">34</a></sup> This is a narrower guarantee than the phrase "atomic update" suggests to a reader arriving from a relational background, and the narrowness matters.</p>
+
+<p><em>Absence of full rewrite.</em> The <code>$set</code> reference states the advantage in comparative terms against full document replacement: "Targeted Updates: $set modifies only the specified fields, ensuring efficient updates by avoiding unnecessary writes and overhead when you work with large documents."<sup class="n"><a href="#n35">35</a></sup> The same page notes the replication corollary, that <code>$set</code> writes only the updated fields to the oplog. The contrast with decomposition is therefore not an inference drawn by this article; it is the distinction the vendor itself draws, between its operator and its own replacement path.</p>
+
+<p><em>Declared indexes only.</em> MongoDB creates exactly one index without being asked — a unique index on <code>_id</code>, at collection creation, which cannot be dropped.<sup class="n"><a href="#n36">36</a></sup> Every other index is created explicitly. The write therefore maintains what the schema designer decided it should maintain, and nothing else.</p>
+
+<p><span class="ep ep-d">D</span> One qualification is owed here, and omitting it would make the comparison less honest than it should be. MongoDB does provide an opt-in analogue of automatic indexing: the <em>wildcard index</em>, declared over the pattern <code>$**</code>, which "can support queries on any arbitrary field within documents in the collection."<sup class="n"><a href="#n37">37</a></sup> The distinction between the two platforms on this axis is consequently not <em>capability</em> but <em>default</em>. One indexes broadly unless instructed otherwise; the other indexes nothing unless instructed. That is a meaningful difference — defaults govern the systems nobody revisited — but it is a smaller and more interesting difference than "automatic versus manual", which is how the comparison is usually and lazily framed.</p>
+
+<h2>3. The cost function of a single-field mutation</h2>
+
+<p>Because the document has been taken apart, changing one field cannot be a targeted write. It becomes a sequence:</p>
+
+<ol>
+<li><strong>Read</strong> the entire document into memory.</li>
+<li><strong>Modify</strong> it there.</li>
+<li><strong>Rewrite</strong> the whole document, together with every derived column.</li>
+<li><strong>Maintain</strong> the indexes — on the build measured here, over every indexed field of the document, not only the fields that changed (appendix, measurement M3).</li>
+<li><strong>Guard</strong> the write-back with a consensus-based conditional operation, so that a concurrent writer cannot silently overwrite it.</li>
+</ol>
+
+<p><span class="ep ep-m">M</span> Steps one through three describe a read-modify-write cycle. This is the structural inference on which the article's title rests, and I must be candid about its evidentiary basis: it follows <em>prima facie</em> from decomposition — a derived column cannot be recomputed without the document that derives it — but I could not find it asserted in any DataStax documentation for the current Data API. The one official statement on the subject that I could locate concerns the earlier, architecturally distinct Documents API, and it says the opposite, that the engineers resolved to avoid read-before-write at all costs.<sup class="n"><a href="#n12">12</a></sup> <em>Pace</em> that 2020 statement, which concerns a different API generation and cannot settle the question either way. What settles it, for a build you control, is a query trace rather than a latency curve. On HCD 2.0.6 with Data API v1.0.33, with tracing enabled on the node, every <code>updateOne</code> carrying a single <code>$set</code> produced two CQL statements: a <code>SELECT</code> of <code>key</code>, <code>tx_id</code> and <code>doc_json</code> by key, then one <code>UPDATE</code> rewriting every derived column and the whole <code>doc_json</code>, guarded by <code>IF tx_id = ?</code> (appendix, measurement M2). The cycle is present on that build. A cost-versus-size probe on the same build grew in step with a same-size read and could not, on its own, separate a read from a read-plus-rewrite; it is the trace, not the curve, that carries the claim.</p>
+
+<p><span class="ep ep-d">D</span> Step five is on firmer ground. The upstream configuration record exposes a client-side retry count for lightweight-transaction failure, defaulting to three.<sup class="n"><a href="#n1">1</a></sup> The Paxos machinery underlying conditional writes in this engine family is documented explicitly: a prepare phase in which a proposer circulates a proposal number to the replicas of a key, promises returned by a quorum of acceptors, then a proposal of the value, and so forth.<sup class="n"><a href="#n13">13</a></sup> The consistency levels at which this executes in the Data API are <span class="ep ep-m">M</span> not published by any source I consulted; measured on HCD 2.0.6 with Data API v1.0.33, every statement on the collection ran at <code>LOCAL_QUORUM</code> and every conditional statement carried <code>LOCAL_SERIAL</code> as its serial level (appendix, measurement M4). Earlier drafts asserted <code>LOCAL_SERIAL</code> from memory; it is restored here on the strength of a trace, on one node with RF = 1 — the name is established, the multi-replica cost is not.</p>
+
+<blockquote><p>The net effect — two CQL statements for an update and for a delete, one for an insert, on the build measured (M2) — is a write materially heavier than a blind CQL insertion, and — importantly — one that is <strong>not idempotent</strong> in the way a blind insertion is. Neither this nor MongoDB's single-step alternative is a defect. Both are the determinate consequence of a storage decision.</p></blockquote>
+
+<h3>3.1 Two habits that follow directly</h3>
+
+<p>The difference surfaces in two places under your control: how you write, and what identifier you assign the record.</p>
+
+<pre><code><span class="c"># astrapy — the Python client for the Data API</span>
+<span class="c">#</span>
+<span class="c"># (1) Server-generated identifier: convenient, and NOT safe to retry.</span>
+<span class="c"># If the network fails after the write applied, a retry creates a second document.</span>
+collection.insert_one({"payer": "acct-42", "amount_cents": 125000})
+
+<span class="c"># (2) Identifier derived from the business key: a retry is rejected as a duplicate,</span>
+<span class="c"># so the operation becomes naturally idempotent. Same cost, far better failure mode.</span>
+collection.insert_one({
+    "_id": "pmt-2026-08-07-000123",   <span class="c"># from the payment reference, not random</span>
+    "payer": "acct-42",
+    "amount_cents": 125000,
+})</code></pre>
+
+<p>That single choice eliminates an entire category of production incident, on either platform, at no runtime cost. It is the cheapest correctness improvement available in this class of system.</p>
+
+<p>The second habit is to let the engine apply the change rather than performing it yourself:</p>
+
+<pre><code><span class="c"># Anti-pattern: read-modify-write in application code.</span>
+<span class="c"># Three round trips, and two concurrent workers can silently lose one update.</span>
+doc = collection.find_one({"_id": "pmt-...000123"})
+doc["status"] = "SETTLED"
+collection.replace_one({"_id": doc["_id"]}, doc)   <span class="c"># rewrites everything you read</span>
+
+<span class="c"># Better: transmit the intent, not the document.</span>
+<span class="c"># One round trip. Whatever the engine does internally, it does it once,</span>
+<span class="c"># atomically, and without shipping the document across the wire twice.</span>
+collection.update_one(
+    {"_id": "pmt-2026-08-07-000123"},
+    {"$set": {"status": "SETTLED"}},
+)</code></pre>
+
+<p>The opening phenomenon now resolves itself. Write latency crept upward because the team <em>added indexed content</em> — each new field was silently enrolled in the maintained index set, and it is the <em>volume</em> of that indexed content, not the number of fields, that the write pays for (appendix, measurement M11): at a fixed indexed volume, multiplying the field count fourteenfold barely moved the cost, while at a fixed field count the cost rose almost linearly with the bytes indexed. Nothing about their write pattern changed. The cost of their write pattern did.</p>
+
+<p><span class="ep ep-m">M</span> Where that cost sits is itself a design fact the paragraph above leaves implicit. Measured on this build (appendix, measurement M12), the per-byte rate splits roughly seventy–thirty between the two components that both grow with indexed bytes: about seventy per cent is the read, the conditional rewrite and the index maintenance, in the stateful storage engine that scales only by adding data-bearing nodes; the remaining quarter to a third is the JSON parse, the shred and the response serialisation, in the stateless Data API tier that scales by adding instances behind a load balancer. On a latency chart they are the same milliseconds, but they are not the same object of design — the minority is elastic, the majority is not. Two independent methods placed the split in that neighbourhood yet disagreed by more than a quarter at the largest sizes, so read it as a direction, not a precise ratio.</p>
+
+<h2>4. What decomposition purchases</h2>
+
+<p>Three properties, of which the third is the one comparative treatments most consistently omit.</p>
+
+<p><strong>Queryability without index design.</strong> Already treated, and genuinely valuable early in a product's life, when the schema is still an argument rather than a contract.</p>
+
+<p><strong>Write scale-out without a coordinating primary.</strong> No single node must accept every write, so capacity is added by adding nodes rather than by enlarging one.</p>
+
+<p><strong>An index current at the moment the write completes.</strong> <span class="ep ep-d">D</span> Because indexing occurs on the write path, a document becomes searchable as soon as it is written. The HCD 2.0 documentation states this directly, and attributes it to the vector index implementation by name:</p>
+
+<blockquote class="src"><p>"When you insert data, JVector adds those new documents to the graph immediately, so you can efficiently search right away."</p>
+<cite>DataStax, <em>About vector databases</em>, Hyper-Converged Database 2.0.<sup class="n"><a href="#n4">4</a></sup></cite></blockquote>
+
+<p><span class="ep ep-m">M</span> One qualifier the vendor sentence omits, and it only holds above a single replica. At RF &gt; 1 the Data API reads a vector search at <code>LOCAL_ONE</code> — one replica — while it commits a write at <code>LOCAL_QUORUM</code> — two of three. "Searchable as soon as it is written" is therefore a single-replica read guarantee, not a quorum one: a vector query issued at acknowledgement can, in principle, read the one replica the write has not yet reached. Measured on a co-located three-replica test ring the effect was <strong>not detectable</strong> — in 120 of 120 cycles the just-written vector was the top match on the first <code>LOCAL_ONE</code> query, because sub-millisecond inter-replica latency closes the gap far below the round trip that carries the query. The window is bounded below the measurement floor there; a wide-area deployment, where inter-replica latency is tens of milliseconds, is exactly where it would surface — the same window this article attributes to the other engine in Figure 2. The searchability guarantee is real; its scope is one replica, and the reader deploying across datacentres should measure it there.</p>
+
+<h3>4.1 Index freshness as a correctness property</h3>
+
+<p>This third point changes character entirely depending on what is being built, and the change is categorical rather than one of degree.</p>
+
+<p>For a product catalogue, several seconds of index lag is invisible; no user experiences it and no requirement references it. For a retrieval-augmented application it is not a performance detail at all. An assistant that records a fact and cannot retrieve it on the following turn is producing wrong answers — not slow answers, wrong ones — however promptly the index subsequently converges. The failure is semantic, it is invisible to latency instrumentation, and it will be reported by users as hallucination rather than as staleness. <em>A fortiori</em>, any system that writes and reads within a single conversational turn inherits the interval as a hard correctness bound rather than as a service objective.</p>
+
+<blockquote><p>If you are building a system of that kind, the write-to-searchable interval belongs in your <strong>acceptance criteria</strong>, not in your performance backlog.</p></blockquote>
+
+<h3>4.2 The opposite resolution, stated in the vendor's own terms</h3>
+
+<p><span class="ep ep-d">D</span> MongoDB's self-managed search and vector search execute in a separate process, <code>mongot</code>, running alongside the database.<sup class="n"><a href="#n15">15</a></sup><sup class="n"><a href="#n16">16</a></sup> MongoDB describes the mechanism precisely:</p>
+
+<blockquote class="src"><p>"mongot builds and maintains these compute-intensive indexes outside of the transaction commit window by leveraging change streams to asynchronously replicate changes to source data, allowing customers to add search and vector search capabilities without fear of impacting existing transactional workloads."</p>
+<cite>MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em>, 15 January 2026.<sup class="n"><a href="#n14">14</a></sup></cite></blockquote>
+
+<p>This is a deliberate and defensible design. It removes index maintenance from the write path, which is precisely the cost the decomposing engine elects to pay. Two coherent answers to one question, and the trade is legible in a single sentence from each vendor — which is a considerably better basis for a decision than any benchmark.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: two timelines comparing synchronous on-write index maintenance against asynchronous index replication through change streams, and the resulting window during which a retrieval query can miss a committed document.">
+<defs>
+<marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+<path d="M0,0 L9,4.5 L0,9 z" fill="#2E5496"/></marker>
+<pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+<line x1="0" y1="0" x2="0" y2="7" stroke="#C8A96A" stroke-width="2.4"/></pattern>
+</defs>
+<rect x="0" y="0" width="900" height="400" fill="#FFFFFF"/>
+
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 2 — The write-to-searchable interval</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Where index maintenance sits relative to the commit determines whether retrieval can miss a committed fact</text>
+
+<text x="20" y="86" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">A. INDEXING ON THE WRITE PATH — decomposing engine</text>
+<line x1="20" y1="150" x2="860" y2="150" stroke="#E4E9F0" stroke-width="2"/>
+<rect x="60" y="112" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="135" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">write accepted</text>
+<rect x="216" y="112" width="210" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="321" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">index maintained · same path</text>
+<rect x="432" y="112" width="140" height="34" rx="5" fill="#1F3864"/>
+<text x="502" y="134" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#fff">ACK to client</text>
+<circle cx="502" cy="168" r="5" fill="#1F3864"/>
+<text x="516" y="173" font-family="system-ui,sans-serif" font-size="11.5" fill="#1B1F24">document is searchable at acknowledgement — documented</text>
+<text x="60" y="192" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Cost: index maintenance is charged to every write. Benefit: no window.</text>
+
+<line x1="20" y1="216" x2="880" y2="216" stroke="#E4E9F0"/>
+
+<text x="20" y="248" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">B. INDEXING OUTSIDE THE COMMIT WINDOW — separate process, change streams</text>
+<line x1="20" y1="312" x2="860" y2="312" stroke="#E4E9F0" stroke-width="2"/>
+<rect x="60" y="274" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="135" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">write accepted</text>
+<rect x="216" y="274" width="140" height="34" rx="5" fill="#1F3864"/>
+<text x="286" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#fff">ACK to client</text>
+<rect x="362" y="274" width="286" height="34" rx="5" fill="url(#hatch)" stroke="#C8A96A"/>
+<rect x="362" y="274" width="286" height="34" rx="5" fill="#FFFFFF" opacity="0.62"/>
+<text x="505" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">asynchronous replication · interval not bounded by any source consulted</text>
+<rect x="654" y="274" width="150" height="34" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="729" y="296" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">index reflects write</text>
+<line x1="362" y1="332" x2="654" y2="332" stroke="#8A6D00" stroke-width="1.4" marker-end="url(#ar2)"/>
+<line x1="362" y1="326" x2="362" y2="338" stroke="#8A6D00" stroke-width="1.4"/>
+<text x="508" y="354" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#8A6D00">a retrieval query issued here returns a wrong answer, not a slow one</text>
+<text x="60" y="378" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">Cost: a window exists. Benefit: transactional throughput is unaffected by index maintenance.</text>
+</svg>
+<figcaption>Figure 2. The two placements of index maintenance relative to the commit. <strong>Documented:</strong> immediate searchability in A (note 4); asynchronous replication through change streams in B (note 14). <strong>Not documented:</strong> the width of the window in B, for which no bound was found in any source consulted. The figure is deliberately drawn without a time axis, since supplying one would imply a magnitude nobody has published.</figcaption>
+</figure>
+
+<p>Note that the two designs are not in competition on a single axis. They optimise different things and the choice is properly determined by the workload, not by preference: <em>ceteris paribus</em>, a catalogue tolerates the window and profits from the throughput; a retrieval system does not tolerate the window at all.</p>
+
+<p><span class="ep ep-d">D</span> One corollary follows from the quoted mechanism and requires no further source: asynchronous replication of changes implies a non-zero interval between a write committing and the corresponding search index reflecting it. <span class="ep ep-u">U</span> What that interval is, and whether MongoDB documents any bound on it, I did not establish. This is again a measurement question rather than a reading question.</p>
+
+<p><span class="ep ep-d">D</span> Status matters here and moves quickly. As of the announcement of 15 January 2026, <code>mongot</code> entered public preview under the Server Side Public License.<sup class="n"><a href="#n14">14</a></sup> <span class="ep ep-u">U</span> Contemporaneous MongoDB material describes general availability as anticipated following the preview; I was unable to confirm the current status per edition at the time of writing, and I therefore make no claim about it. Consult the release notes for the edition you intend to deploy. This article is a pointer to those notes, never a substitute for them.</p>
+
+<h2>5. What decomposition costs, and the design rule that follows</h2>
+
+<p>The cost localises in one identifiable regime: <strong>workloads that repeatedly mutate the same record</strong>. Counters. Status machines transiting a sequence of states. Hot aggregates updated on every event. There, the in-place update is structurally cheaper, and no quantity of tuning alters the structure.</p>
+
+<blockquote><p><strong>Model for append and read at scale, not for repeated mutation of the same record.</strong></p></blockquote>
+
+<p>If your access pattern genuinely concentrates writes on individual records — and some legitimately do — that is valuable information about which engine suits that component. It is far cheaper to learn in week one than in month six, and cheaper still to learn from a storage diagram than from an incident review.</p>
+
+<p><span class="ep ep-d">D</span> It bears stating explicitly, since the term "transaction" recurs throughout this literature with three mutually incompatible senses, that the DataStax documentation is unambiguous about the guarantees on offer <em>sensu stricto</em>: HCD does not adhere to ACID transactions with rollback or locking mechanisms, and a write operation is atomic at the partition level.<sup class="n"><a href="#n33">33</a></sup> Section 8 examines what is changing upstream on exactly this point.</p>
+
+<h2>6. Three design rules</h2>
+
+<h3>6.1 Keep partitions bounded, and know the numbers</h3>
+
+<p><span class="ep ep-d">D</span> A brief detour, because it matters here. The platform offers two data models side by side: schemaless <em>collections</em>, which is what everything above has described, and schema-defined <em>tables</em> carrying an explicit primary key.<sup class="n"><a href="#n6">6</a></sup> Collections suit documents whose shape varies; tables suit records of stable shape read by key and range — ledgers, event trails, time series. Both are reached through the same JSON API; neither requires dropping into a query language.<sup class="n"><a href="#n7">7</a></sup></p>
+
+<p><span class="ep ep-d">D</span> Where tables are used, the published sizing guidance is explicit and arithmetically actionable: keep rows per partition under one hundred thousand and partition size under one hundred megabytes.<sup class="n"><a href="#n8">8</a></sup> The corroborating modelling guidance states the second bound independently.<sup class="n"><a href="#n9">9</a></sup> Note that the documentation specifies <em>rows</em>; a document decomposed to one row makes the two coincide here, but the distinction survives elsewhere and is worth preserving in your own notes.</p>
+
+<p>The partition key determines how rows are grouped, and a key that accumulates without bound breaches both limits eventually:</p>
+
+<pre><code><span class="c">// A table's primary key is declared in JSON, as part of createTable.</span>
+<span class="c">// partitionBy   -> how rows are grouped and distributed</span>
+<span class="c">// partitionSort -> the ordering within a partition (1 ascending, -1 descending)</span>
+
+<span class="c">// UNBOUNDED: one partition per account, growing for the life of the account.</span>
+<span class="c">// Flawless in test. Degrades reads, repairs and streaming in year two.</span>
+"primaryKey": {
+  "partitionBy": ["account_id"],
+  "partitionSort": { "event_ts": -1 }
+}
+
+<span class="c">// BOUNDED: the month joins the partition key, so each partition covers a</span>
+<span class="c">// fixed window. A query spanning months reads a handful of partitions</span>
+<span class="c">// rather than one enormous one.</span>
+"primaryKey": {
+  "partitionBy": ["account_id", "yyyymm"],
+  "partitionSort": { "event_ts": -1 }
+}</code></pre>
+
+<p>Choose the window from your own arithmetic: the busiest account's events per month, multiplied by bytes per event, held beneath both bounds above.<sup class="n"><a href="#n10">10</a></sup> This single decision forestalls the majority of the difficulties popularly attributed to this class of database.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: an unbounded partition key produces one ever-growing partition per account, whereas adding a time component to the partition key produces fixed-width partitions that a range query reads selectively.">
+<rect x="0" y="0" width="900" height="340" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 3 — Bounding the partition key</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">The same data, two groupings: one degrades monotonically, the other does not</text>
+
+<text x="20" y="82" font-family="ui-monospace,Menlo,monospace" font-size="11.5" font-weight="700" fill="#8A6D00">partitionBy: ["account_id"]</text>
+<text x="252" y="82" font-family="system-ui,sans-serif" font-size="11.5" fill="#4A5568">— one partition per account, growing for the life of the account</text>
+
+<rect x="20" y="96" width="560" height="62" rx="6" fill="#FBF3DE" stroke="#C8A96A"/>
+<text x="34" y="118" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">account_id = acct-42</text>
+<text x="34" y="137" font-family="system-ui,sans-serif" font-size="11" fill="#6B5500">Jan · Feb · Mar · Apr · May · Jun · Jul · Aug · Sep · Oct · Nov · Dec · Jan · Feb · Mar …</text>
+<text x="34" y="152" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5500">unbounded row count · unbounded byte size · breaches both published limits eventually</text>
+<text x="596" y="122" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#8A6D00">Flawless in test.</text>
+<text x="596" y="140" font-family="system-ui,sans-serif" font-size="11.5" fill="#8A6D00">Degrades reads, repairs</text>
+<text x="596" y="155" font-family="system-ui,sans-serif" font-size="11.5" fill="#8A6D00">and streaming in year two.</text>
+
+<line x1="20" y1="180" x2="880" y2="180" stroke="#E4E9F0"/>
+
+<text x="20" y="210" font-family="ui-monospace,Menlo,monospace" font-size="11.5" font-weight="700" fill="#1F3864">partitionBy: ["account_id", "yyyymm"]</text>
+<text x="330" y="210" font-family="system-ui,sans-serif" font-size="11.5" fill="#4A5568">— one partition per account per month, of fixed maximum width</text>
+
+<g font-family="system-ui,sans-serif" font-size="10">
+<rect x="20" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="63" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202601</text>
+<text x="63" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="114" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="157" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202602</text>
+<text x="157" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="208" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="251" y="244" text-anchor="middle" font-weight="650" fill="#fff">202603</text>
+<text x="251" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="302" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="345" y="244" text-anchor="middle" font-weight="650" fill="#fff">202604</text>
+<text x="345" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="396" y="224" width="86" height="54" rx="5" fill="#1F3864" stroke="#1F3864"/>
+<text x="439" y="244" text-anchor="middle" font-weight="650" fill="#fff">202605</text>
+<text x="439" y="261" text-anchor="middle" fill="#C6D8F2">read</text>
+<rect x="490" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="533" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202606</text>
+<text x="533" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+<rect x="584" y="224" width="86" height="54" rx="5" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="627" y="244" text-anchor="middle" font-weight="650" fill="#1F3864">202607</text>
+<text x="627" y="261" text-anchor="middle" fill="#4A5568">bounded</text>
+</g>
+<text x="690" y="248" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1F3864">A quarterly query reads</text>
+<text x="690" y="265" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">three partitions, not one</text>
+<text x="690" y="280" font-family="system-ui,sans-serif" font-size="11.5" fill="#1F3864">unbounded one.</text>
+
+<rect x="20" y="294" width="860" height="32" rx="6" fill="#F7F9FC" stroke="#E4E9F0"/>
+<text x="34" y="315" font-family="system-ui,sans-serif" font-size="11.5" fill="#1B1F24">Published bounds, both of which the left-hand design breaches in time: under 100,000 rows per partition, and partition size under 100 MB.</text>
+</svg>
+<figcaption>Figure 3. Partition bounding. <strong>Documented:</strong> both numeric bounds (notes 8 and 9) and the JSON key structure (note 10). <strong>Illustrative:</strong> the monthly window, which is one choice among many; the correct granularity follows from your own arithmetic, not from this figure.</figcaption>
+</figure>
+
+<h3>6.2 Choose what gets indexed, deliberately</h3>
+
+<p>Automatic indexing is a default, not a law. If a field will demonstrably never be filtered upon, excluding it renders every write to that document cheaper. On the other platform the same discipline applies <em>mutatis mutandis</em>, inverted in its direction: declare the indexes you need, and no more. In both cases the discipline is the same act — deciding, rather than inheriting.</p>
+
+<h3>6.3 Measure write-to-searchable before designing around it</h3>
+
+<p>It is twelve lines, and virtually nobody runs it:</p>
+
+<pre><code>import time, uuid
+
+marker = f"probe-{uuid.uuid4()}"        <span class="c"># unique, so nothing else can match it</span>
+t0 = time.perf_counter()
+collection.insert_one({"_id": marker, "body": marker})
+
+while True:                              <span class="c"># poll until the write is findable</span>
+    if collection.find_one({"body": marker}):
+        print(f"write-to-searchable: {(time.perf_counter() - t0) * 1000:.0f} ms")
+        break
+    time.sleep(0.01)</code></pre>
+
+<p>Run it idle, then run it again under write load. This probe measures index freshness, not the write path; it does not tell you whether an update reads before it writes. For that, enable query tracing on one node for a handful of updates and read <code>system_traces</code> — the method behind measurement M2. The second run is the one that matters, because it is under load that the two architectures diverge and under load that your users will encounter whichever behaviour you inherited. A quarter of an hour establishes whether index freshness is a constraint you must design around or one you may safely ignore. If you are building anything with retrieval in it, this is the highest-yield fifteen minutes in this article.</p>
+
+<h2>7. Where JVector actually appears — three loci, three statuses</h2>
+
+<p>A persistent conflation in this area will invalidate an evaluation if carried into it. The same library appears in three distinct places with three distinct statuses, and one place where it does not appear at all.</p>
+
+<p><span class="ep ep-d">D</span> <strong>In Apache Cassandra 5.0 upstream: it does not.</strong> Upstream vector search through storage-attached indexing was specified and built on Lucene's Hierarchical Navigable Small World implementation. The enhancement proposal is explicit: the implementation leverages Lucene's HNSW library, characterised there as the best available ANN algorithm for Java at the time.<sup class="n"><a href="#n21">21</a></sup> Storage-attached indexing itself is a 5.0 feature.<sup class="n"><a href="#n22">22</a></sup></p>
+
+<p><span class="ep ep-d">D</span> <strong>In the DataStax distribution: as the shipped engine.</strong> JVector — a graph index of the DiskANN family, supporting product and binary quantisation<sup class="n"><a href="#n19">19</a></sup> — is part of what the distribution adds atop the Cassandra 5.0 base,<sup class="n"><a href="#n5">5</a></sup> and the HCD documentation names it as the mechanism behind immediate searchability.<sup class="n"><a href="#n4">4</a></sup></p>
+
+<p><span class="ep ep-d">D</span> <strong>In OpenSearch: as an official plugin, not a core engine.</strong> The documented core k-NN engines are Lucene, Faiss and the deprecated NMSLIB, the latter superseded in favour of the first two;<sup class="n"><a href="#n17">17</a></sup> the default engine changed from NMSLIB to Faiss in the 2.18 line, and index creation on NMSLIB is blocked from OpenSearch 3.0.<sup class="n"><a href="#n18">18</a></sup> JVector is available separately as <code>opensearch-project/opensearch-jvector</code>, Apache-2.0 licensed and governed within the OpenSearch project, with a release train tracking OpenSearch versions.<sup class="n"><a href="#n20">20</a></sup> Its README claims thread-safe concurrent index construction, incremental merges in place of full graph rebuilds, and — directly relevant here — compatibility with Cassandra, "which allows to more easily transfer vector encoded data from Cassandra to OpenSearch and vice versa."<sup class="n"><a href="#n19">19</a></sup></p>
+
+<p>The practical consequence: a benchmark of "Cassandra vector search" tells you nothing about the DataStax distribution, and a benchmark of either tells you nothing about the OpenSearch plugin. Three artefacts, three governance models, three release cadences. Establish which one your evaluation actually exercised before you read its numbers.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: three systems and the vector index engine each actually runs — Apache Cassandra 5.0 on Lucene HNSW, the DataStax distribution on JVector as shipped engine, and OpenSearch on Lucene, Faiss and deprecated NMSLIB with JVector available as a separate plugin.">
+<rect x="0" y="0" width="900" height="330" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 4 — Three loci of the same library, and one place it does not appear</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">Conflating these three invalidates an evaluation before the first measurement is taken</text>
+
+<rect x="20" y="66" width="272" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="20" y="66" width="272" height="34" rx="9" fill="#1F3864"/>
+<rect x="20" y="88" width="272" height="12" fill="#1F3864"/>
+<text x="156" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">APACHE CASSANDRA 5.0</text>
+<text x="156" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">upstream · Apache Software Foundation</text>
+<text x="38" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Vector ANN</text>
+<text x="38" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">Lucene HNSW</text>
+<text x="38" y="198" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Index framework</text>
+<text x="38" y="216" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">SAI — new in 5.0</text>
+<rect x="38" y="238" width="236" height="40" rx="6" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="156" y="255" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#514A5C">JVector: NOT PRESENT</text>
+<text x="156" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#514A5C">specified on Lucene HNSW — CEP-30</text>
+
+<rect x="306" y="66" width="272" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="306" y="66" width="272" height="34" rx="9" fill="#1F3864"/>
+<rect x="306" y="88" width="272" height="12" fill="#1F3864"/>
+<text x="442" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">DATASTAX DISTRIBUTION</text>
+<text x="442" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">HCD 2.x · based on Cassandra 5.0</text>
+<text x="324" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Vector ANN</text>
+<text x="324" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">JVector — shipped engine</text>
+<text x="324" y="198" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Family · compression</text>
+<text x="324" y="216" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">DiskANN · PQ and BQ</text>
+<rect x="324" y="238" width="236" height="40" rx="6" fill="#E8F0FB" stroke="#C6D8F2"/>
+<text x="442" y="255" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1F3864">Added by the distribution</text>
+<text x="442" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#1F3864">atop the 5.0 base — immediate indexing</text>
+
+<rect x="592" y="66" width="288" height="228" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<rect x="592" y="66" width="288" height="34" rx="9" fill="#1F3864"/>
+<rect x="592" y="88" width="288" height="12" fill="#1F3864"/>
+<text x="736" y="89" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12.5" font-weight="700" fill="#fff">OPENSEARCH 3.x</text>
+<text x="736" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">separate project · separate governance</text>
+<text x="610" y="154" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">Core k-NN engines</text>
+<text x="610" y="172" font-family="ui-monospace,Menlo,monospace" font-size="11.5" fill="#1F3864">Lucene · Faiss · NMSLIB</text>
+<text x="610" y="188" font-family="system-ui,sans-serif" font-size="10.5" fill="#8A6D00">NMSLIB deprecated; default moved to Faiss at 2.18</text>
+<text x="610" y="212" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#1B1F24">JVector</text>
+<rect x="610" y="222" width="252" height="56" rx="6" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="736" y="240" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11.5" font-weight="650" fill="#6B5500">Separate plugin, not a core engine</text>
+<text x="736" y="255" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10.5" fill="#6B5500">opensearch-project/opensearch-jvector</text>
+<text x="736" y="270" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10.5" fill="#6B5500">Apache-2.0 · release train tracks OpenSearch</text>
+
+<rect x="20" y="304" width="860" height="0.5" fill="#E4E9F0"/>
+</svg>
+<figcaption>Figure 4. The three loci. Every element shown is <strong>documented</strong>: Lucene HNSW upstream (note 21), SAI as a 5.0 feature (note 22), the distribution's base version (note 5), the DiskANN family and quantisation support (notes 19 and 4), the OpenSearch core engines and the NMSLIB deprecation (notes 17 and 18), and the plugin's licensing and release train (notes 19 and 20).</figcaption>
+</figure>
+
+<h2>8. The fifth operation and its designated successor</h2>
+
+<p>The five-step account above assigns the final step to a consensus round. That step, alone among the five, has a named successor already in flight, and any reader holding a current view of the Cassandra roadmap will ask about it. The answer is more interesting than a simple replacement narrative, and it is worth developing with some care, because it both qualifies and reinforces the thesis of this article.</p>
+
+<h3>8.1 What Accord specifies</h3>
+
+<p><span class="ep ep-d">D</span> CEP-15 proposes Accord, a leaderless timestamp protocol for general-purpose distributed transactions. Its stated goals are transactions operating over any set of keys atomically, strict-serializable isolation, one wide-area round trip under normal conditions, failure tolerance unaffected by any minority of replica failures, absence of any introduced bottleneck, and — the goal most relevant here — support for live migration from Paxos. Two techniques are proposed as novel: a <em>reorder buffer</em> guaranteeing single-round-trip consensus under a timestamp protocol, and <em>fast path electorates</em> preserving leaderless fast-path availability under worst tolerated failure. Timestamps are hybrid logical clocks made globally unique by appending each replica's identifier. The proposal situates itself in the EPaxos lineage, claiming better properties than Caesar or Tempo.<sup class="n"><a href="#n23">23</a></sup></p>
+
+<p>The single round trip is a <em>design goal inscribed in the proposal</em>, not a measurement. <span class="ep ep-u">U</span> No benchmark figures published by the Apache Software Foundation were located. Practitioners will encounter a great many performance claims about Accord in secondary material; none that I could trace to a primary source.</p>
+
+<h3>8.2 Coexistence, not replacement</h3>
+
+<p><span class="ep ep-d">D</span> This is the point most frequently mangled in summary. The proposal is explicit on both horizons:</p>
+
+<blockquote class="src"><p>"This work is expected to replace Paxos for the project. In order to support live migration both protocols will be maintained for at least an interim period, after which it is expected that Paxos will be deprecated. The precise timing of this will be up to the community."</p>
+<cite>CEP-15, <em>General Purpose Transactions</em>, section "Long Term".<sup class="n"><a href="#n23">23</a></sup></cite></blockquote>
+
+<p>And, on the architecture of the coexistence: supporting the Paxos-based lightweight transaction and Accord side by side is cited in the proposal as an instance of the intended modularity.<sup class="n"><a href="#n23">23</a></sup> No deprecation of Paxos has been announced. Lightweight transactions remain the mechanism in the field.</p>
+
+<h3>8.3 Release status, stated precisely</h3>
+
+<p><span class="ep ep-d">D</span> Apache Cassandra 6.0-alpha1 is tagged 3 April 2026 and 6.0-alpha2 is tagged 7 August 2026 in the project repository.<sup class="n"><a href="#n24">24</a></sup> The release announcement characterises the build without ambiguity: a quarterly alpha on the 6.0 series, and quarterly alphas are intended only for development and testing purposes.<sup class="n"><a href="#n25">25</a></sup></p>
+
+<p><span class="ep ep-d">D</span> The <code>NEWS.txt</code> of the 6.0-alpha2 tag enumerates, under the 6.0 new-features heading: JDK 21 with generational ZGC as default collector, CEP-37 Auto Repair, CEP-21 Transactional Cluster Metadata, CEP-42 Constraints Framework, CEP-24, CEP-43 and CEP-55, unified-compaction parallelisation, JMX configuration in YAML, and several new CQL functions. <strong>Accord is not among them.</strong> This absence is suggestive but not probative: the same file carries an explicit editorial placeholder, and its upgrade section still refers to the release as 5.1, evidencing a renumbering not yet reflected throughout.<sup class="n"><a href="#n26">26</a></sup></p>
+
+<p><span class="ep ep-d">D</span> The tracking epic for CEP-15 is titled "Accord Beta" and stands, at consultation, In Progress and Unresolved; the linked ticket for writing the CEP-15 documentation is likewise In Progress.<sup class="n"><a href="#n27">27</a></sup> <span class="ep ep-r">R</span> Documentation under review in the project describes the activation model: a global switch in <code>cassandra.yaml</code> (<code>accord: enabled: true</code>) and a per-table property (<code>WITH transactional_mode = 'full'</code>), under which ordinary CQL operations on that table execute through Accord.<sup class="n"><a href="#n28">28</a></sup> The explicit transaction surface — <code>BEGIN TRANSACTION</code>, <code>LET</code>, conditional block, <code>COMMIT TRANSACTION</code> — appears in project issue traffic.<sup class="n"><a href="#n29">29</a></sup> Alpha syntax, subject to change.</p>
+
+<p><span class="ep ep-d">D</span> <span class="ep ep-u">U</span> A qualification I owe the reader: I was unable to render the <code>cassandra.yaml</code> shipped at the 6.0-alpha2 tag, and therefore cannot assert from a primary source that the <code>accord</code> configuration block is present in that specific artefact. What is established is that Accord is absent from that tag's release notes, that its tracking epic is unresolved, and that where it is enabled it is enabled deliberately, per table, rather than by default.</p>
+
+<h3>8.4 What Accord changes in the five-operation model — and what it does not</h3>
+
+<p>Here the analysis becomes unusually clean, because the proposal settles it by its own terms. Among the explicit <em>non-goals</em> of CEP-15 are SASI, SAI and local secondary indexes.<sup class="n"><a href="#n23">23</a></sup> Storage-attached indexing — step four of our five — is outside the proposal's scope by declaration, not by inference.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Step</th><th>Belongs to</th><th>Modified by Accord?</th></tr></thead>
+<tbody>
+<tr><td>1 — Read the whole document</td><td>Storage model</td><td>No</td></tr>
+<tr><td>2 — Modify in memory</td><td>Storage model</td><td>No</td></tr>
+<tr><td>3 — Rewrite document and derived columns</td><td>Storage model</td><td>No</td></tr>
+<tr><td>4 — Maintain storage-attached indexes</td><td>Storage model</td><td>No — excluded by CEP-15's stated non-goals</td></tr>
+<tr><td>5 — Guard with consensus</td><td>Consensus mechanism</td><td>Yes, and this step alone</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Accord alters how a write is <em>arbitrated</em>. It does not alter how a document is <em>decomposed and rewritten</em>. The thesis of this article is therefore not weakened by the arrival of a successor protocol; it is corroborated by it. A change of consensus mechanism — a genuine advance in distributed systems, formally specified and years in construction — leaves untouched the four steps that derive from physical layout. That is exactly what one should expect if the layout decision is the real predictor, and exactly what one should not expect if the five-step cost were an artefact of the consensus round. The successor protocol is, in this precise sense, a controlled experiment on the article's own hypothesis.</p>
+
+<figure class="wide">
+<svg viewBox="0 0 900 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: a layered view in which the consensus stratum may be exchanged from Paxos lightweight transactions to Accord, while the storage stratum comprising decomposition, rewrite and storage-attached index maintenance remains unchanged and is explicitly outside the scope of CEP-15.">
+<defs>
+<marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+<path d="M0,0 L10,5 L0,10 z" fill="#8A6D00"/></marker>
+</defs>
+<rect x="0" y="0" width="900" height="372" fill="#FFFFFF"/>
+<text x="20" y="26" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#1F3864">FIGURE 5 — What a change of consensus protocol does and does not touch</text>
+<text x="20" y="45" font-family="system-ui,sans-serif" font-size="12" fill="#4A5568">The fifth operation has a designated successor; the first four do not</text>
+
+<rect x="20" y="66" width="860" height="112" rx="9" fill="#F7F9FC" stroke="#C6D8F2"/>
+<text x="38" y="90" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#1F3864">CONSENSUS STRATUM — exchangeable</text>
+
+<rect x="38" y="102" width="366" height="62" rx="7" fill="#FFFFFF" stroke="#C6D8F2"/>
+<text x="54" y="124" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">Paxos lightweight transactions</text>
+<text x="54" y="142" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">single partition · prepare / promise / propose</text>
+<text x="54" y="157" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">3 client retries (upstream default) · in the field today</text>
+
+<line x1="418" y1="133" x2="486" y2="133" stroke="#8A6D00" stroke-width="2" marker-end="url(#ar3)"/>
+<text x="452" y="122" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#8A6D00">coexist,</text>
+<text x="452" y="155" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" font-weight="700" fill="#8A6D00">then migrate</text>
+
+<rect x="496" y="102" width="366" height="62" rx="7" fill="#FFFFFF" stroke="#C6D8F2"/>
+<text x="512" y="124" font-family="system-ui,sans-serif" font-size="12" font-weight="650" fill="#1B1F24">Accord — CEP-15</text>
+<text x="512" y="142" font-family="system-ui,sans-serif" font-size="11" fill="#4A5568">multi-partition · leaderless · strict-serializable</text>
+<text x="512" y="157" font-family="system-ui,sans-serif" font-size="11" fill="#8A6D00">alpha · off by default · adopted per table</text>
+
+<rect x="20" y="194" width="860" height="130" rx="9" fill="#FBF3DE" stroke="#EBDCAE"/>
+<text x="38" y="218" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#6B5500">STORAGE STRATUM — unchanged by either protocol</text>
+
+<g font-family="system-ui,sans-serif">
+<rect x="38" y="230" width="198" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="137" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">1–2 · READ / MODIFY</text>
+<text x="137" y="269" text-anchor="middle" font-size="10.5" fill="#6B5500">document fetched, changed in memory</text>
+
+<rect x="246" y="230" width="198" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="345" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">3 · REWRITE</text>
+<text x="345" y="269" text-anchor="middle" font-size="10.5" fill="#6B5500">whole document + derived columns</text>
+
+<rect x="454" y="230" width="408" height="52" rx="6" fill="#FFFFFF" stroke="#C8A96A"/>
+<text x="658" y="252" text-anchor="middle" font-size="11.5" font-weight="650" fill="#1B1F24">4 · STORAGE-ATTACHED INDEX MAINTENANCE</text>
+<text x="658" y="269" text-anchor="middle" font-size="10.5" font-weight="650" fill="#6B5500">SASI, SAI and local secondary indexes are explicit NON-GOALS of CEP-15</text>
+</g>
+<text x="38" y="308" font-size="11" font-family="system-ui,sans-serif" fill="#6B5500">These four steps follow from the physical layout decision, not from the arbitration mechanism. No consensus protocol reaches them.</text>
+
+<rect x="20" y="338" width="860" height="26" rx="6" fill="#F2F0F4" stroke="#DEDAE4"/>
+<text x="34" y="356" font-family="system-ui,sans-serif" font-size="11" fill="#514A5C">Accord is not available in the commercial distribution discussed here: HCD 2.x is based on Cassandra 5.0, and Accord targets the 6.0 line.</text>
+</svg>
+<figcaption>Figure 5. The stratification. <strong>Documented:</strong> Accord's leaderless, strict-serializable, multi-partition character and its explicit non-goals including SAI (note 23); Paxos coexistence and eventual deprecation without timetable (note 23); the retry default (note 1); the base version of the distribution (note 5). <strong>Reported:</strong> the per-table activation model, drawn from documentation still under review (note 28). <strong>Measured, not documented:</strong> the placement of steps 1–3 in the storage stratum, observed by query trace on one build (appendix, measurement M2) and inheriting the <span class="ep ep-m">M</span> marking of section 3.</figcaption>
+</figure>
+
+<p><span class="ep ep-d">D</span> One consequence for readers evaluating the commercial distribution: no mention of Accord appears in the HCD documentation consulted, and HCD 2.0 is based on Cassandra 5.0.<sup class="n"><a href="#n5">5</a></sup> Accord is therefore not available there today. Treat it as a reason to follow the 6.0 line attentively, not as a property of any system you can deploy to production this quarter.</p>
+
+<h2>9. On reading published limits — including this article's</h2>
+
+<p>This section began life as a methodological aside and earned promotion, because the error it describes is one I committed myself and did not catch until audit.</p>
+
+<p>The upstream open-source project behind the Data API and the shipped commercial product do not carry identical limits, and reading the wrong one silently corrupts a design. <span class="ep ep-d">D</span> The upstream configuration record sets a default read page size of fifty and a maximum insert count of twenty per operation, alongside ten indexes required per collection and fifty available per database.<sup class="n"><a href="#n1">1</a></sup> The commercial limits documentation for the same API surface publishes a page size of twenty and a maximum of one hundred insertions per transaction.<sup class="n"><a href="#n2">2</a></sup> The product guardrail for total storage-attached indexes is one hundred.<sup class="n"><a href="#n3">3</a></sup></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Parameter</th><th>Upstream project default</th><th>Commercial product limit</th></tr></thead>
+<tbody>
+<tr><td>Read page size</td><td>50</td><td>20</td></tr>
+<tr><td>Documents per insert operation</td><td>20</td><td>100 insertions per transaction</td></tr>
+<tr><td>Indexes required per collection</td><td>10</td><td>—</td></tr>
+<tr><td>Indexes available per database</td><td>50</td><td>100 total SAI (guardrail)</td></tr>
+<tr><td>LWT client retries</td><td>3</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Observe that the divergence does not run in a single direction. Page size is <em>lower</em> in the product; insert volume is <em>higher</em>; the index ceiling is <em>higher</em>. An earlier draft of this article reported the insert batch as 100 upstream against 20 in the product — reversing the direction of the second row and misattributing the third. Three wrong numbers, produced by reading the upstream repository where the product documentation was called for, and reproduced with complete confidence until they were checked against the sources now listed in the appendix.</p>
+
+<p><span class="ep ep-u">U</span> I should add that I was unable to render the HCD 2.0 limits page itself during verification; the product figures above come from the equivalent commercial documentation for the same Data API surface, which is a source of adjacent rather than identical scope. The rule this yields is therefore one I am in a poor position to preach and a good position to demonstrate:</p>
+
+<blockquote><p>Verify the limits that constrain your design against <strong>the build you will actually deploy</strong> — not against a vendor's documentation for an adjacent edition, not against an upstream repository, not against a comparison article, and not against this one. It takes minutes, and it is the difference between a constraint known <em>ex ante</em> and one that finds you in production.</p></blockquote>
+
+<h2>10. Methodological requirements for comparison</h2>
+
+<p>If you intend to compare these systems empirically, the distance between a defensible benchmark and a worthless one is six requirements, and most published comparisons violate at least three. None is my invention. The first two address <em>coordinated omission</em>, named by Gil Tene, whose <code>wrk2</code> and HdrHistogram exist precisely to correct it: the tool combines constant-throughput load generation with latency measurement that accounts for the intended rate.<sup class="n"><a href="#n30">30</a></sup> The remainder address, <em>inter alia</em>, the documented weaknesses of the Yahoo! Cloud Serving Benchmark upon which most published NoSQL comparisons rest.<sup class="n"><a href="#n31">31</a></sup></p>
+
+<ol>
+<li><strong>Drive load at a fixed offered rate</strong>, not as fast as the system replies. A loop that awaits each response conceals precisely the stalls under investigation and systematically understates the tail.</li>
+<li><strong>Report the distribution, not the average.</strong> Median, p99, p99.9, maximum. Averages conceal the behaviour that pages you at three in the morning.</li>
+<li><strong>Hold durability equivalent, and record the mapping.</strong> The two systems express durability differently; select a defensible equivalence, disclose it, and do not vary it between runs.</li>
+<li><strong>State the working set against available memory</strong>, and execute both an in-cache and a disk-bound regime. A latency figure without this is uninterpretable, not merely incomplete.</li>
+<li><strong>Declare the topology</strong>, including any coordinating tier. Throughput scales with what was provisioned, and a stateless API tier is a provisioning decision.</li>
+<li><strong>Warm up, then run long enough to cross the background maintenance cycles.</strong> Compaction and checkpointing are steady state, not noise.</li>
+</ol>
+
+<p>Apply all six to both systems, or the comparison characterises your test rig rather than the databases.</p>
+
+<p><span class="ep ep-d">D</span> For a peer-reviewed comparison of these two database families, the reference is Haughian, Osman and Knottenbelt, <em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores</em>, DEXA 2016.<sup class="n"><a href="#n32">32</a></sup> <span class="ep ep-u">U</span> I recommend reading it for its stated limitations rather than its results — but I must withdraw the specific characterisation of those limitations that appeared in an earlier draft, since I was unable to obtain the full text and will not paraphrase a paper's methodology section from its abstract. Read the limitations yourself; that exercise is, in any case, more instructive than the numbers.</p>
+
+<h2>11. What to do this week</h2>
+
+<p>Two of the three apply whatever database you run today. None takes longer than an afternoon.</p>
+
+<p><strong>1 — Measure your write-to-searchable interval. Fifteen minutes.</strong><br>
+Run the twelve-line probe from section 6.3 against whatever you already operate, once idle and once under write load. You will obtain a number you almost certainly do not currently have, and it is the number that determines whether index lag is a constraint you must design around. If you are building anything with retrieval in it, this is the highest-value quarter-hour available to you.</p>
+
+<p><strong>2 — Establish who generates your record identifiers. One hour.</strong><br>
+Walk the writes that matter — payments, orders, anything on which a duplicate would be expensive — and determine whether the identifier derives from your business data or from the database. Convert the ones that matter. This eliminates a category of production incident, costs nothing at runtime, and behaves identically on every database in this class.</p>
+
+<p><strong>3 — Ask your own database how it stores a record. An afternoon.</strong><br>
+Whatever you operate, establish whether it keeps a record whole or takes it apart, and what it indexes automatically. Then re-read your slowest write path in that light. In the majority of cases the explanation is already there, and the investigation has been examining the wrong layer.</p>
+
+<h2>12. Conclusion</h2>
+
+<p>The conclusion is not that one of these databases is superior. It is something more portable:</p>
+
+<blockquote><p>Establish how your database physically stores a record, and you can predict most of the rest — what an update genuinely costs, what you should model for, when your index is current, and where the system ceases to be the right answer.</p></blockquote>
+
+<p>That question is worth putting to any database under evaluation, and to the one already in production. It will save more time than a dozen feature comparison tables, and — as section 8 indicates — it remains the right question even as the consensus layer beneath it is replaced by a formally specified successor. Layout outlives protocol.</p>
+
+<p>A second conclusion concerns method rather than architecture, and I would not have written it a year ago. Of the claims in this article, a substantial minority could not be established from sources of acceptable rank, including several that are universally repeated and that I personally believe to be true. Marking them as unverified rather than quietly asserting them makes this a less confident article. It also makes it a falsifiable one, which is the only kind worth writing about someone else's system while employed by their competitor.</p>
+
+<div class="disclosure">
+<p><em>Disclosure.</em> I work at IBM, on the DataStax side of Software, Data &amp; AI. I therefore know one of these two systems considerably better than the other, and the reader should weight the article accordingly. Two deliberate constraints follow from that position. <strong>First</strong>, no benchmark figures appear in the body of this article, because a number produced on my hardware with my workload would tell you nothing about yours and would carry an authority it has not earned; the appendix reports one build's measurements, each with its conditions; one of them (M13) is a deliberate exception — a same-host, matched comparison against MongoDB on the single-field-mutation axis, the one place the methodology section's six requirements can be met on my own hardware because both engines run on it at once. <strong>Second</strong>, every factual claim is graded for evidentiary status and sourced in the appendix below, including claims favourable to my employer and claims I was unable to verify.</p>
+<p>Corrections are welcome and will be applied with attribution. If you find an error, the appendix is designed to let you demonstrate it in minutes rather than argue about it.</p>
+<p><strong>David Leconte</strong> — Customer Success Engineer, IBM France · Software, Data &amp; AI | Horizon</p>
+</div>
+
+<h2>Notes</h2>
+
+<p>Notes carry the short form. The appendix that follows is numbered identically and holds, for every entry, the full locator, the passage relied upon where one exists, and any caveat of scope or edition. A note and its appendix entry are the same source seen at two magnifications.</p>
+
+<ol class="notes">
+<li id="n1">Stargate, <code>data-api</code>, <code>CONFIGURATION.md</code>, branch <code>main</code>. Establishes <code>default-page-size</code> = 50, <code>max-document-insert-count</code> = 20, <code>indexes-needed-per-collection</code> = 10, <code>indexes-available-per-database</code> = 50, and <code>lwt.retries</code> = 3. Upstream project defaults; not the shipped product's limits.</li>
+<li id="n2">DataStax, Data API limits, Astra DB Serverless. Page size 20; maximum insertions per transaction 100. Commercial documentation for the same API surface; the HCD 2.0 limits page could not be rendered during verification.</li>
+<li id="n3">DataStax Mission Control, HCD guardrail configuration: <code>sai_indexes_total</code> set to 100.</li>
+<li id="n4">DataStax, <em>About vector databases</em>, HCD 2.0.</li>
+<li id="n5">DataStax, <em>Cassandra drivers overview</em>, HCD 2.0: "HCD 2.x is based on Cassandra 5.0."</li>
+<li id="n6">DataStax, tables reference, HCD. Tables via the Data API carry a public-preview designation at the time of writing.</li>
+<li id="n7">DataStax, HCD frequently asked questions: the Data API is described as schema-less and document-based, providing access to both structured and unstructured data.</li>
+<li id="n8">DataStax, capacity planning, HCD: under 100,000 rows per partition and partition size under 100 MB.</li>
+<li id="n9">DataStax, data-modelling best practices, CQL for HCD: partitions ideally under 100 MB.</li>
+<li id="n10">DataStax, list table metadata, Data API. Source of the <code>primaryKey</code> / <code>partitionBy</code> / <code>partitionSort</code> structure quoted in section 6.1.</li>
+<li id="n11">Stargate project, introduction of the JSON API and Mongoose integration, 13 March 2023. Source of the "super shredding" characterisation; does not enumerate column names.</li>
+<li id="n12">Stargate project, the Cassandra Documents API, 19 October 2020: the engineers state that they resolved to avoid read-before-write operations at all costs. Concerns the earlier Documents API, architecturally distinct from the current Data API.</li>
+<li id="n13">DataStax, lightweight transactions, HCD. Describes the Paxos phases underlying conditional writes.</li>
+<li id="n14">MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em>, 15 January 2026. Source of the quoted passage, of the SSPL licensing and of the public-preview status.</li>
+<li id="n15">MongoDB, <em>MongoDB Search and Vector Search Now Run Anywhere</em>: <code>mongot</code> as a separate binary running alongside <code>mongod</code>.</li>
+<li id="n16">MongoDB, MongoDB.local San Francisco 2026: "mongot runs separately from mongod, MongoDB's core database process."</li>
+<li id="n17">OpenSearch documentation, k-NN methods and engines: NMSLIB deprecated in favour of Faiss and Lucene.</li>
+<li id="n18">OpenSearch documentation, breaking changes: default engine changed from NMSLIB to Faiss (2.18); NMSLIB index creation blocked from 3.0.</li>
+<li id="n19">GitHub, <code>opensearch-project/opensearch-jvector</code>, README. Source of the DiskANN characterisation, the PQ/BQ support, the thread-safety and incremental-merge claims, and the quoted Cassandra-compatibility passage.</li>
+<li id="n20">Maven Central, <code>org.opensearch.plugin:opensearch-jvector-plugin</code>, version 3.7.0.1. Evidences the release train tracking OpenSearch versions.</li>
+<li id="n21">Apache Software Foundation, CEP-30: integration of Lucene's HNSW for vector search in Apache Cassandra.</li>
+<li id="n22">Apache Cassandra project blog, Storage-Attached Indexes: SAI as a new feature in Apache Cassandra 5.0.</li>
+<li id="n23">Apache Software Foundation, CEP-15: General Purpose Transactions. Status: Accepted. Source of the goals, the non-goals (including SASI, SAI and local secondary indexes), the coexistence statement and the long-term Paxos passage quoted in section 8.2.</li>
+<li id="n24">GitHub, <code>apache/cassandra</code>, tags: <code>cassandra-6.0-alpha1</code> (3 April 2026, commit 1ee7ed7) and <code>cassandra-6.0-alpha2</code> (7 August 2026, commit e874e3a).</li>
+<li id="n25">Apache Cassandra release announcement, 6.0-alpha2, 7 August 2026: "This version is a quarterly alpha release on the 6.0 series. Quarterly alphas are intended only for development and testing purposes."</li>
+<li id="n26">GitHub, <code>apache/cassandra</code>, <code>NEWS.txt</code> at tag <code>cassandra-6.0-alpha2</code>. The 6.0 new-features enumeration, the editorial placeholder, and the residual references to 5.1 in the upgrade section.</li>
+<li id="n27">Apache issue tracker, CASSANDRA-17092, epic "CEP-15: Accord Beta", In Progress / Unresolved at consultation; linked CASSANDRA-18229, "Write docs for CEP-15", In Progress.</li>
+<li id="n28">Apache Cassandra pull request 4572, adding <code>doc/modules/cassandra/pages/developing/cql/transactions.adoc</code>. Source of <code>accord: enabled: true</code> and <code>WITH transactional_mode = 'full'</code>. Under review; merge status not established.</li>
+<li id="n29">Apache issue tracker, CASSANDRA-19759. Source of the <code>BEGIN TRANSACTION</code> / <code>LET</code> / <code>COMMIT TRANSACTION</code> syntax, and of the requirement that the table carry <code>transactional_mode='full'</code>.</li>
+<li id="n30">GitHub, <code>giltene/wrk2</code>. Coordinated omission, constant-throughput load generation, HdrHistogram.</li>
+<li id="n31">Cooper, Silberstein, Tam, Ramakrishnan and Sears, <em>Benchmarking cloud serving systems with YCSB</em>, SoCC 2010, pp. 143–154.</li>
+<li id="n32">Haughian, Osman and Knottenbelt, <em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores</em>, DEXA 2016, LNCS vol. 9828, pp. 152–166, Springer. Full text not consulted.</li>
+<li id="n33">DataStax, how transactions differ, HCD: HCD does not adhere to ACID transactions with rollback or locking mechanisms; a write operation is atomic at the partition level.</li>
+<li id="n34">MongoDB, <em>Atomicity and Transactions</em>, Database Manual. Single-document atomicity, and its explicit boundary for multi-document operations.</li>
+<li id="n35">MongoDB, <code>$set</code> update operator reference, Database Manual. Targeted updates against full document replacement; oplog efficiency.</li>
+<li id="n36">MongoDB, <em>Indexes</em>, Database Manual. The unique <code>_id</code> index created at collection creation, which cannot be dropped; all other indexes created explicitly.</li>
+<li id="n37">MongoDB, <code>createIndexes</code> reference, Database Manual v8.0. Wildcard indexes over the <code>$**</code> pattern, supporting queries on arbitrary fields.</li>
+</ol>
+
+<h2>Appendix — sources</h2>
+
+<p>Each entry records what the source establishes, the edition or version to which it pertains, and the locator. All were consulted on 17 September 2026 unless otherwise stated. Where a source is of adjacent rather than identical scope, or where the target page could not be rendered, that is stated in the entry rather than elsewhere.</p>
+
+<dl class="appendix">
+
+<dt>1 — Stargate, <em>data-api</em> configuration record</dt>
+<dd>Establishes: upstream defaults for page size (50), insert count (20), indexes per collection (10), indexes per database (50), LWT client retries (3).</dd>
+<dd>Version: branch <code>main</code>, upstream open-source project — <em>not</em> the shipped HCD product.</dd>
+<dd class="m"><a href="https://github.com/stargate/data-api/blob/main/CONFIGURATION.md">https://github.com/stargate/data-api/blob/main/CONFIGURATION.md</a></dd>
+
+<dt>2 — DataStax, Data API limits</dt>
+<dd>Establishes: page size 20; maximum insertions per transaction 100.</dd>
+<dd>Version: Astra DB Serverless, same Data API surface. Scope caveat: the HCD 2.0 limits page could not be rendered during verification.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/astra-db-serverless/api-reference/dataapi-limits.html">https://docs.datastax.com/en/astra-db-serverless/api-reference/dataapi-limits.html</a></dd>
+
+<dt>3 — DataStax Mission Control, HCD guardrails</dt>
+<dd>Establishes: the <code>sai_indexes_total</code> guardrail set to 100.</dd>
+<dd>Version: HCD product guardrail configuration.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/mission-control/administration/data-plane/configure-hcd-guardrails.html">https://docs.datastax.com/en/mission-control/administration/data-plane/configure-hcd-guardrails.html</a></dd>
+
+<dt>4 — DataStax, <em>About vector databases</em></dt>
+<dd>Establishes: immediate addition of newly inserted documents to the vector graph, attributed to JVector; quantisation support.</dd>
+<dd class="q">"When you insert data, JVector adds those new documents to the graph immediately, so you can efficiently search right away."</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/get-started/vector-concepts.html">https://docs.datastax.com/en/hyper-converged-database/2.0/get-started/vector-concepts.html</a></dd>
+
+<dt>5 — DataStax, Cassandra drivers overview</dt>
+<dd>Establishes: the base engine version of the distribution.</dd>
+<dd class="q">"HCD 2.x is based on Cassandra 5.0."</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html">https://docs.datastax.com/en/hyper-converged-database/2.0/drivers/cassandra-drivers-overview.html</a></dd>
+
+<dt>6 — DataStax, tables reference</dt>
+<dd>Establishes: fixed-schema tables alongside schemaless collections.</dd>
+<dd class="q">"Tables are best for use cases where your data is structured and adheres to a pre-defined schema, known as a fixed schema."</dd>
+<dd>Version: HCD. Caveat: tables via the Data API carry a public-preview designation.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/api-reference/tables.html">https://docs.datastax.com/en/hyper-converged-database/2.0/api-reference/tables.html</a></dd>
+
+<dt>7 — DataStax, HCD frequently asked questions</dt>
+<dd>Establishes: the Data API as a schema-less, document-based interface over both structured and unstructured data.</dd>
+<dd>Version: HCD 2.0.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/2.0/faqs.html">https://docs.datastax.com/en/hyper-converged-database/2.0/faqs.html</a></dd>
+
+<dt>8 — DataStax, capacity planning</dt>
+<dd>Establishes: the two sizing bounds quoted in section 6.1.</dd>
+<dd class="q">"a good rule of thumb is to keep the number of rows per partition under 100,000 and the partition size under 100 MB."</dd>
+<dd>Version: HCD 1.1. Scope caveat: the 2.0 data-model page could not be rendered; figures corroborated by entry 9.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/install/capacity-planning.html">https://docs.datastax.com/en/hyper-converged-database/1.1/install/capacity-planning.html</a></dd>
+
+<dt>9 — DataStax, data-modelling best practices</dt>
+<dd>Establishes, independently: the partition-size bound.</dd>
+<dd class="q">"DataStax recommends keeping partitions small, ideally under 100 MB."</dd>
+<dd>Version: CQL for HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/cql/hcd/data-modeling/best-practices.html">https://docs.datastax.com/en/cql/hcd/data-modeling/best-practices.html</a></dd>
+
+<dt>10 — DataStax, list table metadata</dt>
+<dd>Establishes: the JSON primary-key structure, including sort direction encoding.</dd>
+<dd class="q">"primaryKey": { "partitionBy": [ "user_id" ], "partitionSort": { "order_id": 1, "order_date": -1 } }</dd>
+<dd>Version: Data API, Astra DB Serverless documentation; identical API surface.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/astra-db-serverless/api-reference/table-methods/list-table-metadata.html">https://docs.datastax.com/en/astra-db-serverless/api-reference/table-methods/list-table-metadata.html</a></dd>
+
+<dt>11 — Stargate project, introducing the JSON API</dt>
+<dd>Establishes: the shredding technique by name. Does <em>not</em> enumerate column names.</dd>
+<dd class="q">"we're using an improved approach known as 'super shredding'"</dd>
+<dd>Date: 13 March 2023.</dd>
+<dd class="m"><a href="https://stargate.io/2023/03/13/introduce-stargate-mongoose.html">https://stargate.io/2023/03/13/introduce-stargate-mongoose.html</a></dd>
+
+<dt>12 — Stargate project, the Cassandra Documents API</dt>
+<dd>Establishes: the design intent regarding read-before-write, for the <em>earlier</em> Documents API.</dd>
+<dd class="q">"we resolved to avoid doing any read-before-write operations at all costs"</dd>
+<dd>Date: 19 October 2020. Scope caveat: architecturally distinct from the current Data API; cited here precisely because it complicates the structural inference in section 3.</dd>
+<dd class="m"><a href="https://stargate.io/2020/10/19/the-stargate-cassandra-documents-api.html">https://stargate.io/2020/10/19/the-stargate-cassandra-documents-api.html</a></dd>
+
+<dt>13 — DataStax, lightweight transactions</dt>
+<dd>Establishes: the Paxos phase structure of conditional writes, and the interaction hazards of mixing LWT with normal operations.</dd>
+<dd>Version: HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/lightweight-transactions.html">https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/lightweight-transactions.html</a></dd>
+
+<dt>14 — MongoDB, <em>Now Source Available: The Engine Powering MongoDB Search</em></dt>
+<dd>Establishes: the asynchronous indexing mechanism; the SSPL licensing; the public-preview status; the date.</dd>
+<dd class="q">"mongot builds and maintains these compute-intensive indexes outside of the transaction commit window by leveraging change streams to asynchronously replicate changes to source data, allowing customers to add search and vector search capabilities without fear of impacting existing transactional workloads."</dd>
+<dd>Date: 15 January 2026.</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/product-release-announcements/now-source-available-the-engine-powering-mongodb-search">https://www.mongodb.com/company/blog/product-release-announcements/now-source-available-the-engine-powering-mongodb-search</a></dd>
+
+<dt>15 — MongoDB, search and vector search running anywhere</dt>
+<dd>Establishes: <code>mongot</code> as a separate binary running alongside <code>mongod</code>.</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/product-release-announcements/mongodb-search-vector-search-now-run-anywhere">https://www.mongodb.com/company/blog/product-release-announcements/mongodb-search-vector-search-now-run-anywhere</a></dd>
+
+<dt>16 — MongoDB.local San Francisco 2026</dt>
+<dd>Establishes, independently: process separation.</dd>
+<dd class="q">"mongot runs separately from mongod, MongoDB's core database process"</dd>
+<dd class="m"><a href="https://www.mongodb.com/company/blog/events/mongodb-local-san-francisco-2026-ship-production-ai-faster">https://www.mongodb.com/company/blog/events/mongodb-local-san-francisco-2026-ship-production-ai-faster</a></dd>
+
+<dt>17 — OpenSearch, k-NN methods and engines</dt>
+<dd>Establishes: the three core engines and the deprecation of NMSLIB.</dd>
+<dd class="q">"While still supported, it has been deprecated in favor of the Faiss and Lucene engines."</dd>
+<dd>Version caveat: documentation published at the unpinned "latest" path; pinned by entry 18.</dd>
+<dd class="m"><a href="https://docs.opensearch.org/latest/mappings/supported-field-types/knn-methods-engines/">https://docs.opensearch.org/latest/mappings/supported-field-types/knn-methods-engines/</a></dd>
+
+<dt>18 — OpenSearch, breaking changes</dt>
+<dd>Establishes: the default-engine change and the version at which NMSLIB index creation is blocked.</dd>
+<dd class="q">"The default k-NN engine changed from NMSLIB to Faiss"</dd>
+<dd>Version: change at 2.18; blocking from 3.0.</dd>
+<dd class="m"><a href="https://docs.opensearch.org/latest/breaking-changes/">https://docs.opensearch.org/latest/breaking-changes/</a></dd>
+
+<dt>19 — <code>opensearch-project/opensearch-jvector</code>, README</dt>
+<dd>Establishes: DiskANN family, PQ and BQ support, thread safety, incremental merges, Apache-2.0 licensing, Cassandra compatibility.</dd>
+<dd class="q">"Compatibility - JVector is compatible with Cassandra. Which allows to more easily transfer vector encoded data from Cassandra to OpenSearch and vice versa."</dd>
+<dd class="m"><a href="https://github.com/opensearch-project/opensearch-jvector">https://github.com/opensearch-project/opensearch-jvector</a></dd>
+
+<dt>20 — Maven Central, OpenSearch JVector plugin</dt>
+<dd>Establishes: the release train tracking OpenSearch versions.</dd>
+<dd>Version: 3.7.0.1.</dd>
+<dd class="m"><a href="https://central.sonatype.com/artifact/org.opensearch.plugin/opensearch-jvector-plugin">https://central.sonatype.com/artifact/org.opensearch.plugin/opensearch-jvector-plugin</a></dd>
+
+<dt>21 — Apache Software Foundation, CEP-30</dt>
+<dd>Establishes: upstream Cassandra vector search built on Lucene HNSW, not JVector.</dd>
+<dd class="q">"Integrate Lucene's HNSW: The implementation will leverage Lucene's Hierarchical Navigable Small World (HNSW) library"</dd>
+<dd>Version: Apache Cassandra 5.0.</dd>
+<dd class="m"><a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255069753">https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=255069753</a></dd>
+<dd class="m">CEP-30 page (Apache Confluence): <a href="https://cwiki.apache.org/confluence/download/attachments/188744725/Accord.pdf">https://cwiki.apache.org/confluence/download/attachments/188744725/Accord.pdf</a></dd>
+<dt>22 — Apache Cassandra project blog, Storage-Attached Indexes</dt>
+<dd>Establishes: SAI as a 5.0 feature.</dd>
+<dd class="q">"Storage Attached Indexes, or SAI, are a new feature in Apache Cassandra 5.0"</dd>
+<dd class="m"><a href="https://cassandra.apache.org/_/blog/Apache-Cassandra-5.0-Features-Storage-Attached-Indexes.html">https://cassandra.apache.org/_/blog/Apache-Cassandra-5.0-Features-Storage-Attached-Indexes.html</a></dd>
+
+<dt>23 — Apache Software Foundation, CEP-15: General Purpose Transactions</dt>
+<dd>Establishes: the goals (strict-serializable isolation, one wide-area round trip, live migration from Paxos); the non-goals (SASI, SAI and local secondary indexes); the Paxos coexistence and long-term deprecation language; the reorder buffer and fast-path electorate techniques; the EPaxos lineage.</dd>
+<dd class="q">"Initially, supporting the Paxos-based LWT and Accord side by side is also an example of such modularity and optionality."</dd>
+<dd>Status: Accepted. Tracking JIRA: CASSANDRA-17092.</dd>
+<dd class="m"><a href="https://cwiki.apache.org/confluence/display/CASSANDRA/CEP-15:+General+Purpose+Transactions">https://cwiki.apache.org/confluence/display/CASSANDRA/CEP-15:+General+Purpose+Transactions</a></dd>
+
+<dt>24 — GitHub, <code>apache/cassandra</code>, tags</dt>
+<dd>Establishes: the alpha tag dates.</dd>
+<dd>Versions: <code>cassandra-6.0-alpha1</code>, 3 April 2026, commit 1ee7ed7; <code>cassandra-6.0-alpha2</code>, 7 August 2026, commit e874e3a.</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/tags">https://github.com/apache/cassandra/tags</a></dd>
+
+<dt>25 — Apache Cassandra, release announcement 6.0-alpha2</dt>
+<dd>Establishes: the quarterly-alpha classification and its intended use.</dd>
+<dd class="q">"Quarterly alphas are intended only for development and testing purposes."</dd>
+<dd>Date: 7 August 2026. Scope caveat: consulted through a list mirror rather than the ASF archive directly.</dd>
+<dd class="m"><a href="http://www.mail-archive.com/user@cassandra.apache.org/msg64289.html">http://www.mail-archive.com/user@cassandra.apache.org/msg64289.html</a></dd>
+<dt>26 — GitHub, <code>apache/cassandra</code>, <code>NEWS.txt</code> at tag <code>cassandra-6.0-alpha2</code></dt>
+<dd>Establishes: the enumerated 6.0 new features, from which Accord is absent; the editorial placeholder that prevents this absence from being probative; the residual 5.1 references evidencing renumbering.</dd>
+<dd class="q">"[The following is a placeholder, to be revised asap]"</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/blob/cassandra-6.0-alpha2/NEWS.txt">https://github.com/apache/cassandra/blob/cassandra-6.0-alpha2/NEWS.txt</a></dd>
+
+<dt>27 — Apache issue tracker, CASSANDRA-17092 and CASSANDRA-18229</dt>
+<dd>Establishes: the CEP-15 tracking epic titled "CEP-15: Accord Beta", In Progress and Unresolved at consultation; the documentation ticket likewise In Progress.</dd>
+<dd class="m"><a href="https://issues.apache.org/jira/browse/CASSANDRA-17092">https://issues.apache.org/jira/browse/CASSANDRA-17092</a></dd>
+<dd class="m">Linked documentation ticket: <a href="https://issues.apache.org/jira/browse/CASSANDRA-18229">https://issues.apache.org/jira/browse/CASSANDRA-18229</a></dd>
+<dt>28 — Apache Cassandra pull request 4572</dt>
+<dd>Establishes: the Accord activation model — global <code>accord: enabled: true</code> and per-table <code>transactional_mode</code>.</dd>
+<dd class="q">"When a table has transactional_mode='full', your existing CQL statements are automatically executed through Accord."</dd>
+<dd>Status caveat: documentation under review; merge status not established. Consulted through the project's pull-request list mirror.</dd>
+<dd class="m"><a href="https://github.com/apache/cassandra/pull/4572">https://github.com/apache/cassandra/pull/4572</a></dd>
+
+<dt>29 — Apache issue tracker, CASSANDRA-19759</dt>
+<dd>Establishes: the explicit transaction syntax and the requirement that the table be marked transactional.</dd>
+<dd class="q">"the table was not marked as an Accord table; aka missing … WITH transactional_mode='full'"</dd>
+<dd>Version caveat: alpha syntax, subject to change before general availability.</dd>
+<dd class="m"><a href="https://issues.apache.org/jira/browse/CASSANDRA-19759">https://issues.apache.org/jira/browse/CASSANDRA-19759</a></dd>
+
+<dt>30 — GitHub, <code>giltene/wrk2</code></dt>
+<dd>Establishes: the attribution of coordinated omission and the corrective design of the tool.</dd>
+<dd class="q">"The model I chose for avoiding Coordinated Omission in wrk2 combines the use of constant throughput load generation with latency measurement that takes the intended constant throughput into account."</dd>
+<dd class="m"><a href="https://github.com/giltene/wrk2">https://github.com/giltene/wrk2</a></dd>
+
+<dt>31 — Cooper, Silberstein, Tam, Ramakrishnan, Sears</dt>
+<dd><em>Benchmarking cloud serving systems with YCSB.</em> 1st ACM Symposium on Cloud Computing (SoCC), Indianapolis, 2010, pp. 143–154. DOI 10.1145/1807128.1807152.</dd>
+<dd>Establishes: the origin and documented limitations of YCSB.</dd>
+<dd class="m"><a href="https://doi.org/10.1145/1807128.1807152">https://doi.org/10.1145/1807128.1807152</a></dd>
+<dd class="m">Open copy of the paper: <a href="https://courses.cs.duke.edu/fall13/compsci590.4/838-CloudPapers/ycsb.pdf">https://courses.cs.duke.edu/fall13/compsci590.4/838-CloudPapers/ycsb.pdf</a></dd>
+<dt>32 — Haughian, Osman, Knottenbelt</dt>
+<dd><em>Benchmarking Replication in Cassandra and MongoDB NoSQL Datastores.</em> DEXA 2016, LNCS vol. 9828, pp. 152–166, Springer, Cham. DOI 10.1007/978-3-319-44406-2_12.</dd>
+<dd>Establishes: the bibliographic reference only. Scope caveat: full text not consulted; no characterisation of the paper's methodology or stated limitations is made in this article.</dd>
+<dd class="m"><a href="https://doi.org/10.1007/978-3-319-44406-2_12">https://doi.org/10.1007/978-3-319-44406-2_12</a></dd>
+<dt>33 — DataStax, how transactions differ</dt>
+<dd>Establishes: the absence of ACID transactions with rollback or locking; partition-level write atomicity; row-level isolation.</dd>
+<dd>Version: HCD.</dd>
+<dd class="m"><a href="https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html">https://docs.datastax.com/en/hyper-converged-database/1.1/architecture/database-internals/transactions-differ.html</a></dd>
+
+<dt>34 — MongoDB, <em>Atomicity and Transactions</em></dt>
+<dd>Establishes: the scope and the boundary of MongoDB's atomicity guarantee.</dd>
+<dd class="q">"In MongoDB, write operations are atomic on the single-document level, even if modifying multiple values." — and: "When a single write operation (e.g. db.collection.updateMany()) modifies multiple documents, the modification of each document is atomic, but the operation as a whole is not atomic."</dd>
+<dd>Version: MongoDB Database Manual, current line.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/core/write-operations-atomicity/">https://www.mongodb.com/docs/manual/core/write-operations-atomicity/</a></dd>
+
+<dt>35 — MongoDB, <code>$set</code> update operator</dt>
+<dd>Establishes: targeted field modification rather than full document rewrite, stated comparatively against replacement.</dd>
+<dd class="q">"Targeted Updates: $set modifies only the specified fields, ensuring efficient updates by avoiding unnecessary writes and overhead when you work with large documents."</dd>
+<dd>Version: MongoDB Database Manual, current line; behaviour of empty operands noted from MongoDB 5.0.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/reference/operator/update/set/">https://www.mongodb.com/docs/manual/reference/operator/update/set/</a></dd>
+
+<dt>36 — MongoDB, <em>Indexes</em></dt>
+<dd>Establishes: exactly one index is created without instruction, and it cannot be dropped.</dd>
+<dd class="q">"MongoDB creates a unique index on the _id field during the creation of a collection. The _id index prevents clients from inserting two documents with the same value for the _id field. You cannot drop this index."</dd>
+<dd>Version: MongoDB Database Manual, current line.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/manual/indexes/">https://www.mongodb.com/docs/manual/indexes/</a></dd>
+
+<dt>37 — MongoDB, <code>createIndexes</code> reference</dt>
+<dd>Establishes: the wildcard index as an opt-in mechanism for indexing arbitrary fields; cited here in the interest of comparative fairness.</dd>
+<dd class="q">"The created index can support queries on any arbitrary field within documents in the collection" — with the noted exclusion of <code>_id</code> by default.</dd>
+<dd>Version: MongoDB Database Manual v8.0.</dd>
+<dd class="m"><a href="https://www.mongodb.com/docs/v8.0/reference/command/createindexes/">https://www.mongodb.com/docs/v8.0/reference/command/createindexes/</a></dd>
+</dl>
+
+<h2>Appendix B — measurements</h2>
+
+<p>Each entry records what was observed, on which build, under which conditions, and where the raw record lives. A measurement establishes what one build did on one day; it is not a vendor's documentation and does not license comparison with any other product.</p>
+
+<dl class="appendix">
+
+<dt>Common conditions</dt>
+<dd>IBM DataStax HCD 2.0.6, release string <code>5.0.7.0-ea50e91ba01f</code> read from the running node (<code>nodetool version</code>, <code>system.local</code>); Data API <code>stargateio/data-api</code> v1.0.33; astrapy 2.3.1. One node, one datacentre, RF 1 (<code>NetworkTopologyStrategy {dc1: 1}</code>), 16 vnodes. Virtual machine, 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz, 220 GiB RAM; the database container limited to 3 GiB with a 2 GiB heap; storage class of the backing media not determinable from the guest. <code>commitlog_sync periodic</code>, 10 000 ms. Working set memtable-resident throughout: no SSTable was flushed and no compaction crossed. Load driven at a fixed offered rate of 50 writes/s for 120 s, open loop, schedule slip under 0.06 s. Client on the same host over loopback. Harness <code>verify_storage_claims.py</code> 1.0 with two mechanical fixes (client environment set to HCD; probe-3 ballast excluded from indexing because the Data API refuses any indexed string above 8 000 bytes). 17 September 2026.</dd>
+<dd class="m">Full record: <code>findings.json</code>.</dd>
+
+<dt>M1 — Physical column layout</dt>
+<dd>Establishes: a collection created with default options and no vector dimension is one table of twelve columns, with nine storage-attached indexes created automatically over all but <code>key</code>, <code>tx_id</code> and <code>doc_json</code>. Read from <code>system_schema.columns</code> and <code>system_schema.indexes</code>; identical in two runs.</dd>
+<dd class="q">key frozen&lt;tuple&lt;tinyint,text&gt;&gt; · tx_id timeuuid · doc_json text · exist_keys set&lt;text&gt; · array_size map&lt;text,int&gt; · array_contains set&lt;text&gt; · query_bool_values map&lt;text,tinyint&gt; · query_dbl_values map&lt;text,decimal&gt; · query_text_values map&lt;text,text&gt; · query_null_values set&lt;text&gt; · query_timestamp_values map&lt;text,timestamp&gt; · query_lexical_value text</dd>
+
+<dt>M2 — The write path of a single-field update</dt>
+<dd>Establishes: with query tracing at probability 1.0 on the node, each of ten <code>updateOne</code> operations carrying one <code>$set</code> produced, in order, a <code>SELECT</code> of the whole document by key and then one <code>UPDATE</code> rewriting every derived column and <code>doc_json</code>, conditioned on <code>tx_id</code>. Each <code>deleteOne</code> produced a <code>SELECT</code> of <code>key, tx_id</code> then <code>DELETE … IF tx_id = ?</code>. Each <code>insertOne</code> produced one <code>INSERT … IF NOT EXISTS</code>. Tracing was reset to 0.0 afterwards. Ten of ten updates showed the pair.</dd>
+<dd class="q">SELECT key, tx_id, doc_json FROM … WHERE key = ? LIMIT 1 — then — UPDATE … SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_dbl_values = ?, query_text_values = ?, query_null_values = ?, query_timestamp_values = ?, query_lexical_value = ?, doc_json = ? WHERE key = ? IF tx_id = ?</dd>
+
+<dt>M3 — Cost of a constant mutation against unchanged content</dt>
+<dd>Establishes: with one scalar field mutated by <code>$set</code>, thirty timed repetitions after five warm-ups per size, and the <code>updateOne</code> HTTP payload constant at every size (122–124 bytes request, 47 bytes response), median latency grew 7.50× (12.1 ms → 90.8 ms) between a 1 KB document and a 128 KB document whose additional content was seventeen indexed string fields that the mutation never touched; a same-size read by key grew 1.56×. With the same total sizes but the additional content excluded from indexing, the update grew 1.92× and 2.21× in two runs against reads of 1.86× and 1.94× — indistinguishable from a read under the pre-registered control rule, and therefore not, on its own, evidence of the cycle that M2 observes directly.</dd>
+
+<dt>M4 — Consistency levels</dt>
+<dd>Establishes: every one of seventy traced statements against the collection ran at <code>LOCAL_QUORUM</code>; every one of thirty conditional statements carried <code>LOCAL_SERIAL</code> as its serial consistency level. The client set no level; these are the Data API tier's defaults. On one node with RF 1 a single replica satisfies both, so the level's name is established and its multi-replica cost is not.</dd>
+
+<dt>What the measurements do not establish</dt>
+<dd>Any multi-replica cost (RF 1). Any disk-bound behaviour (memtable-resident, no compaction crossed). The write-to-searchable interval of the vector index: the freshness probe exercised a storage-attached index on a scalar field, found the document on the first query in forty of forty idle cycles, and measured an end-to-end interval dominated by two HTTP round trips (idle median 19–25 ms, p99 54–78 ms; under 50 writes/s median 42 ms, p99 54–59 ms). On the MongoDB side, only the single-field-mutation axis is measured (appendix, measurement M13, same host, matched durability and resources); read, search, aggregation and index freshness on MongoDB remain unmeasured. Anything about another version of HCD or the Data API, or about Apache Cassandra 5.0 or 6.0.</dd>
+
+</dl>
+
+<h2>Limitations of this article</h2>
+
+<p>Stated here rather than buried, because an article that grades its claims owes the reader an account of where the grading came out badly.</p>
+
+<p><strong>Four substantive claims could not be verified</strong> against sources of acceptable rank within the research budget, and all four concern the decomposing engine rather than its comparator: the enumeration of generic column names (section 2.1); the read-modify-write cycle underlying steps one to three (section 3); the consistency level at which Data API writes execute; and the current general-availability status of MongoDB search per edition. The first three were subsequently measured on one build — HCD 2.0.6 with Data API v1.0.33, one node, RF = 1 — and hold there (appendix, measurements M1–M4); they carry the <span class="ep ep-m">M</span> marker, which is weaker than <span class="ep ep-d">D</span>: an observation of a build is not a vendor's commitment. The fourth remains unverified. None is asserted here as documented.</p>
+
+<p>That the unverified residue now falls almost entirely on one side is itself a finding worth stating, and it cuts against the side I work for. MongoDB's mutation semantics, its index policy and its asynchronous search path are all documented in version-pinned reference material and were confirmed verbatim. The equivalent statements about the Data API's physical representation are not published anywhere I could reach: they circulate as engineering description and practitioner lore — and, since this revision, as a measurement on one build, which is a different thing from documentation. A reader may reasonably conclude that the system I know better is the one whose mechanism is harder to verify — and may reasonably weight the comparison accordingly. One asymmetry that earlier editions carried has since been closed on the axis this article is about: MongoDB's single-field mutation was measured against HCD's on the same host, in a matched regime, with durability and resources matched (appendix, measurement M13). It confirmed the structural prediction of section 3 rather than overturning it — MongoDB's in-place update is far cheaper on this axis, by a wide margin, even when a wildcard index is added to match HCD's automatic indexing. The eleven-to-zero measurement asymmetry this section once conceded no longer holds for the mutation axis; it still holds for read, search and index freshness, where nothing on the MongoDB side was measured.</p>
+
+<p><strong>Three product pages could not be rendered</strong> during verification — the HCD 2.0 Data API limits page and the HCD 2.0 data-model page principally — with the consequence that several product figures rest on the equivalent commercial documentation for the same API surface rather than on the exact edition under discussion. These substitutions are marked in the appendix entry concerned.</p>
+
+<p><strong>Everything in section 8 concerning Cassandra 6.0 describes software in alpha</strong>, explicitly designated by its publishers as unsuitable for anything beyond development and testing. Its configuration surface, its syntax and its feature scope may all change before general availability. Treat that section as a statement about a direction of travel, never as a specification.</p>
+
+<p><strong>Three sources were consulted through list mirrors</strong> rather than the Apache archive directly, and two through the project's pull-request traffic rather than published documentation. These are marked individually. Where the distinction bears on the weight of a claim, the claim carries the <span class="ep ep-r">R</span> marker rather than <span class="ep ep-d">D</span>.</p>
+
+</div></main>
+</div>
+</body></html>

@@ -1,0 +1,140 @@
+{
+  "probe": "probe_aggregation.py",
+  "run_at_utc": "2026-09-18T09:09:39.086556+00:00",
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80
+  },
+  "result": {
+    "engine": "mongodb",
+    "n_loaded": 200000,
+    "load_seconds": 4.0,
+    "indexes": "_id + cat_idx (created after B-default)",
+    "counts": {
+      "count_all": 200000,
+      "estimated": 200000,
+      "filtered_cat_c3": 20000,
+      "count_all_correct": true,
+      "filtered_correct": true
+    },
+    "A_count_all_ms": {
+      "n": 30,
+      "min_ms": 108.007,
+      "p50_ms": 115.009,
+      "p95_ms": 125.282,
+      "p99_ms": 127.694,
+      "max_ms": 128.577,
+      "stdev_ms": 4.565
+    },
+    "A_estimated_count_ms": {
+      "n": 30,
+      "min_ms": 0.336,
+      "p50_ms": 0.408,
+      "p95_ms": 0.695,
+      "p99_ms": 0.755,
+      "max_ms": 0.768,
+      "stdev_ms": 0.122
+    },
+    "B_filtered_count_default_collscan_ms": {
+      "n": 30,
+      "min_ms": 149.065,
+      "p50_ms": 157.177,
+      "p95_ms": 197.138,
+      "p99_ms": 208.394,
+      "max_ms": 210.183,
+      "stdev_ms": 14.098
+    },
+    "B_filtered_count_cat_index_ms": {
+      "n": 30,
+      "min_ms": 11.261,
+      "p50_ms": 12.659,
+      "p95_ms": 15.488,
+      "p99_ms": 15.63,
+      "max_ms": 15.643,
+      "stdev_ms": 1.316
+    },
+    "C1_groupby_sum_serverside_ms": {
+      "n": 15,
+      "min_ms": 215.956,
+      "p50_ms": 222.711,
+      "p95_ms": 252.075,
+      "p99_ms": 285.402,
+      "max_ms": 293.734,
+      "stdev_ms": 18.12
+    },
+    "C1_rows": 10,
+    "C1_correct": true,
+    "C1_result": {
+      "c8": {
+        "sum": 10000660.0,
+        "n": 20000
+      },
+      "c1": {
+        "sum": 9999120.0,
+        "n": 20000
+      },
+      "c3": {
+        "sum": 9999560.0,
+        "n": 20000
+      },
+      "c5": {
+        "sum": 10001000.0,
+        "n": 20000
+      },
+      "c0": {
+        "sum": 9998900.0,
+        "n": 20000
+      },
+      "c4": {
+        "sum": 10000780.0,
+        "n": 20000
+      },
+      "c2": {
+        "sum": 10000340.0,
+        "n": 20000
+      },
+      "c6": {
+        "sum": 9999220.0,
+        "n": 20000
+      },
+      "c9": {
+        "sum": 9999880.0,
+        "n": 20000
+      },
+      "c7": {
+        "sum": 9999440.0,
+        "n": 20000
+      }
+    },
+    "ground_truth": {
+      "n": 200000,
+      "per_cat_n": {
+        "c0": 20000,
+        "c1": 20000,
+        "c2": 20000,
+        "c3": 20000,
+        "c4": 20000,
+        "c5": 20000,
+        "c6": 20000,
+        "c7": 20000,
+        "c8": 20000,
+        "c9": 20000
+      },
+      "per_cat_sum": {
+        "c0": 9998900.0,
+        "c1": 9999120.0,
+        "c2": 10000340.0,
+        "c3": 9999560.0,
+        "c4": 10000780.0,
+        "c5": 10001000.0,
+        "c6": 9999220.0,
+        "c7": 9999440.0,
+        "c8": 10000660.0,
+        "c9": 9999880.0
+      },
+      "grand_sum": 99998900.0
+    }
+  },
+  "structural": "HCD Data API has no server-side aggregation pipeline (aggregate/$group/distinct = COMMAND_UNKNOWN); only countDocuments/estimatedDocumentCount. MongoDB has the full aggregation framework."
+}

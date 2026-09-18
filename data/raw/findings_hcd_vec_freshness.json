@@ -1,0 +1,20 @@
+{
+  "probe": "hcd vector-search freshness (same session as mongot)",
+  "engine": "HCD 2.0.6 JVector",
+  "cycles": 40,
+  "search_write_to_visible_ms": {
+    "n": 40,
+    "min_ms": 31.9,
+    "p50_ms": 44.972,
+    "p95_ms": 84.827,
+    "max_ms": 573.598,
+    "mean_ms": 64.731
+  },
+  "search_poll_attempts": {
+    "min": 1,
+    "median": 1,
+    "max": 1
+  },
+  "never_visible": 0,
+  "note": "attempts median 1 = synchronous, searchable on the first query; the interval is HTTP-round-trip-bound, not an index lag"
+}

@@ -1,0 +1,55 @@
+{
+  "test": "vector-search freshness at RF=3 under vector-search=LOCAL_ONE",
+  "run_at_utc": "2026-09-17T16:5x (p16 ring)",
+  "target": {
+    "product": "HCD 2.0.6 (5.0.7.0-ea50e91ba01f), Data API v1.0.33 temporary container",
+    "ring": "presto-hcd-v16, 6 nodes / 2 DC, keyspace verif_vec_20260917 = {dc1: 3}",
+    "vector_collection": "dim 16, cosine; Data API defaults writes/reads=LOCAL_QUORUM, vector-search=LOCAL_ONE, serial=LOCAL_SERIAL (M6)",
+    "validity_check": "marker vector returns at cosine similarity 1.0 rank-1, background at <=0.83; an unrelated query returns a different top-1 — the ANN search discriminates, the hit is not trivial"
+  },
+  "idle": {
+    "cycles": 60,
+    "vector_search_first_try_hits": "60/60",
+    "key_read_first_try_hits": "60/60",
+    "cycles_key_hit_but_vector_missed": 0,
+    "vector_attempts_histogram": {
+      "1": 60
+    },
+    "insert_to_vector_visible_ms": {
+      "p50": 74.735,
+      "p95": 145.766,
+      "p99": 257.713,
+      "max": 393.75850511714816,
+      "n": 60
+    }
+  },
+  "loaded_40ps": {
+    "cycles": 60,
+    "background_rate_per_s": 40.0,
+    "vector_search_first_try_hits": "60/60",
+    "key_read_first_try_hits": "60/60",
+    "cycles_key_hit_but_vector_missed": 0,
+    "vector_attempts_histogram": {
+      "1": 60
+    },
+    "insert_to_vector_visible_ms": {
+      "p50": 74.406,
+      "p95": 91.278,
+      "p99": 114.227,
+      "max": 122.53396678715944,
+      "n": 60
+    }
+  },
+  "verdict": "NOT DETECTABLE on this topology (neither confirms nor refutes the article's section-4 [D] claim)",
+  "reasoning": [
+    "120/120 cycles (60 idle + 60 under 40 vector-writes/s): the just-written vector was top-1 on the FIRST LOCAL_ONE search in every cycle; 0 cycles where the LOCAL_QUORUM key read found the document but the LOCAL_ONE vector search missed it.",
+    "The insert->vector-visible interval is dominated by the two HTTP round trips (idle p50 74.7 ms, loaded p50 74.4 ms), not by replication: on this single-host ring inter-replica latency is sub-millisecond, so by the time the LOCAL_ONE search arrives the third replica already carries the write.",
+    "The LOCAL_ONE risk is therefore real in principle but bounded here BELOW the ~74 ms measurement floor. This bench cannot show it because it cannot make a replica lag longer than an HTTP round trip."
+  ],
+  "what_this_does_not_establish": [
+    "That no window exists: a real multi-datacentre (WAN) deployment, where inter-replica latency is tens of milliseconds, is exactly where LOCAL_ONE could return a stale vector — and that is the topology the article's 'wide-area' framing targets. This single-host ring cannot reproduce it.",
+    "Separation of replication lag from JVector index-build lag: with 0 miss, the two cannot be disambiguated here. A second Data API at vector-search=LOCAL_QUORUM would only matter once a WAN topology makes misses appear.",
+    "Anything about vectorize/embedding-gateway paths (VECTORIZE_ENABLED=false here), other dimensions/metrics, or larger corpora."
+  ],
+  "article_bearing": "Section 4 [D] 'searchable as soon as it is written' is quoted from HCD docs about JVector adding documents to the graph immediately. This test adds one qualifier the article does not: at RF>1 the Data API READS vector search at LOCAL_ONE while it WRITES at LOCAL_QUORUM, so 'searchable at acknowledgement' is a single-replica read guarantee, not a quorum one. On co-located replicas the gap is unobservable; on a WAN it is the exact shape of window the article warns about for the OTHER engine (MongoDB, figure 2). Worth a one-line [M]/[U] footnote, not a claim change."
+}

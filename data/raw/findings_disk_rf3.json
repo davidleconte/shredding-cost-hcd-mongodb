@@ -1,0 +1,105 @@
+{
+  "campaign": "3 — disk regime at RF=3",
+  "run_at_utc": "2026-09-17T21:33:23.725151+00:00",
+  "disk_regime_proof": {
+    "before": {
+      "sstables": 0,
+      "data_dir_bytes": 0,
+      "compactions_completed": 651
+    },
+    "after": {
+      "sstables": 40,
+      "data_dir_bytes": 6491369675,
+      "compactions_completed": 729
+    },
+    "steps": [
+      {
+        "step": "fill",
+        "documents": 24576,
+        "seconds": 1137.8
+      },
+      {
+        "step": "flush",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "step": "sstables_after_flush",
+        "count": 82
+      },
+      {
+        "step": "compact",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "step": "invalidate_caches",
+        "failures": []
+      }
+    ],
+    "caches_not_invalidated": null,
+    "page_cache_note": "The operating system page cache was NOT dropped; doing so needs root on the host. Reads may therefore still be served from RAM below the database. State this in any report that calls the regime disk-bound.",
+    "checks": {
+      "data_exceeds_memtable_budget": true,
+      "sstables_exist": true,
+      "compaction_crossed": true,
+      "caches_invalidated": true
+    },
+    "disk_bound": true
+  },
+  "variantA_rmw": {
+    "verdict_by_control_rule": "INCONCLUSIVE (update grows with read)",
+    "update_p50": {
+      "1kb": 18.521,
+      "8kb": 19.856,
+      "32kb": 21.808,
+      "128kb": 32.983
+    },
+    "update_growth": 1.78,
+    "read_control_growth": 1.89,
+    "read_p50": {
+      "1kb": 9.466,
+      "8kb": 12.573,
+      "32kb": 12.278,
+      "128kb": 17.907
+    }
+  },
+  "variantB_indexed_chunks": {
+    "verdict": "SUPPORTED",
+    "update_p50": {
+      "1kb": 20.389,
+      "8kb": 25.127,
+      "32kb": 44.314,
+      "128kb": 121.189
+    },
+    "update_growth": 5.94,
+    "read_control_growth": 2.1
+  },
+  "comparison": {
+    "variantB_growth_campaign1_memtable_rf1": 7.5,
+    "variantB_growth_campaign3_disk_rf3": 5.94,
+    "reading": "The indexed-content coefficient does NOT collapse in the disk regime: variant B grew x5.94 (disk, RF=3) vs x7.50 (memtable, RF=1). Index maintenance stays a first-order cost against IO. The difference mixes regime with the RF/hardware confound and cannot be attributed to disk alone."
+  },
+  "TO_BE_COMPLETED_BY_HAND": {
+    "product_and_version": "HCD 2.0.6 (5.0.7.0-ea50e91ba01f), Data API v1.0.33 (temp container p16-data-api)",
+    "topology": "p16 ring, 6 nodes/2 DC, keyspace verif_disk_20260917 = NetworkTopologyStrategy {dc1:3}; nodes 8 GiB/4 vCPU, heap 4G",
+    "storage_class": "UNDETERMINABLE from the guest: data on /dev/sda1 (ext4), a QEMU virtual SCSI disk; rotational flag=1 is the QEMU default (not real-media evidence); no smartctl, no root. Effective IO (dd, fsync): 101 MB/s sequential write. Physical media class not established.",
+    "memtable_budget_mb": 2048,
+    "disk_proof": {
+      "on_disk_bytes": 6491369675,
+      "on_disk_GiB": 6.05,
+      "target_GiB": 6.0,
+      "sstables_after_compaction": 40,
+      "compactions_before": 651,
+      "compactions_after": 729,
+      "compactions_crossed": 78,
+      "caches_invalidated": true,
+      "disk_bound": true,
+      "fill": "24576 incompressible-ballast docs, 262144 B each, 1138 s"
+    },
+    "durability": "commitlog_sync periodic 10000ms; Data API defaults writes/reads LOCAL_QUORUM, serial LOCAL_SERIAL (M4/M6)",
+    "page_cache_caveat": "OS page cache NOT dropped (no root). The 6.05 GiB dataset fits in the host's 220 GiB RAM, so reads of the fill data can still be served from page cache below the database. 'Disk-bound' here means the dataset genuinely exceeds the memtable budget and lives in SSTables (proven), NOT that every read missed RAM.",
+    "confound_probe_reads_hot_row": "The RMW probe re-reads the row it just wrote (SELECT doc_json before UPDATE); that row is memtable-resident regardless of dataset size. The disk regime acts through node memory pressure (frequent flushes) and cold caches, not by serving the probed row from disk.",
+    "hardware_confound_vs_campaign1": "Campaign 1's memtable coefficients came from rh-hcd (RF=1, 3 GiB/2 G heap). This run is p16 (RF=3, 8 GiB/4 G heap). A coefficient difference mixes regime with topology and hardware; do not attribute it to disk alone."
+  }
+}

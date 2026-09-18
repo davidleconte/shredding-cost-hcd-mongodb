@@ -1,0 +1,119 @@
+{
+  "probe": "probe_aggregation.py",
+  "run_at_utc": "2026-09-18T09:29:31.556897+00:00",
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80
+  },
+  "result": {
+    "engine": "hcd-dataapi",
+    "n_loaded": 200000,
+    "load_seconds": 185.3,
+    "indexes": "automatic nine SAI (cat covered by query_text_values)",
+    "counts": {
+      "count_all": null,
+      "count_all_error": "TooManyDocumentsToCountException: Document count exceeds 1000, the maximum allowed by the server",
+      "estimated": 0,
+      "filtered_cat_c3": null,
+      "filtered_error": "TooManyDocumentsToCountException: Document count exceeds 1000, the maximum allowed by the server",
+      "count_all_correct": false,
+      "filtered_correct": false,
+      "estimated_note": "SSTable-metadata estimate; reads 0 until memtable flush"
+    },
+    "A_count_all_ms": {},
+    "A_estimated_count_ms": {
+      "n": 30,
+      "min_ms": 5.551,
+      "p50_ms": 6.875,
+      "p95_ms": 8.899,
+      "p99_ms": 10.152,
+      "max_ms": 10.652,
+      "stdev_ms": 1.151
+    },
+    "B_filtered_count_saidx_ms": {},
+    "C2_client_scan_aggregate_ms": {
+      "n": 3,
+      "min_ms": 133827.164,
+      "p50_ms": 133984.229,
+      "p95_ms": 134990.509,
+      "p99_ms": 135079.956,
+      "max_ms": 135102.317,
+      "stdev_ms": 567.725
+    },
+    "C2_docs_scanned": 200000,
+    "C2_correct": true,
+    "C2_result": {
+      "c0": {
+        "sum": 9998900.0,
+        "n": 20000
+      },
+      "c1": {
+        "sum": 9999120.0,
+        "n": 20000
+      },
+      "c2": {
+        "sum": 10000340.0,
+        "n": 20000
+      },
+      "c3": {
+        "sum": 9999560.0,
+        "n": 20000
+      },
+      "c4": {
+        "sum": 10000780.0,
+        "n": 20000
+      },
+      "c5": {
+        "sum": 10001000.0,
+        "n": 20000
+      },
+      "c6": {
+        "sum": 9999220.0,
+        "n": 20000
+      },
+      "c7": {
+        "sum": 9999440.0,
+        "n": 20000
+      },
+      "c8": {
+        "sum": 10000660.0,
+        "n": 20000
+      },
+      "c9": {
+        "sum": 9999880.0,
+        "n": 20000
+      }
+    },
+    "C2_note": "no server-side aggregation exists; every doc is pulled to the client via paginated find and summed in app code",
+    "ground_truth": {
+      "n": 200000,
+      "per_cat_n": {
+        "c0": 20000,
+        "c1": 20000,
+        "c2": 20000,
+        "c3": 20000,
+        "c4": 20000,
+        "c5": 20000,
+        "c6": 20000,
+        "c7": 20000,
+        "c8": 20000,
+        "c9": 20000
+      },
+      "per_cat_sum": {
+        "c0": 9998900.0,
+        "c1": 9999120.0,
+        "c2": 10000340.0,
+        "c3": 9999560.0,
+        "c4": 10000780.0,
+        "c5": 10001000.0,
+        "c6": 9999220.0,
+        "c7": 9999440.0,
+        "c8": 10000660.0,
+        "c9": 9999880.0
+      },
+      "grand_sum": 99998900.0
+    }
+  },
+  "structural": "HCD Data API has no server-side aggregation pipeline (aggregate/$group/distinct = COMMAND_UNKNOWN); only countDocuments/estimatedDocumentCount. MongoDB has the full aggregation framework."
+}

@@ -1,0 +1,99 @@
+{
+  "probe": "agg_cql_arm.py",
+  "run_at_utc": "2026-09-18T09:33:35.542303+00:00",
+  "LABEL": "APPLES-TO-ORANGES REFERENCE \u2014 native CQL, NOT the HCD document model / Data API. Requires abandoning the document model and pre-designing a table partitioned by the group key.",
+  "table": "cmp.agg_cql(cat,id,amt) PK(cat,id), RF=3, reads LOCAL_QUORUM",
+  "n_loaded": 200000,
+  "load_seconds": 68.9,
+  "C3a_per_partition_sweep_10q_ms": {
+    "n": 15,
+    "min_ms": 1924.195,
+    "p50_ms": 2011.399,
+    "p95_ms": 2223.488,
+    "p99_ms": 2421.508,
+    "max_ms": 2471.012,
+    "stdev_ms": 125.407
+  },
+  "C3a_correct": true,
+  "C3b_full_groupby_cat_ms": {
+    "n": 15,
+    "min_ms": 2387.172,
+    "p50_ms": 2568.372,
+    "p95_ms": 2703.698,
+    "p99_ms": 2728.623,
+    "max_ms": 2734.854,
+    "stdev_ms": 109.69
+  },
+  "C3b_correct": true,
+  "C3b_is": "cross-partition range scan (coordinator full-scan anti-pattern), returns 10 rows",
+  "result_perpartition": {
+    "c0": {
+      "sum": 9998900.0,
+      "n": 20000
+    },
+    "c1": {
+      "sum": 9999120.0,
+      "n": 20000
+    },
+    "c2": {
+      "sum": 10000340.0,
+      "n": 20000
+    },
+    "c3": {
+      "sum": 9999560.0,
+      "n": 20000
+    },
+    "c4": {
+      "sum": 10000780.0,
+      "n": 20000
+    },
+    "c5": {
+      "sum": 10001000.0,
+      "n": 20000
+    },
+    "c6": {
+      "sum": 9999220.0,
+      "n": 20000
+    },
+    "c7": {
+      "sum": 9999440.0,
+      "n": 20000
+    },
+    "c8": {
+      "sum": 10000660.0,
+      "n": 20000
+    },
+    "c9": {
+      "sum": 9999880.0,
+      "n": 20000
+    }
+  },
+  "ground_truth": {
+    "per_cat_n": {
+      "c0": 20000,
+      "c1": 20000,
+      "c2": 20000,
+      "c3": 20000,
+      "c4": 20000,
+      "c5": 20000,
+      "c6": 20000,
+      "c7": 20000,
+      "c8": 20000,
+      "c9": 20000
+    },
+    "per_cat_sum": {
+      "c0": 9998900.0,
+      "c1": 9999120.0,
+      "c2": 10000340.0,
+      "c3": 9999560.0,
+      "c4": 10000780.0,
+      "c5": 10001000.0,
+      "c6": 9999220.0,
+      "c7": 9999440.0,
+      "c8": 10000660.0,
+      "c9": 9999880.0
+    },
+    "grand_sum": 99998900.0,
+    "n": 200000
+  }
+}

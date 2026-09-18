@@ -1,0 +1,46 @@
+{
+  "probe": "rmw_postflush.py",
+  "variant": "B indexed chunks, flush before each update",
+  "regime": "SSTable-read path (page-cache-warm; no root to drop page cache)",
+  "by_size": {
+    "1kb": {
+      "n": 30,
+      "p50_ms": 107.765,
+      "p95_ms": 120.874,
+      "p99_ms": 157.272,
+      "max_ms": 171.608,
+      "stdev_ms": 12.843
+    },
+    "8kb": {
+      "n": 30,
+      "p50_ms": 112.086,
+      "p95_ms": 124.404,
+      "p99_ms": 157.515,
+      "max_ms": 170.244,
+      "stdev_ms": 11.651
+    },
+    "32kb": {
+      "n": 30,
+      "p50_ms": 119.22,
+      "p95_ms": 132.017,
+      "p99_ms": 168.359,
+      "max_ms": 183.135,
+      "stdev_ms": 13.297
+    },
+    "128kb": {
+      "n": 30,
+      "p50_ms": 163.402,
+      "p95_ms": 183.713,
+      "p99_ms": 217.448,
+      "max_ms": 229.834,
+      "stdev_ms": 15.265
+    }
+  },
+  "p50_growth_factor": 1.52,
+  "comparison": {
+    "M10_memtable_under_pressure_disk_regime": 5.94,
+    "campaign1_memtable_rf1": 7.5,
+    "this_postflush": 1.52
+  },
+  "reading": "If this growth is materially above M10's 5.94, forcing the RMW SELECT onto the SSTable read path adds cost the memtable runs hid. If similar, the RMW read was never the bottleneck and the coefficient is a rewrite/index-maintenance cost, not a read cost."
+}

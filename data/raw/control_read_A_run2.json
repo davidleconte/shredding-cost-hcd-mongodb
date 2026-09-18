@@ -1,0 +1,79 @@
+{
+  "variant": "A",
+  "collection": "storage_probe_rf3",
+  "reps": 30,
+  "warmup": 5,
+  "read": {
+    "1kb": {
+      "n": 30,
+      "min_ms": 5.377,
+      "p50_ms": 8.671,
+      "p95_ms": 10.666,
+      "p99_ms": 17.172,
+      "p999_ms": 19.481,
+      "max_ms": 19.737,
+      "stdev_ms": 2.394
+    },
+    "8kb": {
+      "n": 30,
+      "min_ms": 6.099,
+      "p50_ms": 9.4,
+      "p95_ms": 12.507,
+      "p99_ms": 13.807,
+      "p999_ms": 14.116,
+      "max_ms": 14.151,
+      "stdev_ms": 1.789
+    },
+    "32kb": {
+      "n": 30,
+      "min_ms": 8.486,
+      "p50_ms": 10.476,
+      "p95_ms": 17.345,
+      "p99_ms": 19.929,
+      "p999_ms": 20.201,
+      "max_ms": 20.232,
+      "stdev_ms": 2.783
+    },
+    "128kb": {
+      "n": 30,
+      "min_ms": 12.035,
+      "p50_ms": 16.059,
+      "p95_ms": 23.797,
+      "p99_ms": 32.203,
+      "p999_ms": 35.22,
+      "max_ms": 35.555,
+      "stdev_ms": 4.5
+    }
+  },
+  "wire_bytes": {
+    "1kb": {
+      "updateOne_req": 122,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 80,
+      "findOne_resp": 1135
+    },
+    "8kb": {
+      "updateOne_req": 122,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 80,
+      "findOne_resp": 8303
+    },
+    "32kb": {
+      "updateOne_req": 123,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 81,
+      "findOne_resp": 32880
+    },
+    "128kb": {
+      "updateOne_req": 124,
+      "updateOne_resp": 47,
+      "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+      "findOne_req": 82,
+      "findOne_resp": 131185
+    }
+  },
+  "read_p50_growth_factor": 1.85
+}

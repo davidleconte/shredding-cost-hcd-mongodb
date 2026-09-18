@@ -1,0 +1,732 @@
+{
+  "harness": "verify_storage_claims.py",
+  "harness_version": "1.0 + 2 mechanical fixes (see harness_modifications)",
+  "run_at_utc": "2026-09-17T14:59:03.702466+00:00",
+  "conditions": {
+    "endpoint": "http://127.0.0.1:8181",
+    "keyspace": "verif_stockage_20260917",
+    "collection": "storage_probe_20260917",
+    "cql_available": true,
+    "client_platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "product_and_version": "IBM DataStax HCD 2.0.6 — image cp.icr.io/cp/cpd/ibm-datastax-hcd/hcd:2.0.6-ubi; read from the node: nodetool version = ReleaseVersion 5.0.7.0-ea50e91ba01f; SELECT release_version FROM system.local = 5.0.7.0-ea50e91ba01f; native protocol v5. Data API tier: stargateio/data-api:v1.0.33 (VECTORIZE_ENABLED=true). Client: astrapy 2.3.1, cassandra-driver 3.30.1, Python 3.12.3.",
+      "topology": "1 node (container rh-hcd, 172.27.0.2), cluster 'recherche-hybride', datacenter dc1, rack rack1, GossipingPropertyFileSnitch, 16 vnodes, 100% ownership. Experiment keyspace verif_stockage_20260917 = NetworkTopologyStrategy {dc1: 1} (RF=1 is the only representative RF on a single node). Consequence: LOCAL_QUORUM and LOCAL_SERIAL are satisfied by one replica; the NAME of the consistency level is observable, the cost of a real quorum/Paxos round across replicas is NOT. Data API tier: 1 stateless instance (rh-data-api, mem_limit 2 GiB) on the same Docker bridge; client on the same host via 127.0.0.1:8181.",
+      "node_hardware": "Host: QEMU virtual machine 'alphadebunker', 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz (1 thread/core), 220 GiB RAM (94 GiB available at run time), root filesystem /dev/sda1 1.4 TiB 'QEMU HARDDISK' reported ROTA=1 — backing media class NOT determinable from inside the VM; Docker overlayfs, data on volume recherche-hybride_hcd-data. Container rh-hcd: mem_limit 3 GiB (cgroup usage 2.87–2.94 GiB incl. page cache during runs, no OOM-kill, 0 restarts), no CPU limit; JVM heap 2 GiB (Xmx), memtable_heap_space 512 MiB + memtable_offheap_space 512 MiB (offheap_objects), file_cache_size 512 MiB, key_cache 0, row_cache 0, concurrent_reads/writes 32. Node uptime 12.8 days at run time; max GC pause over uptime 2165 ms (nodetool gcstats); GC during the experiment window: max pause 26 ms.",
+      "working_set_vs_ram": "IN-CACHE, memtable-resident regime only. Collection A held 12 000 load documents (~0.6 KB each) + transient probe documents (max 128 KB) after both runs; on-disk data directory 72 KB and ZERO SSTables flushed (Data.db count 0) — the entire working set stayed in the memtable for the whole experiment. No flush and no compaction cycle was crossed (requirement 6 of the harness is therefore NOT met: the run was long enough to hold the offered rate, not long enough to cross background maintenance). The disk-bound regime was not exercised. Note: nodetool tablestats throws a NullPointerException on this build (TableStatsHolder.getMetricMean), so space figures come from du and CQL count(*).",
+      "durability_settings": "commitlog_sync = periodic, commitlog_sync_period = 10000 ms (a write is acknowledged before its commitlog segment is fsynced; up to 10 s of acknowledged writes can be lost on power loss), trickle_fsync = true, disk_access_mode = standard, write_request_timeout 2000 ms, read_request_timeout 5000 ms, cas_contention_timeout 1000 ms. Consistency levels were NOT configured by the client; those observed in system_traces are the Data API tier's own defaults: LOCAL_QUORUM for every statement on the collection, LOCAL_SERIAL as serial level on every conditional (IF) statement. Authentication: AdvancedAuthenticator (cassandra/cassandra). Guardrails: sai_indexes_per_table_fail_threshold 10, sai_indexes_total_fail_threshold 100 (0 SAI in use before the experiment)."
+    }
+  },
+  "findings": [
+    {
+      "probe": "1. physical column layout",
+      "claim_id": "A2",
+      "claim": "A JSON document is decomposed into one row bearing generic columns (doc_json, exist_keys, array_contains, array_size, query_*_values).",
+      "verdict": "SUPPORTED",
+      "evidence": {
+        "columns_found": {
+          "array_contains": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "array_size": {
+            "type": "map<text, int>",
+            "kind": "regular"
+          },
+          "doc_json": {
+            "type": "text",
+            "kind": "regular"
+          },
+          "exist_keys": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "key": {
+            "type": "frozen<tuple<tinyint, text>>",
+            "kind": "partition_key"
+          },
+          "query_bool_values": {
+            "type": "map<text, tinyint>",
+            "kind": "regular"
+          },
+          "query_dbl_values": {
+            "type": "map<text, decimal>",
+            "kind": "regular"
+          },
+          "query_lexical_value": {
+            "type": "text",
+            "kind": "regular"
+          },
+          "query_null_values": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "query_text_values": {
+            "type": "map<text, text>",
+            "kind": "regular"
+          },
+          "query_timestamp_values": {
+            "type": "map<text, timestamp>",
+            "kind": "regular"
+          },
+          "tx_id": {
+            "type": "timeuuid",
+            "kind": "regular"
+          }
+        },
+        "predicted_present": [
+          "doc_json",
+          "exist_keys",
+          "array_contains",
+          "array_size",
+          "query_text_values",
+          "query_dbl_values",
+          "query_bool_values",
+          "query_null_values",
+          "query_timestamp_values"
+        ],
+        "predicted_absent": [],
+        "columns_not_predicted": [
+          "key",
+          "query_lexical_value",
+          "tx_id"
+        ],
+        "column_count": 12,
+        "indexes": [
+          {
+            "name": "storage_probe_20260917_array_contains",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(array_contains)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_array_size",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(array_size)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_exists_keys",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(exist_keys)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_bool_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_bool_values)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_dbl_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_dbl_values)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_lexical_value",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "index_analyzer": "standard",
+              "target": "query_lexical_value"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_null_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(query_null_values)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_text_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_text_values)"
+            }
+          },
+          {
+            "name": "storage_probe_20260917_query_timestamp_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_timestamp_values)"
+            }
+          }
+        ],
+        "index_count": 9
+      },
+      "notes": [
+        "9 indexes created automatically on this collection",
+        "9/9 predicted columns present",
+        "Columns not predicted but present: key frozen<tuple<tinyint,text>> (partition key), tx_id timeuuid (LWT guard), query_lexical_value text (lexical/BM25 column, HCD 2.0.6 has lexical enabled by default). 9 SAI indexes were created on this non-vector collection (no vector index because no dimension was declared); the upstream config value 'indexes-needed-per-collection = 10' is the budget the API checks, not the count created here."
+      ],
+      "replication_2": {
+        "verdict": "SUPPORTED",
+        "index_count": 9,
+        "predicted_present": 9
+      }
+    },
+    {
+      "probe": "2. write-to-searchable interval",
+      "claim_id": "FRESHNESS",
+      "claim": "A document is searchable at the moment the write is acknowledged.",
+      "verdict": "INCONCLUSIVE",
+      "evidence": {
+        "idle": {
+          "n": 40,
+          "min_ms": 19.479,
+          "p50_ms": 25.462,
+          "p95_ms": 34.994,
+          "p99_ms": 78.375,
+          "p999_ms": 98.664,
+          "max_ms": 100.919,
+          "stdev_ms": 12.498
+        },
+        "under_load": {
+          "n": 120,
+          "min_ms": 32.471,
+          "p50_ms": 42.534,
+          "p95_ms": 50.834,
+          "p99_ms": 59.178,
+          "p999_ms": 60.734,
+          "max_ms": 60.932,
+          "stdev_ms": 4.766
+        },
+        "offered_rate_per_s": 50.0,
+        "load_duration_s": 120,
+        "background_writes_issued": 6000,
+        "schedule_slip_s": 0.056,
+        "measurement_model": "open loop, fixed offered rate; percentiles only",
+        "p99_degradation_factor_under_load": 0.76
+      },
+      "notes": [
+        "p99 idle 78.375 ms · p99 loaded 59.178 ms · degradation x0.8",
+        "Whether this interval is acceptable is not a property of the database. It is a property of your application's correctness requirements.",
+        "Harness rule: SUPPORTED iff p99 under load < 50 ms. Measured p99 under load: run 1 = 59.178 ms, run 2 = 53.849 ms -> INCONCLUSIVE both runs by that rule. Interpretation aid (supplementary, same cycle, idle, n=40): the marker was found on the FIRST find_one in 40/40 cycles; the measured interval is the sum of insert_one (p50 9.8 ms) + one find_one (p50 11.2 ms) round trips through HTTP -> Data API -> CQL. No index lag was detectable at the 5 ms polling resolution. Under load the attempt count was not recorded by the harness. What was measured is SAI equality on a scalar field ('body' via array_contains), NOT the JVector vector graph the article's section 4 quotation refers to."
+      ],
+      "replication_2": {
+        "verdict": "INCONCLUSIVE",
+        "evidence": {
+          "idle": {
+            "n": 40,
+            "min_ms": 13.857,
+            "p50_ms": 18.71,
+            "p95_ms": 29.04,
+            "p99_ms": 54.491,
+            "p999_ms": 67.207,
+            "max_ms": 68.62,
+            "stdev_ms": 8.49
+          },
+          "under_load": {
+            "n": 120,
+            "min_ms": 32.821,
+            "p50_ms": 42.285,
+            "p95_ms": 49.817,
+            "p99_ms": 53.849,
+            "p999_ms": 55.489,
+            "max_ms": 55.644,
+            "stdev_ms": 3.963
+          },
+          "offered_rate_per_s": 50.0,
+          "load_duration_s": 120,
+          "background_writes_issued": 6000,
+          "schedule_slip_s": 0.055,
+          "measurement_model": "open loop, fixed offered rate; percentiles only",
+          "p99_degradation_factor_under_load": 0.99
+        }
+      },
+      "supplementary_attempt_count_idle": {
+        "n": 40,
+        "find_attempts_histogram": {
+          "1": 40
+        },
+        "insert_one_ms": {
+          "n": 40,
+          "min_ms": 7.202,
+          "p50_ms": 9.82,
+          "p95_ms": 15.246,
+          "p99_ms": 40.058,
+          "p999_ms": 53.696,
+          "max_ms": 55.211,
+          "stdev_ms": 7.364
+        },
+        "first_find_one_ms": {
+          "n": 40,
+          "min_ms": 8.726,
+          "p50_ms": 11.23,
+          "p95_ms": 17.248,
+          "p99_ms": 28.852,
+          "p999_ms": 34.618,
+          "max_ms": 35.258,
+          "stdev_ms": 4.528
+        },
+        "insert_to_found_ms": {
+          "n": 40,
+          "min_ms": 16.296,
+          "p50_ms": 22.921,
+          "p95_ms": 27.28,
+          "p99_ms": 66.829,
+          "p999_ms": 88.106,
+          "max_ms": 90.471,
+          "stdev_ms": 11.078
+        }
+      }
+    },
+    {
+      "probe": "3. read-modify-write detection",
+      "claim_id": "A3",
+      "claim": "A single-field update reads the whole document, modifies it in memory and rewrites it entirely, plus derived columns.",
+      "verdict": "INCONCLUSIVE",
+      "evidence": {
+        "mutation": "one scalar field, constant across all sizes",
+        "by_document_size": {
+          "1kb": {
+            "n": 30,
+            "min_ms": 8.535,
+            "p50_ms": 11.468,
+            "p95_ms": 22.64,
+            "p99_ms": 29.41,
+            "p999_ms": 30.332,
+            "max_ms": 30.435,
+            "stdev_ms": 4.753
+          },
+          "8kb": {
+            "n": 30,
+            "min_ms": 8.605,
+            "p50_ms": 13.413,
+            "p95_ms": 18.875,
+            "p99_ms": 21.515,
+            "p999_ms": 22.252,
+            "max_ms": 22.334,
+            "stdev_ms": 3.348
+          },
+          "32kb": {
+            "n": 30,
+            "min_ms": 11.767,
+            "p50_ms": 14.854,
+            "p95_ms": 23.102,
+            "p99_ms": 25.08,
+            "p999_ms": 25.317,
+            "max_ms": 25.344,
+            "stdev_ms": 3.477
+          },
+          "128kb": {
+            "n": 30,
+            "min_ms": 17.299,
+            "p50_ms": 22.066,
+            "p95_ms": 37.706,
+            "p99_ms": 42.532,
+            "p999_ms": 43.09,
+            "max_ms": 43.152,
+            "stdev_ms": 6.216
+          }
+        },
+        "reps_per_size": 30,
+        "p50_growth_factor": 1.92,
+        "document_size_growth_factor": 128.0
+      },
+      "notes": [
+        "p50 grew x1.92 while the document grew x128 and the mutation stayed constant. Cost scales with total document size: that is the signature of a whole-document rewrite.",
+        "Confounder to exclude before publishing: payload transfer over HTTP also scales with document size. Re-run against a local endpoint, or subtract a same-size read, to separate wire cost from storage cost.",
+        "FINAL: latency probe INCONCLUSIVE by the pre-registered read-control rule; the cycle itself is SUPPORTED by direct query trace (see direct_observation_by_query_trace). Variant B shows the rewrite cost scales with unchanged indexed content."
+      ],
+      "verdict_harness_raw": "SUPPORTED",
+      "read_control_pre_registered_rule": {
+        "rule": "User protocol step 3: run a READ of documents of the same sizes; if the read curve has the same slope as the update curve, the growth is wire cost and probe 3 is INCONCLUSIVE.",
+        "run_1": {
+          "update_p50_ms": {
+            "1kb": 11.468,
+            "8kb": 13.413,
+            "32kb": 14.854,
+            "128kb": 22.066
+          },
+          "update_p50_growth": 1.92,
+          "read_p50_ms": {
+            "1kb": 7.299,
+            "8kb": 9.913,
+            "32kb": 10.7,
+            "128kb": 13.579
+          },
+          "read_p50_growth": 1.86,
+          "read_source": "p50 values transcribed from the run log; the full distribution JSON of run 1 was overwritten by run 2 (control_read.py writes a fixed filename)",
+          "abs_slope_ms_per_kb": {
+            "update": 0.0834,
+            "read": 0.0494
+          }
+        },
+        "run_2": {
+          "update_p50_ms": {
+            "1kb": 10.58,
+            "8kb": 12.621,
+            "32kb": 12.628,
+            "128kb": 23.411
+          },
+          "update_p50_growth": 2.21,
+          "read_p50_ms": {
+            "1kb": 6.253,
+            "8kb": 7.073,
+            "32kb": 7.049,
+            "128kb": 12.146
+          },
+          "read_p50_growth": 1.94,
+          "read_distributions": {
+            "1kb": {
+              "n": 30,
+              "min_ms": 4.721,
+              "p50_ms": 6.253,
+              "p95_ms": 7.333,
+              "p99_ms": 7.836,
+              "p999_ms": 7.98,
+              "max_ms": 7.996,
+              "stdev_ms": 0.832
+            },
+            "8kb": {
+              "n": 30,
+              "min_ms": 5.234,
+              "p50_ms": 7.073,
+              "p95_ms": 11.414,
+              "p99_ms": 11.632,
+              "p999_ms": 11.656,
+              "max_ms": 11.659,
+              "stdev_ms": 1.75
+            },
+            "32kb": {
+              "n": 30,
+              "min_ms": 5.174,
+              "p50_ms": 7.049,
+              "p95_ms": 9.492,
+              "p99_ms": 15.768,
+              "p999_ms": 18.031,
+              "max_ms": 18.282,
+              "stdev_ms": 2.252
+            },
+            "128kb": {
+              "n": 30,
+              "min_ms": 9.031,
+              "p50_ms": 12.146,
+              "p95_ms": 21.785,
+              "p99_ms": 23.527,
+              "p999_ms": 23.667,
+              "max_ms": 23.683,
+              "stdev_ms": 3.821
+            }
+          },
+          "abs_slope_ms_per_kb": {
+            "update": 0.101,
+            "read": 0.0464
+          }
+        },
+        "wire_bytes_per_size": {
+          "1kb": {
+            "updateOne_req": 122,
+            "updateOne_resp": 47,
+            "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+            "findOne_req": 80,
+            "findOne_resp": 1135
+          },
+          "8kb": {
+            "updateOne_req": 122,
+            "updateOne_resp": 47,
+            "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+            "findOne_req": 80,
+            "findOne_resp": 8303
+          },
+          "32kb": {
+            "updateOne_req": 123,
+            "updateOne_resp": 47,
+            "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+            "findOne_req": 81,
+            "findOne_resp": 32880
+          },
+          "128kb": {
+            "updateOne_req": 124,
+            "updateOne_resp": 47,
+            "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+            "findOne_req": 82,
+            "findOne_resp": 131185
+          }
+        },
+        "verdict_by_rule": "INCONCLUSIVE",
+        "reasoning": "Growth FACTORS coincide (update x1.92 / x2.21 vs read x1.86 / x1.94), so the pre-registered rule fires. Caveat the rule does not capture: the updateOne HTTP payload is constant (122-124 B request, 47 B response) at every size, so the update's growth cannot be HTTP transfer; the read's growth includes a 1.1 KB -> 131 KB HTTP response. In absolute terms the update slope is 1.6-1.7x the read slope (0.083 / 0.101 vs 0.049 / 0.046 ms per KB). The latency probe alone cannot separate 'one full read' from 'read + full rewrite'."
+      },
+      "variant_B_indexed_chunks": {
+        "verdict": "SUPPORTED",
+        "evidence": {
+          "mutation": "one scalar field, constant across all sizes",
+          "ballast_shape": "indexed string chunks of <= 8000 bytes (2/5/17 fields for 8/32/128 KB)",
+          "by_document_size": {
+            "1kb": {
+              "n": 30,
+              "min_ms": 9.521,
+              "p50_ms": 12.104,
+              "p95_ms": 16.034,
+              "p99_ms": 18.798,
+              "p999_ms": 19.527,
+              "max_ms": 19.608,
+              "stdev_ms": 2.043
+            },
+            "8kb": {
+              "n": 30,
+              "min_ms": 12.173,
+              "p50_ms": 15.718,
+              "p95_ms": 19.664,
+              "p99_ms": 20.248,
+              "p999_ms": 20.405,
+              "max_ms": 20.423,
+              "stdev_ms": 2.194
+            },
+            "32kb": {
+              "n": 30,
+              "min_ms": 26.707,
+              "p50_ms": 32.108,
+              "p95_ms": 41.018,
+              "p99_ms": 46.922,
+              "p999_ms": 48.867,
+              "max_ms": 49.083,
+              "stdev_ms": 4.888
+            },
+            "128kb": {
+              "n": 30,
+              "min_ms": 71.783,
+              "p50_ms": 90.783,
+              "p95_ms": 135.727,
+              "p99_ms": 223.528,
+              "p999_ms": 254.768,
+              "max_ms": 258.239,
+              "stdev_ms": 33.527
+            }
+          },
+          "reps_per_size": 30,
+          "p50_growth_factor": 7.5,
+          "document_size_growth_factor": 128.0
+        },
+        "read_control": {
+          "p50_ms": {
+            "1kb": 7.39,
+            "8kb": 7.917,
+            "32kb": 8.253,
+            "128kb": 11.523
+          },
+          "growth": 1.56,
+          "distributions": {
+            "1kb": {
+              "n": 30,
+              "min_ms": 6.166,
+              "p50_ms": 7.39,
+              "p95_ms": 10.659,
+              "p99_ms": 12.253,
+              "p999_ms": 12.616,
+              "max_ms": 12.656,
+              "stdev_ms": 1.498
+            },
+            "8kb": {
+              "n": 30,
+              "min_ms": 7.09,
+              "p50_ms": 7.917,
+              "p95_ms": 11.305,
+              "p99_ms": 11.989,
+              "p999_ms": 12.151,
+              "max_ms": 12.169,
+              "stdev_ms": 1.3
+            },
+            "32kb": {
+              "n": 30,
+              "min_ms": 6.826,
+              "p50_ms": 8.253,
+              "p95_ms": 11.438,
+              "p99_ms": 15.375,
+              "p999_ms": 16.762,
+              "max_ms": 16.917,
+              "stdev_ms": 1.925
+            },
+            "128kb": {
+              "n": 30,
+              "min_ms": 9.424,
+              "p50_ms": 11.523,
+              "p95_ms": 24.082,
+              "p99_ms": 27.897,
+              "p999_ms": 28.469,
+              "max_ms": 28.532,
+              "stdev_ms": 4.694
+            }
+          }
+        },
+        "reading": "With the ballast INDEXED (default collection options), a constant one-field $set grew from p50 12.1 ms (1 KB) to 90.8 ms (128 KB, 17 indexed chunks) = x7.50, against a read growth of x1.56 and a constant updateOne wire payload. The extra cost tracks the amount of UNCHANGED indexed content, i.e. derived columns and their SAI entries are rewritten in full on every update, not only for the mutated path."
+      },
+      "direct_observation_by_query_trace": {
+        "source": "system_traces.sessions with nodetool settraceprobability 1.0 during the probe-4 replay (10 updateOne $set on collection A), then reset to 0.0",
+        "sequence_per_updateOne": [
+          "SELECT key, tx_id, doc_json FROM <coll> WHERE key = ? LIMIT 1   [CL LOCAL_QUORUM]",
+          "UPDATE <coll> SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_dbl_values = ?, query_text_values = ?, query_null_values = ?, query_timestamp_values = ?, query_lexical_value = ?, doc_json = ? WHERE key = ? IF tx_id = ?   [CL LOCAL_QUORUM, serial LOCAL_SERIAL]"
+        ],
+        "sequence_per_deleteOne": [
+          "SELECT key, tx_id FROM <coll> WHERE key = ? LIMIT 1",
+          "DELETE FROM <coll> WHERE key = ? IF tx_id = ?"
+        ],
+        "sequence_per_insertOne": [
+          "INSERT INTO <coll> (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_lexical_value) VALUES (...) IF NOT EXISTS"
+        ],
+        "counts": [
+          {
+            "statement": "SELECT",
+            "kind": "plain",
+            "consistency_level": "LOCAL_QUORUM",
+            "serial_consistency_level": "SERIAL",
+            "count": 40,
+            "sample": "SELECT key, tx_id, doc_json FROM verif_stockage_20260917.storage_probe_20260917 WHERE array_contains CONTAINS ? LIMIT 1"
+          },
+          {
+            "statement": "INSERT",
+            "kind": "LWT",
+            "consistency_level": "LOCAL_QUORUM",
+            "serial_consistency_level": "LOCAL_SERIAL",
+            "count": 10,
+            "sample": "INSERT INTO \"verif_stockage_20260917\".\"storage_probe_20260917\" (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_value"
+          },
+          {
+            "statement": "DELETE",
+            "kind": "LWT",
+            "consistency_level": "LOCAL_QUORUM",
+            "serial_consistency_level": "LOCAL_SERIAL",
+            "count": 10,
+            "sample": "DELETE FROM \"verif_stockage_20260917\".\"storage_probe_20260917\" WHERE key = ? IF tx_id = ?"
+          },
+          {
+            "statement": "UPDATE",
+            "kind": "plain",
+            "consistency_level": "LOCAL_QUORUM",
+            "serial_consistency_level": "LOCAL_SERIAL",
+            "count": 10,
+            "sample": "UPDATE \"verif_stockage_20260917\".\"storage_probe_20260917\" SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_db"
+          }
+        ],
+        "verdict_by_trace": "SUPPORTED",
+        "reading": "The read-modify-write cycle is observed directly, not inferred from latency: the whole document (doc_json) is read, the API tier rebuilds every derived column, and a single CQL UPDATE rewrites every column including the full doc_json, guarded by a lightweight transaction on tx_id. This is an observation of one build (HCD 2.0.6 + data-api v1.0.33), not a documented contract."
+      }
+    },
+    {
+      "probe": "4. write consistency level",
+      "claim_id": "A5",
+      "claim": "Data API writes execute at LOCAL_QUORUM; conditional writes at a serial level.",
+      "verdict": "SUPPORTED",
+      "evidence": {
+        "consistency_levels_observed": {
+          "ONE": 42,
+          "LOCAL_QUORUM": 70,
+          "LOCAL_ONE": 2
+        },
+        "traces_examined": 200
+      },
+      "notes": [
+        "First invocation (inside the full run, tracing off): INCONCLUSIVE, system_traces empty. Re-run per protocol: nodetool settraceprobability 1.0 on the single node, replay of 10 insertOne / 10 updateOne / 20 findOne / 10 deleteOne through the Data API, probe_consistency() invoked unchanged, then settraceprobability 0 (verified: 'Current trace probability: 0.0').",
+        "observed: {'ONE': 42, 'LOCAL_QUORUM': 70, 'LOCAL_ONE': 2}",
+        "The harness counter mixes all 200 traced sessions (ONE / LOCAL_ONE come from system and client-side reads, not from the Data API's statements on the collection). Per-statement breakdown on the target table (supplementary read-only query): 70/70 statements at LOCAL_QUORUM; serial level LOCAL_SERIAL on all 30 conditional statements (INSERT ... IF NOT EXISTS, UPDATE ... IF tx_id = ?, DELETE ... IF tx_id = ?). On a single node with RF=1 these levels are satisfied by one replica: the name is established, the multi-replica cost is not."
+      ],
+      "per_statement_consistency": [
+        {
+          "statement": "SELECT",
+          "kind": "plain",
+          "consistency_level": "LOCAL_QUORUM",
+          "serial_consistency_level": "SERIAL",
+          "count": 40,
+          "sample": "SELECT key, tx_id, doc_json FROM verif_stockage_20260917.storage_probe_20260917 WHERE array_contains CONTAINS ? LIMIT 1"
+        },
+        {
+          "statement": "INSERT",
+          "kind": "LWT",
+          "consistency_level": "LOCAL_QUORUM",
+          "serial_consistency_level": "LOCAL_SERIAL",
+          "count": 10,
+          "sample": "INSERT INTO \"verif_stockage_20260917\".\"storage_probe_20260917\" (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_value"
+        },
+        {
+          "statement": "DELETE",
+          "kind": "LWT",
+          "consistency_level": "LOCAL_QUORUM",
+          "serial_consistency_level": "LOCAL_SERIAL",
+          "count": 10,
+          "sample": "DELETE FROM \"verif_stockage_20260917\".\"storage_probe_20260917\" WHERE key = ? IF tx_id = ?"
+        },
+        {
+          "statement": "UPDATE",
+          "kind": "plain",
+          "consistency_level": "LOCAL_QUORUM",
+          "serial_consistency_level": "LOCAL_SERIAL",
+          "count": 10,
+          "sample": "UPDATE \"verif_stockage_20260917\".\"storage_probe_20260917\" SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_db"
+        }
+      ],
+      "replication_2_verdict": "SUPPORTED"
+    }
+  ],
+  "publication_note": "These figures characterise one build on one machine under one workload. They settle what this engine does; they do NOT license any comparison with another vendor's product, and no figure here should be published as such. Publish the verdicts and the method; publish the numbers only alongside every field of 'conditions' above, completed.",
+  "harness_modifications": [
+    {
+      "where": "connect_data_api()",
+      "change": "DataAPIClient(token) -> DataAPIClient(token, environment=Environment.HCD)",
+      "why": "Mechanical: self-hosted HCD Data API serves /v1; astrapy 2.3.1 without environment targets Astra's /api/json/v1 and gets HTTP 404 on every command (reproduced read-only before the change).",
+      "effect_on_protocol": "none"
+    },
+    {
+      "where": "main(), create_collection",
+      "change": "create_collection(name) -> create_collection(name, definition={'indexing': {'deny': ['ballast']}})",
+      "why": "Mechanical: the Data API refuses any INDEXED string > 8000 bytes (SHRED_DOC_LIMIT_VIOLATION at 8192 bytes), so probe 3's 8/32/128 KB single-string ballast cannot be indexed. Excluding only 'ballast' from indexing keeps sizes, mutation, reps and thresholds untouched; the ballast still lives in doc_json. User-approved (option C) together with a variant B (indexed chunks <= 8000 B) run in a separate collection and reported separately.",
+      "effect_on_protocol": "probe 3 measures steps 1-3 (RMW) isolated from SAI maintenance of the ballast; probe 1 still sees 9 SAI indexes; probe 2's 'body' field remains indexed."
+    }
+  ],
+  "replication_2": {
+    "run_at_utc": "2026-09-17T15:05:49.995742+00:00",
+    "verdicts": [
+      [
+        "A2",
+        "SUPPORTED"
+      ],
+      [
+        "FRESHNESS",
+        "INCONCLUSIVE"
+      ],
+      [
+        "A3",
+        "SUPPORTED"
+      ],
+      [
+        "A5",
+        "SUPPORTED"
+      ]
+    ],
+    "schedule_slip_s": 0.055,
+    "note": "Identical protocol, identical collection, run ~10 min after run 1; reported in full in findings_rate50_rep2.json."
+  },
+  "run_log": [
+    "14:52 UTC short pass --skip-load: probes 1-2 OK; probe 3 aborted at 8 KB with SHRED_DOC_LIMIT_VIOLATION (indexed string 8192 B > 8000 B).",
+    "14:53 empirical limit test in throwaway collections tmp_limit_a/b (dropped): non-indexed single string accepted up to 512 KB; indexed chunks <= 8000 B accepted up to 17 fields (128 KB).",
+    "14:56 run 1 --rate 50 --duration 120 (pre-declared main run): slip 0.056 s, 6000 background writes, no OOM (cgroup max 2.944 GiB / 3 GiB).",
+    "14:59 read control A (run 1); 15:00 variant B probe 3 + read control B; 15:01 freshness attempt count (idle).",
+    "15:02 probe 4: tracing 1.0 -> replay -> probe -> tracing 0.0 (verified).",
+    "15:06 run 2 (replication, identical): slip 0.055 s, no OOM (cgroup max 2.907 GiB); read control A run 2.",
+    "Left in place for inspection: keyspace verif_stockage_20260917 with collections storage_probe_20260917 (A, 12 000 load docs) and storage_probe_20260917_b (B, empty). Tracing probability is 0.0."
+  ],
+  "what_this_experiment_does_not_establish": [
+    "Any multi-replica cost: 1 node, RF=1; LOCAL_QUORUM/LOCAL_SERIAL are names here, not quorum rounds across replicas.",
+    "Any disk-bound behaviour: 0 SSTables flushed, no compaction crossed; all figures are memtable/in-cache figures.",
+    "The vector-index (JVector) write-to-searchable interval: probe 2 exercised SAI equality on a scalar field only.",
+    "Index lag under load below ~40 ms: the measured interval is dominated by two HTTP round trips; attempt count under load was not recorded.",
+    "Separation of 'read once' from 'read + rewrite' by latency alone (pre-registered rule fires); the cycle is established by trace, not by the cost curve.",
+    "Anything about MongoDB, about Apache Cassandra 5.0.x or 6.0, or about another HCD/Data API version: one build, one machine, one workload, one day.",
+    "Whether the Data API's write CL/serial CL are configurable defaults or fixed: only the observed values are established."
+  ]
+}

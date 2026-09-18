@@ -1,0 +1,669 @@
+{
+  "probe": "probe_field_vs_byte.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-17T21:36:25.094922+00:00",
+  "design_note": "Three arms at one constant document size are NOT executable: the 8 000-byte indexed-string cap makes 17 the minimum field count at 128 KB, which is the reference arm itself. Two series are used instead, each holding one term constant.",
+  "decisive_series": "series 2 — field count varies at constant indexed volume",
+  "verdict_rule": "series-2 endpoint ratio <= 1.15 → bytes dominate; >= 1.5 → field count is an independent driver; between → inconclusive",
+  "verdict_per_pass": [
+    "BYTES DOMINATE",
+    "INCONCLUSIVE"
+  ],
+  "internal_control_same_config_in_both_series": {
+    "pass1": {
+      "S1_p50_ms": 68.384,
+      "S2_p50_ms": 67.044,
+      "relative_spread": 0.02,
+      "verdict": "consistent"
+    },
+    "pass2": {
+      "S1_p50_ms": 69.054,
+      "S2_p50_ms": 68.609,
+      "relative_spread": 0.0065,
+      "verdict": "consistent"
+    }
+  },
+  "analysis": {
+    "pass1": {
+      "series1_per_byte_at_fixed_field_count": {
+        "x": "bytes per field",
+        "slope_ms_per_unit": 0.011926,
+        "r2": 0.9999,
+        "endpoint_ratio": 4.556,
+        "x_range": [
+          512,
+          8000
+        ],
+        "y_range_ms": [
+          25.163,
+          114.649
+        ]
+      },
+      "series2_per_field_at_fixed_volume": {
+        "x": "field count",
+        "slope_ms_per_unit": 0.077422,
+        "r2": 0.5745,
+        "endpoint_ratio": 1.128,
+        "x_range": [
+          9,
+          128
+        ],
+        "y_range_ms": [
+          66.74,
+          75.291
+        ]
+      }
+    },
+    "pass2": {
+      "series1_per_byte_at_fixed_field_count": {
+        "x": "bytes per field",
+        "slope_ms_per_unit": 0.012339,
+        "r2": 0.9999,
+        "endpoint_ratio": 4.738,
+        "x_range": [
+          512,
+          8000
+        ],
+        "y_range_ms": [
+          24.753,
+          117.269
+        ]
+      },
+      "series2_per_field_at_fixed_volume": {
+        "x": "field count",
+        "slope_ms_per_unit": 0.111247,
+        "r2": 0.9154,
+        "endpoint_ratio": 1.187,
+        "x_range": [
+          9,
+          128
+        ],
+        "y_range_ms": [
+          67.629,
+          80.281
+        ]
+      }
+    }
+  },
+  "results": {
+    "S1-16x512B|pass1": {
+      "config": {
+        "label": "S1-16x512B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 8192,
+      "update": {
+        "n": 30,
+        "min_ms": 21.878,
+        "p50_ms": 25.163,
+        "p95_ms": 28.965,
+        "p99_ms": 31.351,
+        "max_ms": 31.986,
+        "stdev_ms": 2.264
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.063,
+        "p50_ms": 9.596,
+        "p95_ms": 14.17,
+        "p99_ms": 14.467,
+        "max_ms": 14.512,
+        "stdev_ms": 1.71
+      }
+    },
+    "S1-16x1024B|pass1": {
+      "config": {
+        "label": "S1-16x1024B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 16384,
+      "update": {
+        "n": 30,
+        "min_ms": 26.86,
+        "p50_ms": 31.491,
+        "p95_ms": 35.558,
+        "p99_ms": 36.398,
+        "max_ms": 36.707,
+        "stdev_ms": 2.357
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.361,
+        "p50_ms": 10.628,
+        "p95_ms": 14.765,
+        "p99_ms": 15.797,
+        "max_ms": 15.982,
+        "stdev_ms": 1.984
+      }
+    },
+    "S1-16x2048B|pass1": {
+      "config": {
+        "label": "S1-16x2048B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 32768,
+      "update": {
+        "n": 30,
+        "min_ms": 35.48,
+        "p50_ms": 44.304,
+        "p95_ms": 52.613,
+        "p99_ms": 54.284,
+        "max_ms": 54.329,
+        "stdev_ms": 4.11
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.01,
+        "p50_ms": 10.852,
+        "p95_ms": 20.422,
+        "p99_ms": 26.083,
+        "max_ms": 27.977,
+        "stdev_ms": 4.304
+      }
+    },
+    "S1-16x4096B|pass1": {
+      "config": {
+        "label": "S1-16x4096B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 54.974,
+        "p50_ms": 68.384,
+        "p95_ms": 77.863,
+        "p99_ms": 77.993,
+        "max_ms": 77.996,
+        "stdev_ms": 6.851
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.986,
+        "p50_ms": 11.058,
+        "p95_ms": 17.576,
+        "p99_ms": 23.142,
+        "max_ms": 25.146,
+        "stdev_ms": 3.401
+      }
+    },
+    "S1-16x8000B|pass1": {
+      "config": {
+        "label": "S1-16x8000B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 8000
+      },
+      "total_bytes": 128000,
+      "update": {
+        "n": 30,
+        "min_ms": 97.957,
+        "p50_ms": 114.649,
+        "p95_ms": 140.412,
+        "p99_ms": 333.122,
+        "max_ms": 410.991,
+        "stdev_ms": 53.774
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 10.278,
+        "p50_ms": 12.737,
+        "p95_ms": 19.459,
+        "p99_ms": 26.442,
+        "max_ms": 28.827,
+        "stdev_ms": 3.686
+      }
+    },
+    "S2-9x7281B|pass1": {
+      "config": {
+        "label": "S2-9x7281B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 9,
+        "bytes_per_field": 7281
+      },
+      "total_bytes": 65529,
+      "update": {
+        "n": 30,
+        "min_ms": 57.862,
+        "p50_ms": 66.74,
+        "p95_ms": 76.474,
+        "p99_ms": 77.224,
+        "max_ms": 77.329,
+        "stdev_ms": 5.612
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.367,
+        "p50_ms": 10.933,
+        "p95_ms": 14.925,
+        "p99_ms": 20.197,
+        "max_ms": 22.23,
+        "stdev_ms": 2.728
+      }
+    },
+    "S2-16x4096B|pass1": {
+      "config": {
+        "label": "S2-16x4096B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 56.977,
+        "p50_ms": 67.044,
+        "p95_ms": 79.633,
+        "p99_ms": 124.743,
+        "max_ms": 142.729,
+        "stdev_ms": 14.764
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.37,
+        "p50_ms": 13.255,
+        "p95_ms": 17.953,
+        "p99_ms": 19.577,
+        "max_ms": 20.211,
+        "stdev_ms": 2.73
+      }
+    },
+    "S2-32x2048B|pass1": {
+      "config": {
+        "label": "S2-32x2048B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 32,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 52.179,
+        "p50_ms": 71.626,
+        "p95_ms": 78.042,
+        "p99_ms": 79.437,
+        "max_ms": 79.929,
+        "stdev_ms": 7.86
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.785,
+        "p50_ms": 11.928,
+        "p95_ms": 22.153,
+        "p99_ms": 28.711,
+        "max_ms": 31.345,
+        "stdev_ms": 4.669
+      }
+    },
+    "S2-64x1024B|pass1": {
+      "config": {
+        "label": "S2-64x1024B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 64,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 60.716,
+        "p50_ms": 77.971,
+        "p95_ms": 91.676,
+        "p99_ms": 93.028,
+        "max_ms": 93.07,
+        "stdev_ms": 9.121
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.191,
+        "p50_ms": 12.854,
+        "p95_ms": 16.635,
+        "p99_ms": 18.841,
+        "max_ms": 19.39,
+        "stdev_ms": 2.302
+      }
+    },
+    "S2-128x512B|pass1": {
+      "config": {
+        "label": "S2-128x512B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 128,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 62.223,
+        "p50_ms": 75.291,
+        "p95_ms": 96.039,
+        "p99_ms": 98.203,
+        "max_ms": 98.91,
+        "stdev_ms": 9.458
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 10.696,
+        "p50_ms": 13.027,
+        "p95_ms": 19.928,
+        "p99_ms": 21.032,
+        "max_ms": 21.4,
+        "stdev_ms": 2.98
+      }
+    },
+    "S1-16x512B|pass2": {
+      "config": {
+        "label": "S1-16x512B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 8192,
+      "update": {
+        "n": 30,
+        "min_ms": 20.579,
+        "p50_ms": 24.753,
+        "p95_ms": 28.446,
+        "p99_ms": 30.851,
+        "max_ms": 31.804,
+        "stdev_ms": 2.775
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 6.999,
+        "p50_ms": 10.583,
+        "p95_ms": 19.298,
+        "p99_ms": 35.57,
+        "max_ms": 41.938,
+        "stdev_ms": 6.321
+      }
+    },
+    "S1-16x1024B|pass2": {
+      "config": {
+        "label": "S1-16x1024B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 16384,
+      "update": {
+        "n": 30,
+        "min_ms": 24.839,
+        "p50_ms": 31.045,
+        "p95_ms": 40.476,
+        "p99_ms": 43.514,
+        "max_ms": 44.696,
+        "stdev_ms": 4.79
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.37,
+        "p50_ms": 10.695,
+        "p95_ms": 14.109,
+        "p99_ms": 16.756,
+        "max_ms": 17.793,
+        "stdev_ms": 1.944
+      }
+    },
+    "S1-16x2048B|pass2": {
+      "config": {
+        "label": "S1-16x2048B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 32768,
+      "update": {
+        "n": 30,
+        "min_ms": 37.878,
+        "p50_ms": 44.371,
+        "p95_ms": 56.272,
+        "p99_ms": 61.519,
+        "max_ms": 63.525,
+        "stdev_ms": 6.656
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 7.727,
+        "p50_ms": 10.65,
+        "p95_ms": 17.101,
+        "p99_ms": 25.915,
+        "max_ms": 29.119,
+        "stdev_ms": 4.015
+      }
+    },
+    "S1-16x4096B|pass2": {
+      "config": {
+        "label": "S1-16x4096B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 52.581,
+        "p50_ms": 69.054,
+        "p95_ms": 89.964,
+        "p99_ms": 112.065,
+        "max_ms": 118.05,
+        "stdev_ms": 12.814
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 8.567,
+        "p50_ms": 10.264,
+        "p95_ms": 18.197,
+        "p99_ms": 20.955,
+        "max_ms": 20.992,
+        "stdev_ms": 3.02
+      }
+    },
+    "S1-16x8000B|pass2": {
+      "config": {
+        "label": "S1-16x8000B",
+        "series": "bytes-vary-fields-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 8000
+      },
+      "total_bytes": 128000,
+      "update": {
+        "n": 30,
+        "min_ms": 97.984,
+        "p50_ms": 117.269,
+        "p95_ms": 135.468,
+        "p99_ms": 235.587,
+        "max_ms": 275.371,
+        "stdev_ms": 30.235
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 10.98,
+        "p50_ms": 14.331,
+        "p95_ms": 26.996,
+        "p99_ms": 35.109,
+        "max_ms": 38.128,
+        "stdev_ms": 6.005
+      }
+    },
+    "S2-9x7281B|pass2": {
+      "config": {
+        "label": "S2-9x7281B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 9,
+        "bytes_per_field": 7281
+      },
+      "total_bytes": 65529,
+      "update": {
+        "n": 30,
+        "min_ms": 55.583,
+        "p50_ms": 67.629,
+        "p95_ms": 85.04,
+        "p99_ms": 106.03,
+        "max_ms": 113.034,
+        "stdev_ms": 11.345
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.026,
+        "p50_ms": 10.557,
+        "p95_ms": 15.914,
+        "p99_ms": 25.172,
+        "max_ms": 28.813,
+        "stdev_ms": 3.626
+      }
+    },
+    "S2-16x4096B|pass2": {
+      "config": {
+        "label": "S2-16x4096B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 54.415,
+        "p50_ms": 68.609,
+        "p95_ms": 82.12,
+        "p99_ms": 90.058,
+        "max_ms": 93.298,
+        "stdev_ms": 8.692
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.708,
+        "p50_ms": 11.825,
+        "p95_ms": 16.925,
+        "p99_ms": 25.395,
+        "max_ms": 28.704,
+        "stdev_ms": 3.578
+      }
+    },
+    "S2-32x2048B|pass2": {
+      "config": {
+        "label": "S2-32x2048B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 32,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 53.441,
+        "p50_ms": 66.325,
+        "p95_ms": 79.725,
+        "p99_ms": 85.837,
+        "max_ms": 87.503,
+        "stdev_ms": 8.012
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 9.812,
+        "p50_ms": 12.224,
+        "p95_ms": 31.249,
+        "p99_ms": 38.492,
+        "max_ms": 38.714,
+        "stdev_ms": 6.941
+      }
+    },
+    "S2-64x1024B|pass2": {
+      "config": {
+        "label": "S2-64x1024B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 64,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 59.914,
+        "p50_ms": 72.614,
+        "p95_ms": 87.577,
+        "p99_ms": 88.336,
+        "max_ms": 88.444,
+        "stdev_ms": 7.067
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 10.331,
+        "p50_ms": 11.935,
+        "p95_ms": 16.684,
+        "p99_ms": 18.8,
+        "max_ms": 19.591,
+        "stdev_ms": 2.321
+      }
+    },
+    "S2-128x512B|pass2": {
+      "config": {
+        "label": "S2-128x512B",
+        "series": "fields-vary-bytes-fixed",
+        "n_fields": 128,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 65536,
+      "update": {
+        "n": 30,
+        "min_ms": 61.767,
+        "p50_ms": 80.281,
+        "p95_ms": 101.088,
+        "p99_ms": 460.539,
+        "max_ms": 606.43,
+        "stdev_ms": 94.83
+      },
+      "read_control": {
+        "n": 30,
+        "min_ms": 10.07,
+        "p50_ms": 12.46,
+        "p95_ms": 20.663,
+        "p99_ms": 23.496,
+        "max_ms": 24.004,
+        "stdev_ms": 3.433
+      }
+    }
+  },
+  "conditions": {
+    "endpoint": "http://127.0.0.1:8182",
+    "keyspace": "verif_disk_20260917",
+    "collection": "fieldbyte_probe",
+    "reps": 30,
+    "warmup_discarded": 5,
+    "passes": 2,
+    "client_platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "product_and_version": "HCD 2.0.6 (5.0.7.0-ea50e91ba01f), Data API v1.0.33 (temp container p16-data-api)",
+      "topology": "p16 ring, 6 nodes/2 DC, keyspace verif_disk_20260917 = NetworkTopologyStrategy {dc1:3}; nodes 8 GiB/4 vCPU, heap 4G",
+      "storage_class": "UNDETERMINABLE from the guest: data on /dev/sda1 (ext4), a QEMU virtual SCSI disk; rotational flag=1 is the QEMU default (not real-media evidence); no smartctl, no root. Effective IO (dd, fsync): 101 MB/s sequential write. Physical media class not established.",
+      "memtable_budget_mb": 2048,
+      "disk_proof": {
+        "on_disk_bytes": 6491369675,
+        "on_disk_GiB": 6.05,
+        "target_GiB": 6.0,
+        "sstables_after_compaction": 40,
+        "compactions_before": 651,
+        "compactions_after": 729,
+        "compactions_crossed": 78,
+        "caches_invalidated": true,
+        "disk_bound": true,
+        "fill": "24576 incompressible-ballast docs, 262144 B each, 1138 s"
+      },
+      "durability": "commitlog_sync periodic 10000ms; Data API defaults writes/reads LOCAL_QUORUM, serial LOCAL_SERIAL (M4/M6)",
+      "page_cache_caveat": "OS page cache NOT dropped (no root). The 6.05 GiB dataset fits in the host's 220 GiB RAM, so reads of the fill data can still be served from page cache below the database. 'Disk-bound' here means the dataset genuinely exceeds the memtable budget and lives in SSTables (proven), NOT that every read missed RAM.",
+      "confound_probe_reads_hot_row": "The RMW probe re-reads the row it just wrote (SELECT doc_json before UPDATE); that row is memtable-resident regardless of dataset size. The disk regime acts through node memory pressure (frequent flushes) and cold caches, not by serving the probed row from disk.",
+      "hardware_confound_vs_campaign1": "Campaign 1's memtable coefficients came from rh-hcd (RF=1, 3 GiB/2 G heap). This run is p16 (RF=3, 8 GiB/4 G heap). A coefficient difference mixes regime with topology and hardware; do not attribute it to disk alone.",
+      "regime": "disk-bound (same verif_disk_20260917 keyspace, after the driver reached disk_bound=True)",
+      "internal_control_spread": {
+        "pass1": 0.02,
+        "pass2": 0.0065
+      },
+      "note": "Run only in the disk regime; the per-byte linearity (r²=0.9999) is expected to be regime-robust but was not repeated in memtable."
+    }
+  },
+  "publication_note": "Characterises one build on one machine under one workload. Publish the verdict and the method; publish the numbers only alongside every field of 'conditions' above, completed. Licenses no comparison with any other vendor's product."
+}

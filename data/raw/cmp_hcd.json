@@ -1,0 +1,213 @@
+{
+  "probe": "probe_comparative.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:14:06.821001+00:00",
+  "smoke_test": false,
+  "engine": "hcd",
+  "arms": {
+    "hcd": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 32.113,
+            "p50_ms": 40.9,
+            "p95_ms": 49.848,
+            "p99_ms": 54.285,
+            "max_ms": 55.818,
+            "stdev_ms": 5.189
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 35.437,
+            "p50_ms": 43.632,
+            "p95_ms": 70.375,
+            "p99_ms": 326.149,
+            "max_ms": 429.927,
+            "stdev_ms": 69.344
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 47.733,
+            "p50_ms": 56.867,
+            "p95_ms": 74.812,
+            "p99_ms": 77.761,
+            "max_ms": 78.308,
+            "stdev_ms": 7.812
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 67.321,
+            "p50_ms": 79.214,
+            "p95_ms": 110.702,
+            "p99_ms": 115.479,
+            "max_ms": 116.039,
+            "stdev_ms": 12.01
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 103.095,
+            "p50_ms": 130.787,
+            "p95_ms": 145.28,
+            "p99_ms": 280.436,
+            "max_ms": 335.336,
+            "stdev_ms": 38.113
+          }
+        },
+        "16x512B|pass2": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 27.961,
+            "p50_ms": 35.734,
+            "p95_ms": 45.853,
+            "p99_ms": 48.327,
+            "max_ms": 48.591,
+            "stdev_ms": 5.219
+          }
+        },
+        "16x1024B|pass2": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 35.18,
+            "p50_ms": 42.145,
+            "p95_ms": 52.301,
+            "p99_ms": 68.748,
+            "max_ms": 75.258,
+            "stdev_ms": 7.715
+          }
+        },
+        "16x2048B|pass2": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 45.868,
+            "p50_ms": 53.727,
+            "p95_ms": 63.31,
+            "p99_ms": 67.939,
+            "max_ms": 68.441,
+            "stdev_ms": 4.853
+          }
+        },
+        "16x4096B|pass2": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 63.479,
+            "p50_ms": 74.677,
+            "p95_ms": 92.963,
+            "p99_ms": 360.077,
+            "max_ms": 467.906,
+            "stdev_ms": 70.728
+          }
+        },
+        "16x8000B|pass2": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 91.27,
+            "p50_ms": 122.138,
+            "p95_ms": 154.793,
+            "p99_ms": 163.62,
+            "max_ms": 165.281,
+            "stdev_ms": 19.276
+          }
+        }
+      },
+      "indexes_present": [
+        "automatic — nine SAI per collection"
+      ]
+    }
+  },
+  "durability_mapping": {
+    "engine": "hcd",
+    "write_consistency": "LOCAL_QUORUM",
+    "serial_consistency": "LOCAL_SERIAL",
+    "note": "tier defaults, not set by the client"
+  },
+  "conditions": {
+    "host": {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    "reps": 30,
+    "passes": 2,
+    "warmup_discarded": 5,
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "deployment_shape": "HCD 2.0.6, p16 ring, keyspace cmp = NetworkTopologyStrategy {dc1:3} (3 replicas, one per rack). Data API tier v1.0.33 in front.",
+      "regime": "memtable/cache-resident (fresh-doc series, no disk fill). MATCHED to the MongoDB arm.",
+      "resource_limits": "HCD nodes 8 GiB/4 vCPU each (matched to each mongod); Data API tier 2 GiB, no CPU cap — an extra hop MongoDB does not have.",
+      "colocation": "client, Data API and nodes all on alphadebunker; loopback only.",
+      "durability_asymmetry_not_covered_by_mapping": "Each HCD updateOne is a conditional write (INSERT/UPDATE ... IF, a Paxos round at LOCAL_SERIAL) — see M2/M5. MongoDB's single-document update pays no such round. Design difference, measured not aligned."
+    }
+  },
+  "warning": "A single-record file is not a comparison. Merge with --compare, which refuses to emit a ratio unless both engines were measured on the same host with the same series shape."
+}

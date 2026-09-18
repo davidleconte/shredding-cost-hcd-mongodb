@@ -1,0 +1,57 @@
+{
+  "driver": "disk_regime_driver.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-17T21:29:41.731243+00:00",
+  "keyspace": "verif_disk_20260917",
+  "collection": "disk_fill",
+  "target_bytes": 6442450944,
+  "memtable_budget_mb": 2048.0,
+  "evidence": {
+    "before": {
+      "sstables": 0,
+      "data_dir_bytes": 0,
+      "compactions_completed": 651
+    },
+    "after": {
+      "sstables": 40,
+      "data_dir_bytes": 6491369675,
+      "compactions_completed": 729
+    },
+    "steps": [
+      {
+        "step": "fill",
+        "documents": 24576,
+        "seconds": 1137.8
+      },
+      {
+        "step": "flush",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "step": "sstables_after_flush",
+        "count": 82
+      },
+      {
+        "step": "compact",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "step": "invalidate_caches",
+        "failures": []
+      }
+    ],
+    "caches_not_invalidated": null,
+    "page_cache_note": "The operating system page cache was NOT dropped; doing so needs root on the host. Reads may therefore still be served from RAM below the database. State this in any report that calls the regime disk-bound.",
+    "checks": {
+      "data_exceeds_memtable_budget": true,
+      "sstables_exist": true,
+      "compaction_crossed": true,
+      "caches_invalidated": true
+    },
+    "disk_bound": true
+  },
+  "next_step": "Run probe_field_vs_byte.py and verify_storage_claims.py against this keyspace now, without restarting the node. If the node is restarted the memtable is empty again and the regime is lost.",
+  "honesty_note": "disk_bound=false means the regime was not reached. Do not report the run as disk-bound on the strength of intent."
+}

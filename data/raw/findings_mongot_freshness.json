@@ -1,0 +1,36 @@
+{
+  "probe": "mongot_freshness.py",
+  "run_at_utc": "2026-09-18T07:45:19.338661+00:00",
+  "engine": "mongodb-atlas-local (mongot)",
+  "mongodb_version": "8.3.11",
+  "cycles": 40,
+  "deployment": "single-node replica set (w:majority trivial); async lag is per-deployment",
+  "search_write_to_visible_ms": {
+    "n": 40,
+    "min_ms": 978.641,
+    "p50_ms": 1015.201,
+    "p95_ms": 1042.295,
+    "p99_ms": 1154.313,
+    "max_ms": 1224.72,
+    "mean_ms": 1021.553,
+    "stdev_ms": 35.172
+  },
+  "search_poll_attempts": {
+    "min": 22,
+    "median": 34,
+    "max": 36,
+    "note": "attempts>1 means the doc was NOT searchable on the first query \u2014 the async lag"
+  },
+  "search_never_visible_within_timeout": 0,
+  "regular_find_by_id_ms": {
+    "n": 40,
+    "min_ms": 1.035,
+    "p50_ms": 1.306,
+    "p95_ms": 1.685,
+    "p99_ms": 2.411,
+    "max_ms": 2.768,
+    "mean_ms": 1.361,
+    "stdev_ms": 0.289
+  },
+  "contrast": "regular find({_id}) is synchronous (found immediately); $search via mongot lags by the median write-to-visible above. HCD's SAI/JVector is synchronous like the regular index (M7: 40/40 first-try), so on the search axis HCD is immediate where MongoDB $search lags."
+}

@@ -1,0 +1,105 @@
+# MongoDB 8.0.32 — three-member replica set `rs0`
+# ==============================================================================
+# This file reconstructs the MongoDB deployment used by campaigns 5, 6 and 7.
+#
+# WHAT THE EVIDENCE FIXES (data/raw/cmp_mongo.json -> conditions.TO_BE_COMPLETED_BY_HAND):
+#
+#   "MongoDB 8.0.32 replica set rs0, 3 members (mongo1 PRIMARY + mongo2/mongo3
+#    SECONDARY), Docker on alphadebunker. w:majority is a real 2-of-3 majority,
+#    not the trivial single-member case."
+#   "each mongod: --memory 8g --cpus 4 (matched to one HCD node)."
+#   "client and all 3 mongod on the same host (alphadebunker); loopback only."
+#
+# and docs/campaigns/05-mutation-comparison.fr.md records the Docker network name
+# as `cmpnet` ("3 conteneurs + reseau `cmpnet` supprimes" at teardown).
+#
+# WHAT IS RECONSTRUCTION, NOT EVIDENCE: the original run was driven by
+# `docker run --memory 8g --cpus 4` invocations, not by a compose file; no compose
+# file exists in the campaign record. The port mapping below is this file's own
+# choice — the host ports the campaign used are not recorded anywhere under
+# data/raw/. Everything else (image tag, member count, member names, resource
+# limits, network name) is taken from the record above.
+#
+# w:majority and j:true are NOT set here. The probes set them per collection, in
+# code — `WriteConcern(w="majority", j=True)` in probes/probe_comparative.py,
+# probes/probe_read_search.py, probes/probe_aggregation.py, probes/mongot_freshness.py,
+# probes/mongot_floor.py and probes/turn_latency.py. Leaving the server default
+# alone is deliberate: the durability setting travels with the probe that claims it.
+#
+# Each mongod listens on a DISTINCT port inside its own container (27017, 27018,
+# 27019) and publishes it 1:1. That is what lets one replica-set configuration
+# resolve both from inside the Docker network and from a client on the host —
+# see the /etc/hosts step in REPRODUCING.md, section 3.2. Do not "simplify" this
+# to three containers all on 27017: the replica set advertises host:port pairs,
+# and a host client would then be sent to the same member three times.
+#
+#   docker compose -f env/docker-compose.mongodb-rs.yml up -d
+#   # then run the rs.initiate step from REPRODUCING.md section 3.2
+#
+# No authentication is configured. This is a throwaway laboratory deployment that
+# must not be exposed beyond loopback.
+
+services:
+
+  mongo1:
+    image: mongo:8.0.32
+    container_name: mongo1
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    mem_limit: 8g
+    cpus: 4
+    networks:
+      - cmpnet
+    volumes:
+      - mongo1-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo2:
+    image: mongo:8.0.32
+    container_name: mongo2
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - "127.0.0.1:27018:27018"
+    mem_limit: 8g
+    cpus: 4
+    networks:
+      - cmpnet
+    volumes:
+      - mongo2-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27018", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mongo3:
+    image: mongo:8.0.32
+    container_name: mongo3
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - "127.0.0.1:27019:27019"
+    mem_limit: 8g
+    cpus: 4
+    networks:
+      - cmpnet
+    volumes:
+      - mongo3-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27019", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+networks:
+  cmpnet:
+    name: cmpnet
+
+volumes:
+  mongo1-data:
+  mongo2-data:
+  mongo3-data:

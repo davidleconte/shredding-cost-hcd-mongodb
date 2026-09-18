@@ -1,0 +1,46 @@
+{
+  "probe": "docker image label + on-image file read (no container from the measurement run survived; the image did)",
+  "run_at_utc": "2026-09-18T10:05:00+00:00",
+  "why": "M17/M18/M19 measure MongoDB search freshness. They were run against the mongodb/mongodb-atlas-local image. Until the mongot build inside that image was identified, those three measurements carried an unnamed reserve: 'some mongot'. This pins it.",
+  "image": {
+    "reference": "mongodb/mongodb-atlas-local:latest",
+    "digest": "sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1",
+    "created": "2026-09-17T09:15:42.554550490Z",
+    "build_date_label": "2026-09-16T08:14:20Z",
+    "vcs_ref": "28eadd3b1a5a834acaab9dbfe06d7a5df73b64ee",
+    "platform": "linux/amd64",
+    "base": "registry.access.redhat.com/ubi9-minimal"
+  },
+  "versions": {
+    "mongot_version": "1.75.1",
+    "mongot_version_source": [
+      "image label mongot-version=1.75.1",
+      "binary: /opt/mongot/mongot --version -> 1.75.1"
+    ],
+    "mongot_edition": "localDev",
+    "mongot_edition_source": [
+      "image label mongot-edition=localDev",
+      "on-image file /etc/mongodb-atlas-local/mongot-edition contains exactly: localDev"
+    ],
+    "mongod_version": "8.3.11",
+    "mongodb_type": "community"
+  },
+  "commit_interval": {
+    "value": null,
+    "note": "NOT established. The commit/refresh interval is not exposed in /opt/mongot/mongot (launch script), in /opt/mongot/README.md, or as an image environment variable. It is internal to the mongot jar. The ~1015 ms figure of M17 and the de-synchronised distribution of M18 remain EMPIRICAL observations of this build's behaviour, not a read of a documented default."
+  },
+  "consequence": {
+    "severity": "raises the reserve on M17, M18 and M19 rather than lowering it",
+    "statement": "mongot here is the localDev edition, which MongoDB ships for local development, not the search tier that serves Atlas. Therefore the measured write-to-searchable lag is a property of mongot 1.75.1 localDev running beside a single-node replica set on a loaded shared host. It may NOT be quoted as 'MongoDB Atlas Search lag', as 'MongoDB's search freshness', or as a property of MongoDB the product.",
+    "affects": {
+      "M17": "search write-to-visible ~1015 ms (findings_mongot_freshness.json)",
+      "M18": "de-synchronised floor of that lag (findings_mongot_floor.json)",
+      "M19": "miss-rate versus turn latency curve (findings_turn_mongodb.json)"
+    },
+    "does_not_affect": {
+      "direction": "The DIRECTION survives: mongot indexes asynchronously off the change stream by construction, so a just-written document is not immediately searchable, whereas HCD's SAI/JVector is on the write path. That is an architectural difference, not a build artefact.",
+      "hcd_side": "The HCD half of those measurements (M7, findings_hcd_vec_freshness.json) is unaffected; it carries its own separate reserve, that 'synchronous' was only ever bounded below the ~45 ms HTTP floor, never shown to be zero."
+    },
+    "what_would_close_it": "Repeat M17/M18/M19 against a production-edition mongot (Atlas, or a deployment whose /etc/mongodb-atlas-local/mongot-edition is not localDev) and compare the lag distributions. Not possible on this host."
+  }
+}

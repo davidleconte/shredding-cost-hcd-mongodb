@@ -1,0 +1,258 @@
+{
+  "harness": "verify_storage_claims.py",
+  "harness_version": "1.0 + 3 mechanical fixes (env=HCD, deny-index ballast, driver CL=ONE for system_traces on RF=2 two-DC ring)",
+  "run_at_utc": "2026-09-17T16:21:37.277964+00:00",
+  "target": {
+    "product": "IBM DataStax HCD 2.0.6 (release 5.0.7.0-ea50e91ba01f), Data API stargateio/data-api:v1.0.33 (temporary container p16-data-api, removed after run)",
+    "ring": "presto-hcd-v16-cluster, 6 nodes, 2 datacentres (dc1: 172.23.0.50 rack1 / .2 rack2 / .3 rack3; dc2 .4/.5/.6), 16 vnodes, 8 GiB / 4 vCPU per node, heap 4G, memtable 1G+1G",
+    "keyspace": "verif_rf3_20260917 = NetworkTopologyStrategy {dc1: 3} — RF=3, one replica per rack in dc1",
+    "durability": "commitlog_sync periodic 10000ms; consistency levels NOT set by client — Data API tier defaults observed",
+    "isolation_note": "shared production-demo ring; 20 supply_chain_hcd SAI indexes were dropped to free the 100-index budget and RECREATED verbatim afterwards (verified 101 total, 20 supply_chain). Tracing raised to 1.0 on dc1 nodes then restored to 0.0 (verified). Keyspace dropped, snapshots cleared on all 6 nodes, Data API container removed.",
+    "working_set": "memtable-resident; RF=3 means each write hits 3 replicas"
+  },
+  "verdicts_run1": [
+    [
+      "A2",
+      "SUPPORTED"
+    ],
+    [
+      "FRESHNESS",
+      "INCONCLUSIVE"
+    ],
+    [
+      "A3",
+      "SUPPORTED"
+    ],
+    [
+      "A5",
+      "INCONCLUSIVE"
+    ]
+  ],
+  "verdicts_run2": [
+    [
+      "A2",
+      "SUPPORTED"
+    ],
+    [
+      "FRESHNESS",
+      "INCONCLUSIVE"
+    ],
+    [
+      "A3",
+      "SUPPORTED"
+    ],
+    [
+      "A5",
+      "INCONCLUSIVE"
+    ]
+  ],
+  "probe1_A2": {
+    "verdict": "SUPPORTED",
+    "index_count": 9,
+    "predicted_present": 9,
+    "note": "identical shredded layout as RF=1: 12 columns, 9 SAI indexes"
+  },
+  "probe2_FRESHNESS": {
+    "verdict_by_harness_rule": "INCONCLUSIVE (p99 loaded >= 50ms threshold)",
+    "run1": {
+      "idle": {
+        "n": 40,
+        "min_ms": 34.462,
+        "p50_ms": 45.431,
+        "p95_ms": 55.52,
+        "p99_ms": 99.256,
+        "p999_ms": 124.315,
+        "max_ms": 127.1,
+        "stdev_ms": 14.096
+      },
+      "under_load": {
+        "n": 120,
+        "min_ms": 38.368,
+        "p50_ms": 47.872,
+        "p95_ms": 58.62,
+        "p99_ms": 59.227,
+        "p999_ms": 66.057,
+        "max_ms": 66.973,
+        "stdev_ms": 4.682
+      },
+      "slip_s": 0.066
+    },
+    "run2": {
+      "idle": {
+        "n": 40,
+        "min_ms": 20.412,
+        "p50_ms": 28.372,
+        "p95_ms": 37.266,
+        "p99_ms": 76.039,
+        "p999_ms": 97.497,
+        "max_ms": 99.881,
+        "stdev_ms": 11.808
+      },
+      "under_load": {
+        "n": 120,
+        "min_ms": 38.682,
+        "p50_ms": 45.903,
+        "p95_ms": 54.416,
+        "p99_ms": 127.346,
+        "p999_ms": 226.14,
+        "max_ms": 238.219,
+        "stdev_ms": 19.948
+      },
+      "slip_s": 0.078
+    },
+    "note": "RF=3 idle p50 45/28 ms and loaded p50 48/46 ms are ~2x the RF=1 figures (rh-hcd idle p50 25/19, loaded 42/42) — consistent with LOCAL_QUORUM writes now hitting 2 of 3 replicas. Run2 loaded p99 127ms / max 238ms shows a heavier tail under load than RF=1."
+  },
+  "probe3_A3": {
+    "verdict_latency_by_control_rule": "INCONCLUSIVE",
+    "verdict_by_trace": "SUPPORTED",
+    "run1_update_p50": {
+      "1kb": 20.249,
+      "8kb": 19.439,
+      "32kb": 23.333,
+      "128kb": 34.858
+    },
+    "run1_growth": 1.72,
+    "run2_update_p50": {
+      "1kb": 16.608,
+      "8kb": 19.461,
+      "32kb": 21.172,
+      "128kb": 31.691
+    },
+    "run2_growth": 1.91,
+    "read_control_run1": {
+      "p50": {
+        "1kb": 9.748,
+        "8kb": 12.647,
+        "32kb": 13.475,
+        "128kb": 18.179
+      },
+      "growth": 1.86
+    },
+    "read_control_run2": {
+      "p50": {
+        "1kb": 8.671,
+        "8kb": 9.4,
+        "32kb": 10.476,
+        "128kb": 16.059
+      },
+      "growth": 1.85
+    },
+    "wire_bytes": {
+      "1kb": {
+        "updateOne_req": 122,
+        "updateOne_resp": 47,
+        "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+        "findOne_req": 80,
+        "findOne_resp": 1135
+      },
+      "8kb": {
+        "updateOne_req": 122,
+        "updateOne_resp": 47,
+        "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+        "findOne_req": 80,
+        "findOne_resp": 8303
+      },
+      "32kb": {
+        "updateOne_req": 123,
+        "updateOne_resp": 47,
+        "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+        "findOne_req": 81,
+        "findOne_resp": 32880
+      },
+      "128kb": {
+        "updateOne_req": 124,
+        "updateOne_resp": 47,
+        "updateOne_resp_body": "{\"status\":{\"modifiedCount\":1,\"matchedCount\":1}}",
+        "findOne_req": 82,
+        "findOne_resp": 131185
+      }
+    },
+    "reasoning": "Update growth x1.72/x1.91 vs read growth x1.86/x1.85 — the pre-registered control rule fires (same slope) so the latency probe alone is INCONCLUSIVE, exactly as at RF=1. The cycle is established by trace (below), not the curve.",
+    "trace_sequence_per_updateOne": [
+      "SELECT key,tx_id,doc_json ... WHERE key=? LIMIT 1  [CL LOCAL_QUORUM]",
+      "UPDATE ... SET tx_id=now(), <9 derived columns>, doc_json=? WHERE key=? IF tx_id=?  [CL LOCAL_QUORUM, serial LOCAL_SERIAL]"
+    ],
+    "variant_B_indexed_chunks": "NOT_ATTEMPTED — creating a second indexed collection on the shared ring was blocked by the session's safety classifier (Modify Shared Resources), twice. The rh-hcd (RF=1) variant-B result (x7.50) stands and was not re-confirmed at RF=3."
+  },
+  "probe4_A5": {
+    "verdict": "SUPPORTED",
+    "per_statement": [
+      {
+        "statement": "SELECT",
+        "conditional": false,
+        "cl": "LOCAL_QUORUM",
+        "serial_cl": "SERIAL",
+        "n": 224,
+        "coordinator_duration_ms_p50": 6.582,
+        "query": "SELECT key, tx_id FROM verif_rf3_20260917.storage_probe_rf3 WHERE key = ? LIMIT 1"
+      },
+      {
+        "statement": "SELECT",
+        "conditional": true,
+        "cl": "ONE",
+        "serial_cl": "SERIAL",
+        "n": 2,
+        "coordinator_duration_ms_p50": 13.168,
+        "query": "SELECT index_name, kind, options FROM system_schema.indexes WHERE keyspace_name='verif_rf3_20260917' AND table_name='storage_probe_rf3'"
+      },
+      {
+        "statement": "UPDATE",
+        "conditional": true,
+        "cl": "LOCAL_QUORUM",
+        "serial_cl": "LOCAL_SERIAL",
+        "n": 124,
+        "coordinator_duration_ms_p50": 13.738,
+        "query": "UPDATE \"verif_rf3_20260917\".\"storage_probe_rf3\" SET tx_id = now(), exist_keys = ?, array_size = ?, array_contains = ?, query_bool_values = ?, query_dbl_values = ?, query_text_values = ?, query_null_values = ?, query_timestamp_values = ?, query_lexical_value = ?,doc_json = ? WHERE key = ? IF tx_id = ?"
+      },
+      {
+        "statement": "DELETE",
+        "conditional": true,
+        "cl": "LOCAL_QUORUM",
+        "serial_cl": "LOCAL_SERIAL",
+        "n": 44,
+        "coordinator_duration_ms_p50": 10.207,
+        "query": "DELETE FROM \"verif_rf3_20260917\".\"storage_probe_rf3\" WHERE key = ? IF tx_id = ?"
+      },
+      {
+        "statement": "INSERT",
+        "conditional": true,
+        "cl": "LOCAL_QUORUM",
+        "serial_cl": "LOCAL_SERIAL",
+        "n": 44,
+        "coordinator_duration_ms_p50": 11.174,
+        "query": "INSERT INTO \"verif_rf3_20260917\".\"storage_probe_rf3\" (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values, query_text_values, query_null_values, query_timestamp_values, query_lexical_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS"
+      },
+      {
+        "statement": "CREATE",
+        "conditional": true,
+        "cl": "LOCAL_ONE",
+        "serial_cl": "LOCAL_QUORUM",
+        "n": 10,
+        "coordinator_duration_ms_p50": 1.94,
+        "query": "CREATE TABLE IF NOT EXISTS \"verif_rf3_20260917\".\"storage_probe_rf3\" ( key tuple<tinyint,text>, tx_id timeuuid, doc_json text, exist_keys set<text>, array_size map<text, int>, array_contains set<text>, query_bool_values map<text, tinyint>, query_dbl_values map<text, decimal>, query_text_values map<text, text>, query_timestamp_values map<text, timestamp>, query_null_values set<text>, query_lexical_value text, PRIMARY KEY (key)) WITH comment = '{\"collection\":{\"name\":\"storage_probe_rf3\",\"schema_version\":1,\"options\":{\"indexing\":{\"deny\":[\"ballast\"]},\"defaultId\":{\"type\":\"\"},\"lexical\":{\"enabled\":true,\"analyzer\":\"standard\"},\"rerank\":{\"enabled\":false}}}}'"
+      }
+    ],
+    "coordinators": {
+      "172.23.0.2": 224,
+      "172.23.0.3": 224
+    },
+    "paxos_phase_counts": {
+      "PAXOS_PREPARE": 0,
+      "PAXOS_PROPOSE": 0,
+      "PAXOS_COMMIT": 232,
+      "Sending PAXOS": 348,
+      "read-repair": 0,
+      "Read": 481
+    },
+    "MULTI_REPLICA_CONSENSUS_OBSERVED": "YES — this is what RF=1 could not show. On RF=3, every conditional write executes a full Paxos round across all three dc1 replicas: coordinator sends PAXOS2_PREPARE_REQ to the other two replicas, both return 'Promising read/write ballot', coordinator reads existing values for the CAS precondition, then PAXOS2_PROPOSE_REQ to both, both 'Accepting proposal' + 'Appending to commitlog' + 'Adding to paxos memtable', then commit. Message sizes 370 B (prepare) to 263 KB (prepare-rsp with the read row) to 131 KB (propose with the new value).",
+    "coordinator_duration_p50_ms": {
+      "SELECT": 6.582,
+      "SELECT/IF": 13.168,
+      "UPDATE/IF": 13.738,
+      "DELETE/IF": 10.207,
+      "INSERT/IF": 11.174,
+      "CREATE/IF": 1.94
+    },
+    "note": "CL and serial-CL identical to RF=1 (LOCAL_QUORUM writes, LOCAL_SERIAL conditionals) — but now each is satisfied by 2 of 3 real replicas rather than 1. The conditional UPDATE's coordinator-side duration p50 is 13.7 ms; the non-conditional SELECT is 6.6 ms."
+  }
+}

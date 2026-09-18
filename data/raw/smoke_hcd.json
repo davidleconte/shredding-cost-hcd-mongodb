@@ -1,0 +1,128 @@
+{
+  "probe": "probe_comparative.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:13:22.002920+00:00",
+  "smoke_test": true,
+  "engine": "hcd",
+  "arms": {
+    "hcd": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 5,
+            "min_ms": 42.416,
+            "p50_ms": 48.021,
+            "p95_ms": 62.981,
+            "p99_ms": 64.646,
+            "max_ms": 65.063,
+            "stdev_ms": 8.312
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 5,
+            "min_ms": 46.573,
+            "p50_ms": 51.304,
+            "p95_ms": 53.411,
+            "p99_ms": 53.792,
+            "max_ms": 53.887,
+            "stdev_ms": 2.377
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 5,
+            "min_ms": 55.106,
+            "p50_ms": 60.793,
+            "p95_ms": 73.737,
+            "p99_ms": 75.826,
+            "max_ms": 76.348,
+            "stdev_ms": 7.709
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 5,
+            "min_ms": 85.378,
+            "p50_ms": 88.026,
+            "p95_ms": 91.853,
+            "p99_ms": 92.286,
+            "max_ms": 92.394,
+            "stdev_ms": 2.4
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 5,
+            "min_ms": 126.632,
+            "p50_ms": 135.662,
+            "p95_ms": 147.324,
+            "p99_ms": 147.467,
+            "max_ms": 147.503,
+            "stdev_ms": 8.532
+          }
+        }
+      },
+      "indexes_present": [
+        "automatic \u2014 nine SAI per collection"
+      ]
+    }
+  },
+  "durability_mapping": {
+    "engine": "hcd",
+    "write_consistency": "LOCAL_QUORUM",
+    "serial_consistency": "LOCAL_SERIAL",
+    "note": "tier defaults, not set by the client"
+  },
+  "conditions": {
+    "host": {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    "reps": 5,
+    "passes": 1,
+    "warmup_discarded": 5,
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "deployment_shape": "single node or cluster; replication factor; for MongoDB, replica set size",
+      "regime": "memtable/cache-resident or disk-bound, with evidence",
+      "resource_limits": "CPU and memory limits of every process involved",
+      "colocation": "client and server on the same host?"
+    }
+  },
+  "warning": "A single-record file is not a comparison. Merge with --compare, which refuses to emit a ratio unless both engines were measured on the same host with the same series shape.",
+  "publication_note": "SMOKE TEST. Five repetitions on an unqualified machine. This validates that the instrument runs; it measures nothing and must never be quoted."
+}

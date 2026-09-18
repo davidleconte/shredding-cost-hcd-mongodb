@@ -1,0 +1,60 @@
+{
+  "probe": "method2_trace.py",
+  "sizes": {
+    "16x512B": {
+      "total_bytes": 8192,
+      "client_p50_ms": 31.369,
+      "coord_select_p50_ms": 4.061,
+      "coord_update_p50_ms": 16.278,
+      "coord_sum_p50_ms": 20.339,
+      "tier_method2_p50_ms": 11.03,
+      "n_select_traces": 35,
+      "n_update_traces": 31
+    },
+    "16x1024B": {
+      "total_bytes": 16384,
+      "client_p50_ms": 34.726,
+      "coord_select_p50_ms": 4.031,
+      "coord_update_p50_ms": 19.833,
+      "coord_sum_p50_ms": 23.864,
+      "tier_method2_p50_ms": 10.862,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x2048B": {
+      "total_bytes": 32768,
+      "client_p50_ms": 49.553,
+      "coord_select_p50_ms": 5.323,
+      "coord_update_p50_ms": 31.128,
+      "coord_sum_p50_ms": 36.451,
+      "tier_method2_p50_ms": 13.102,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x4096B": {
+      "total_bytes": 65536,
+      "client_p50_ms": 74.278,
+      "coord_select_p50_ms": 6.596,
+      "coord_update_p50_ms": 49.824,
+      "coord_sum_p50_ms": 56.42,
+      "tier_method2_p50_ms": 17.858,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x8000B": {
+      "total_bytes": 128000,
+      "client_p50_ms": 129.049,
+      "coord_select_p50_ms": 9.034,
+      "coord_update_p50_ms": 92.645,
+      "coord_sum_p50_ms": 101.679,
+      "tier_method2_p50_ms": 27.37,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    }
+  },
+  "tracing_reset_verified": [
+    "Current trace probability: 0.0",
+    "Current trace probability: 0.0",
+    "Current trace probability: 0.0"
+  ]
+}

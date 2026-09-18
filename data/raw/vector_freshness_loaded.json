@@ -1,0 +1,388 @@
+{
+  "summary": {
+    "test": "vector-search freshness at RF=3, vector-search=LOCAL_ONE vs writes/reads=LOCAL_QUORUM",
+    "keyspace": "verif_vec_20260917",
+    "collection": "vec_freshness",
+    "dim": 16,
+    "background_corpus": 0,
+    "cycles": 60,
+    "background_rate_per_s": 40.0,
+    "vector_search_first_try_hits": "60/60",
+    "key_read_first_try_hits": "60/60",
+    "cycles_key_hit_but_vector_missed": 0,
+    "cycles_vector_never_visible_within_timeout": 0,
+    "vector_attempts_histogram": {
+      "1": 60
+    },
+    "insert_to_vector_visible_ms": {
+      "p50": 74.406,
+      "p95": 91.278,
+      "p99": 114.227,
+      "max": 122.53396678715944,
+      "n": 60
+    },
+    "interpretation": "NOT DETECTABLE on this topology: the vector was top-k on the first LOCAL_ONE query in every cycle. The window, if any, is shorter than one HTTP round trip on a single-host ring with sub-ms inter-replica latency. This neither confirms nor refutes the claim; it bounds the window below the measurement floor."
+  },
+  "cycles": [
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 97.46936894953251
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 75.73187304660678
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 76.83836808428168
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 76.88910467550159
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 71.94271590560675
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 74.22413723543286
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 81.40271110460162
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 80.9926176443696
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 69.4888629950583
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.55576707050204
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 69.4912588223815
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 85.75690072029829
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 76.34369703009725
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 82.27728214114904
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 108.45414688810706
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 64.787024166435
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 75.1330703496933
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 81.5048310905695
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 74.40382707864046
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 82.79525395482779
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 82.89554622024298
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.96274106577039
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 65.69583900272846
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 70.98439522087574
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 74.85035015270114
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 76.54513791203499
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 85.23147366940975
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 74.40825691446662
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 72.02740432694554
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 77.05719396471977
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.27728904783726
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 82.30240270495415
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 72.90065381675959
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 74.24428779631853
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 66.14208407700062
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 83.55349907651544
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 85.7597179710865
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 88.30527402460575
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 69.05758054926991
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.82532395422459
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 67.88539094850421
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 63.98039311170578
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 75.2112208865583
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 76.79307507351041
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 78.69283715263009
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 81.38519898056984
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 66.81426521390676
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 90.95181711018085
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 75.57325111702085
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 65.70008816197515
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 72.70418712869287
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.69029894471169
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 70.21255092695355
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 122.53396678715944
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 63.47749289125204
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.10701021924615
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 63.3652089163661
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 64.05066326260567
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.52304691448808
+    },
+    {
+      "vec_hit_first": true,
+      "key_hit_first": true,
+      "vec_attempts": 1,
+      "insert_to_vec_visible_ms": 73.00322642549872
+    }
+  ]
+}

@@ -1,0 +1,392 @@
+{
+  "probe": "probe_comparative.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:13:39.479032+00:00",
+  "smoke_test": false,
+  "engine": "mongodb",
+  "arms": {
+    "mongo-default": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 4.368,
+            "p50_ms": 5.67,
+            "p95_ms": 10.07,
+            "p99_ms": 10.981,
+            "max_ms": 11.326,
+            "stdev_ms": 1.799
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 4.178,
+            "p50_ms": 5.217,
+            "p95_ms": 8.287,
+            "p99_ms": 8.891,
+            "max_ms": 9.138,
+            "stdev_ms": 1.237
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 3.613,
+            "p50_ms": 5.31,
+            "p95_ms": 7.882,
+            "p99_ms": 11.896,
+            "max_ms": 13.519,
+            "stdev_ms": 1.866
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 4.134,
+            "p50_ms": 6.039,
+            "p95_ms": 9.728,
+            "p99_ms": 10.642,
+            "max_ms": 10.772,
+            "stdev_ms": 1.759
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 4.187,
+            "p50_ms": 6.484,
+            "p95_ms": 12.216,
+            "p99_ms": 39.669,
+            "max_ms": 50.781,
+            "stdev_ms": 8.144
+          }
+        },
+        "16x512B|pass2": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 3.652,
+            "p50_ms": 5.16,
+            "p95_ms": 7.235,
+            "p99_ms": 24.506,
+            "max_ms": 31.529,
+            "stdev_ms": 4.812
+          }
+        },
+        "16x1024B|pass2": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 4.263,
+            "p50_ms": 5.68,
+            "p95_ms": 8.064,
+            "p99_ms": 8.311,
+            "max_ms": 8.409,
+            "stdev_ms": 1.054
+          }
+        },
+        "16x2048B|pass2": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 4.318,
+            "p50_ms": 6.605,
+            "p95_ms": 8.908,
+            "p99_ms": 11.605,
+            "max_ms": 12.684,
+            "stdev_ms": 1.71
+          }
+        },
+        "16x4096B|pass2": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 3.859,
+            "p50_ms": 6.437,
+            "p95_ms": 8.942,
+            "p99_ms": 11.145,
+            "max_ms": 11.983,
+            "stdev_ms": 1.638
+          }
+        },
+        "16x8000B|pass2": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 4.579,
+            "p50_ms": 6.468,
+            "p95_ms": 9.896,
+            "p99_ms": 10.519,
+            "max_ms": 10.647,
+            "stdev_ms": 1.762
+          }
+        }
+      },
+      "indexes_present": [
+        "_id_"
+      ]
+    },
+    "mongo-wildcard": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 4.237,
+            "p50_ms": 5.544,
+            "p95_ms": 8.47,
+            "p99_ms": 10.229,
+            "max_ms": 10.53,
+            "stdev_ms": 1.413
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 3.672,
+            "p50_ms": 5.405,
+            "p95_ms": 9.672,
+            "p99_ms": 10.815,
+            "max_ms": 11.112,
+            "stdev_ms": 1.852
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 3.616,
+            "p50_ms": 6.006,
+            "p95_ms": 7.572,
+            "p99_ms": 8.872,
+            "max_ms": 9.284,
+            "stdev_ms": 1.126
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 4.115,
+            "p50_ms": 5.846,
+            "p95_ms": 8.871,
+            "p99_ms": 13.272,
+            "max_ms": 14.679,
+            "stdev_ms": 1.982
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 5.166,
+            "p50_ms": 7.621,
+            "p95_ms": 10.648,
+            "p99_ms": 11.446,
+            "max_ms": 11.652,
+            "stdev_ms": 1.486
+          }
+        },
+        "16x512B|pass2": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 4.033,
+            "p50_ms": 5.541,
+            "p95_ms": 9.937,
+            "p99_ms": 13.953,
+            "max_ms": 15.353,
+            "stdev_ms": 2.317
+          }
+        },
+        "16x1024B|pass2": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 4.025,
+            "p50_ms": 5.824,
+            "p95_ms": 8.184,
+            "p99_ms": 9.041,
+            "max_ms": 9.25,
+            "stdev_ms": 1.198
+          }
+        },
+        "16x2048B|pass2": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 3.846,
+            "p50_ms": 6.274,
+            "p95_ms": 9.312,
+            "p99_ms": 17.816,
+            "max_ms": 21.12,
+            "stdev_ms": 2.937
+          }
+        },
+        "16x4096B|pass2": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 4.384,
+            "p50_ms": 6.111,
+            "p95_ms": 11.303,
+            "p99_ms": 12.449,
+            "max_ms": 12.715,
+            "stdev_ms": 2.09
+          }
+        },
+        "16x8000B|pass2": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 4.729,
+            "p50_ms": 6.465,
+            "p95_ms": 8.535,
+            "p99_ms": 10.063,
+            "max_ms": 10.663,
+            "stdev_ms": 1.253
+          }
+        }
+      },
+      "indexes_present": [
+        "_id_",
+        "wildcard_all"
+      ]
+    }
+  },
+  "durability_mapping": {
+    "engine": "mongodb",
+    "write_concern": "majority",
+    "journal": true,
+    "mapped_to": "HCD LOCAL_QUORUM + commitlog",
+    "mapping_is_a_judgement": true
+  },
+  "conditions": {
+    "host": {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    "reps": 30,
+    "passes": 2,
+    "warmup_discarded": 5,
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "deployment_shape": "MongoDB 8.0.32 replica set rs0, 3 members (mongo1 PRIMARY + mongo2/mongo3 SECONDARY), Docker on alphadebunker. w:majority is a real 2-of-3 majority, not the trivial single-member case.",
+      "regime": "cache-resident (working set tiny; the probe measures the 16x512..8000B series on fresh docs, no disk fill). MATCHED to the HCD arm, which is memtable-resident for the same reason. This is NOT the disk regime of campaigns 3-4; both engines are in-cache here, by design, so the comparison measures engines, not regimes.",
+      "resource_limits": "each mongod: --memory 8g --cpus 4 (matched to one HCD node). Client (probe) on the same host.",
+      "colocation": "client and all 3 mongod on the same host (alphadebunker); loopback only.",
+      "durability_asymmetry_not_covered_by_mapping": "Each HCD mutation carries a lightweight transaction (a Paxos round, LOCAL_SERIAL); MongoDB pays none, atomicity being guaranteed at the document. This is a design difference, not a tunable to align, and it is part of what is measured."
+    }
+  },
+  "warning": "A single-record file is not a comparison. Merge with --compare, which refuses to emit a ratio unless both engines were measured on the same host with the same series shape."
+}

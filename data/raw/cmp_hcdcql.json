@@ -1,0 +1,207 @@
+{
+  "probe": "hcd_cql_arm.py",
+  "version": "1.0",
+  "engine": "hcd-cql-direct",
+  "arms": {
+    "hcd-cql-direct": {
+      "results": {
+        "16x512B|pass1": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 15.847,
+            "p50_ms": 18.407,
+            "p95_ms": 23.0,
+            "p99_ms": 52.42,
+            "max_ms": 63.786,
+            "stdev_ms": 8.327
+          }
+        },
+        "16x1024B|pass1": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 18.77,
+            "p50_ms": 25.233,
+            "p95_ms": 71.138,
+            "p99_ms": 72.764,
+            "max_ms": 73.06,
+            "stdev_ms": 20.547
+          }
+        },
+        "16x2048B|pass1": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 31.203,
+            "p50_ms": 40.393,
+            "p95_ms": 86.717,
+            "p99_ms": 92.905,
+            "max_ms": 95.033,
+            "stdev_ms": 22.736
+          }
+        },
+        "16x4096B|pass1": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 49.891,
+            "p50_ms": 61.653,
+            "p95_ms": 109.82,
+            "p99_ms": 110.528,
+            "max_ms": 110.686,
+            "stdev_ms": 20.217
+          }
+        },
+        "16x8000B|pass1": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 73.131,
+            "p50_ms": 101.645,
+            "p95_ms": 128.923,
+            "p99_ms": 162.805,
+            "max_ms": 173.264,
+            "stdev_ms": 16.316
+          }
+        },
+        "16x512B|pass2": {
+          "size": {
+            "label": "16x512B",
+            "n_fields": 16,
+            "bytes_per_field": 512
+          },
+          "total_bytes": 8192,
+          "update": {
+            "n": 30,
+            "min_ms": 15.161,
+            "p50_ms": 18.269,
+            "p95_ms": 24.154,
+            "p99_ms": 25.04,
+            "max_ms": 25.387,
+            "stdev_ms": 2.369
+          }
+        },
+        "16x1024B|pass2": {
+          "size": {
+            "label": "16x1024B",
+            "n_fields": 16,
+            "bytes_per_field": 1024
+          },
+          "total_bytes": 16384,
+          "update": {
+            "n": 30,
+            "min_ms": 22.912,
+            "p50_ms": 29.599,
+            "p95_ms": 73.509,
+            "p99_ms": 75.817,
+            "max_ms": 76.393,
+            "stdev_ms": 18.256
+          }
+        },
+        "16x2048B|pass2": {
+          "size": {
+            "label": "16x2048B",
+            "n_fields": 16,
+            "bytes_per_field": 2048
+          },
+          "total_bytes": 32768,
+          "update": {
+            "n": 30,
+            "min_ms": 30.787,
+            "p50_ms": 41.274,
+            "p95_ms": 85.668,
+            "p99_ms": 88.943,
+            "max_ms": 90.098,
+            "stdev_ms": 18.299
+          }
+        },
+        "16x4096B|pass2": {
+          "size": {
+            "label": "16x4096B",
+            "n_fields": 16,
+            "bytes_per_field": 4096
+          },
+          "total_bytes": 65536,
+          "update": {
+            "n": 30,
+            "min_ms": 44.873,
+            "p50_ms": 59.034,
+            "p95_ms": 132.432,
+            "p99_ms": 178.387,
+            "max_ms": 188.228,
+            "stdev_ms": 32.487
+          }
+        },
+        "16x8000B|pass2": {
+          "size": {
+            "label": "16x8000B",
+            "n_fields": 16,
+            "bytes_per_field": 8000
+          },
+          "total_bytes": 128000,
+          "update": {
+            "n": 30,
+            "min_ms": 82.088,
+            "p50_ms": 100.633,
+            "p95_ms": 115.408,
+            "p99_ms": 119.356,
+            "max_ms": 119.768,
+            "stdev_ms": 8.194
+          }
+        }
+      },
+      "indexes_present": [
+        "automatic \u2014 nine SAI per collection (same as hcd arm); tier bypassed"
+      ]
+    }
+  },
+  "durability_mapping": {
+    "engine": "hcd-cql-direct",
+    "write_consistency": "LOCAL_QUORUM",
+    "serial_consistency": "LOCAL_SERIAL (implicit on the IF)",
+    "note": "same storage work as the Data API path (M2), tier removed"
+  },
+  "conditions": {
+    "host": {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    "reps": 30,
+    "passes": 2,
+    "warmup_discarded": 5,
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "regime": "cache-resident, matched to the hcd and mongodb arms",
+      "note": "storage engine only; Data API tier (HTTP+parse+shred+serialise) absent"
+    }
+  }
+}

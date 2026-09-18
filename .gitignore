@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Local run artefacts — raw evidence lives in data/raw/ and IS committed
+*.log
+.env
+*.tmp
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

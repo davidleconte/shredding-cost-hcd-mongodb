@@ -1,0 +1,288 @@
+{
+  "harness": "verify_storage_claims.py",
+  "harness_version": "1.0",
+  "run_at_utc": "2026-09-17T16:21:37.277964+00:00",
+  "conditions": {
+    "endpoint": "http://127.0.0.1:8182",
+    "keyspace": "verif_rf3_20260917",
+    "collection": "storage_probe_rf3",
+    "cql_available": true,
+    "client_platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "product_and_version": "e.g. HCD 2.0.x \u2014 read it from the running node, not the docs",
+      "topology": "nodes, datacentres, replication factor",
+      "node_hardware": "vCPU, RAM, storage class",
+      "working_set_vs_ram": "in-cache or disk-bound; a latency figure without this is uninterpretable",
+      "durability_settings": "commitlog sync mode and any non-default consistency"
+    }
+  },
+  "findings": [
+    {
+      "probe": "1. physical column layout",
+      "claim_id": "A2",
+      "claim": "A JSON document is decomposed into one row bearing generic columns (doc_json, exist_keys, array_contains, array_size, query_*_values).",
+      "verdict": "SUPPORTED",
+      "evidence": {
+        "columns_found": {
+          "array_contains": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "array_size": {
+            "type": "map<text, int>",
+            "kind": "regular"
+          },
+          "doc_json": {
+            "type": "text",
+            "kind": "regular"
+          },
+          "exist_keys": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "key": {
+            "type": "frozen<tuple<tinyint, text>>",
+            "kind": "partition_key"
+          },
+          "query_bool_values": {
+            "type": "map<text, tinyint>",
+            "kind": "regular"
+          },
+          "query_dbl_values": {
+            "type": "map<text, decimal>",
+            "kind": "regular"
+          },
+          "query_lexical_value": {
+            "type": "text",
+            "kind": "regular"
+          },
+          "query_null_values": {
+            "type": "set<text>",
+            "kind": "regular"
+          },
+          "query_text_values": {
+            "type": "map<text, text>",
+            "kind": "regular"
+          },
+          "query_timestamp_values": {
+            "type": "map<text, timestamp>",
+            "kind": "regular"
+          },
+          "tx_id": {
+            "type": "timeuuid",
+            "kind": "regular"
+          }
+        },
+        "predicted_present": [
+          "doc_json",
+          "exist_keys",
+          "array_contains",
+          "array_size",
+          "query_text_values",
+          "query_dbl_values",
+          "query_bool_values",
+          "query_null_values",
+          "query_timestamp_values"
+        ],
+        "predicted_absent": [],
+        "columns_not_predicted": [
+          "key",
+          "query_lexical_value",
+          "tx_id"
+        ],
+        "column_count": 12,
+        "indexes": [
+          {
+            "name": "storage_probe_rf3_array_contains",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(array_contains)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_array_size",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(array_size)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_exists_keys",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(exist_keys)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_bool_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_bool_values)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_dbl_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_dbl_values)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_lexical_value",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "index_analyzer": "standard",
+              "target": "query_lexical_value"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_null_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "values(query_null_values)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_text_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_text_values)"
+            }
+          },
+          {
+            "name": "storage_probe_rf3_query_timestamp_values",
+            "kind": "CUSTOM",
+            "options": {
+              "class_name": "StorageAttachedIndex",
+              "target": "entries(query_timestamp_values)"
+            }
+          }
+        ],
+        "index_count": 9
+      },
+      "notes": [
+        "9 indexes created automatically on this collection",
+        "9/9 predicted columns present"
+      ]
+    },
+    {
+      "probe": "2. write-to-searchable interval",
+      "claim_id": "FRESHNESS",
+      "claim": "A document is searchable at the moment the write is acknowledged.",
+      "verdict": "INCONCLUSIVE",
+      "evidence": {
+        "idle": {
+          "n": 40,
+          "min_ms": 34.462,
+          "p50_ms": 45.431,
+          "p95_ms": 55.52,
+          "p99_ms": 99.256,
+          "p999_ms": 124.315,
+          "max_ms": 127.1,
+          "stdev_ms": 14.096
+        },
+        "under_load": {
+          "n": 120,
+          "min_ms": 38.368,
+          "p50_ms": 47.872,
+          "p95_ms": 58.62,
+          "p99_ms": 59.227,
+          "p999_ms": 66.057,
+          "max_ms": 66.973,
+          "stdev_ms": 4.682
+        },
+        "offered_rate_per_s": 50.0,
+        "load_duration_s": 120,
+        "background_writes_issued": 6000,
+        "schedule_slip_s": 0.066,
+        "measurement_model": "open loop, fixed offered rate; percentiles only",
+        "p99_degradation_factor_under_load": 0.6
+      },
+      "notes": [
+        "p99 idle 99.256 ms \u00b7 p99 loaded 59.227 ms \u00b7 degradation x0.6",
+        "Whether this interval is acceptable is not a property of the database. It is a property of your application's correctness requirements."
+      ]
+    },
+    {
+      "probe": "3. read-modify-write detection",
+      "claim_id": "A3",
+      "claim": "A single-field update reads the whole document, modifies it in memory and rewrites it entirely, plus derived columns.",
+      "verdict": "SUPPORTED",
+      "evidence": {
+        "mutation": "one scalar field, constant across all sizes",
+        "by_document_size": {
+          "1kb": {
+            "n": 30,
+            "min_ms": 16.932,
+            "p50_ms": 20.249,
+            "p95_ms": 27.256,
+            "p99_ms": 29.952,
+            "p999_ms": 30.844,
+            "max_ms": 30.943,
+            "stdev_ms": 3.416
+          },
+          "8kb": {
+            "n": 30,
+            "min_ms": 16.14,
+            "p50_ms": 19.439,
+            "p95_ms": 26.789,
+            "p99_ms": 30.014,
+            "p999_ms": 31.129,
+            "max_ms": 31.253,
+            "stdev_ms": 3.567
+          },
+          "32kb": {
+            "n": 30,
+            "min_ms": 19.156,
+            "p50_ms": 23.333,
+            "p95_ms": 41.295,
+            "p99_ms": 45.916,
+            "p999_ms": 46.547,
+            "max_ms": 46.617,
+            "stdev_ms": 6.648
+          },
+          "128kb": {
+            "n": 30,
+            "min_ms": 27.564,
+            "p50_ms": 34.858,
+            "p95_ms": 49.44,
+            "p99_ms": 53.126,
+            "p999_ms": 54.223,
+            "max_ms": 54.344,
+            "stdev_ms": 7.069
+          }
+        },
+        "reps_per_size": 30,
+        "p50_growth_factor": 1.72,
+        "document_size_growth_factor": 128.0
+      },
+      "notes": [
+        "p50 grew x1.72 while the document grew x128 and the mutation stayed constant. Cost scales with total document size: that is the signature of a whole-document rewrite.",
+        "Confounder to exclude before publishing: payload transfer over HTTP also scales with document size. Re-run against a local endpoint, or subtract a same-size read, to separate wire cost from storage cost."
+      ]
+    },
+    {
+      "probe": "4. write consistency level",
+      "claim_id": "A5",
+      "claim": "Data API writes execute at LOCAL_QUORUM; conditional writes at a serial level.",
+      "verdict": "INCONCLUSIVE",
+      "evidence": {
+        "consistency_levels_observed": {},
+        "traces_examined": 200
+      },
+      "notes": [
+        "no consistency level recorded in system_traces. Enable tracing (nodetool settraceprobability 1.0) on a quiet node, replay a write, then re-run this probe. Reset the probability afterwards."
+      ]
+    }
+  ],
+  "publication_note": "These figures characterise one build on one machine under one workload. They settle what this engine does; they do NOT license any comparison with another vendor's product, and no figure here should be published as such. Publish the verdicts and the method; publish the numbers only alongside every field of 'conditions' above, completed."
+}

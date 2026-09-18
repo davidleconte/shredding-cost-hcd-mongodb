@@ -1,0 +1,92 @@
+{
+  "comparison": "probe_comparative.py merge",
+  "version": "1.0",
+  "run_at_utc": "2026-09-18T06:31:40.491106+00:00",
+  "cross_engine_comparison_permitted": true,
+  "why": "permitted only when every record comes from the same host and the same series shape; otherwise the ratio mixes engines with hardware and is the confound this study exists to avoid",
+  "same_host": true,
+  "same_series_shape": true,
+  "hosts": [
+    {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    },
+    {
+      "hostname": "alphadebunker",
+      "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+      "cpu_count": 80,
+      "mem_gib": 220.2,
+      "platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39"
+    }
+  ],
+  "arms": {
+    "mongo-default": {
+      "slope": {
+        "ms_per_KiB": 0.0098,
+        "r2": 0.7809,
+        "endpoint_ratio": 1.144,
+        "y_range_ms": [
+          5.67,
+          6.484
+        ]
+      },
+      "indexes_present": [
+        "_id_"
+      ]
+    },
+    "mongo-wildcard": {
+      "slope": {
+        "ms_per_KiB": 0.0176,
+        "r2": 0.8794,
+        "endpoint_ratio": 1.375,
+        "y_range_ms": [
+          5.544,
+          7.621
+        ]
+      },
+      "indexes_present": [
+        "_id_",
+        "wildcard_all"
+      ]
+    },
+    "hcd": {
+      "slope": {
+        "ms_per_KiB": 0.7775,
+        "r2": 0.997,
+        "endpoint_ratio": 3.198,
+        "y_range_ms": [
+          40.9,
+          130.787
+        ]
+      },
+      "indexes_present": [
+        "automatic \u2014 nine SAI per collection"
+      ]
+    },
+    "hcd-cql-direct": {
+      "slope": {
+        "ms_per_KiB": 0.7037,
+        "r2": 0.9959,
+        "endpoint_ratio": 5.522,
+        "y_range_ms": [
+          18.407,
+          101.645
+        ]
+      },
+      "indexes_present": [
+        "automatic \u2014 nine SAI per collection (same as hcd arm); tier bypassed"
+      ]
+    }
+  },
+  "reading_guide": "mongo-default is MongoDB as a team would deploy it: nothing indexed that was not asked for. mongo-wildcard is MongoDB doing HCD's job: every field queryable without declaration. Quoting the first against HCD overstates MongoDB's advantage; quoting only the second understates how MongoDB is actually used. Report both or report neither."
+}

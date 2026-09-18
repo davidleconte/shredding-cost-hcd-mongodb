@@ -1,0 +1,529 @@
+{
+  "probe": "probe_tier_vs_storage.py",
+  "version": "1.0",
+  "run_at_utc": "2026-09-17T22:34:06.905113+00:00",
+  "question": "Does the ~0.77 ms per indexed KiB live in the stateless Data API tier or in the storage engine? The answer changes the architectural reading, and may soften the article's own criticism.",
+  "method": "Arm A: updateOne through the Data API. Arm B: the identical CQL statement pair against the same row, values read back rather than recomputed, so the storage work is the same and no JSON is parsed. Difference = tier.",
+  "agreement_tolerance": 0.25,
+  "analysis_per_KiB": {
+    "pass1": {
+      "tier_term": {
+        "ms_per_KiB": 0.1902,
+        "r2": 0.9969
+      },
+      "storage_term": {
+        "ms_per_KiB": 0.5815,
+        "r2": 0.9992
+      }
+    },
+    "pass2": {
+      "tier_term": {
+        "ms_per_KiB": 0.2481,
+        "r2": 0.9625
+      },
+      "storage_term": {
+        "ms_per_KiB": 0.5121,
+        "r2": 0.9916
+      }
+    }
+  },
+  "results": {
+    "16x512B|pass1": {
+      "size": {
+        "label": "16x512B",
+        "n_fields": 16,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 8192,
+      "data_api": {
+        "n": 30,
+        "min_ms": 24.047,
+        "p50_ms": 28.827,
+        "p95_ms": 37.472,
+        "p99_ms": 45.481,
+        "max_ms": 48.348,
+        "stdev_ms": 4.974
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 14.476,
+        "p50_ms": 17.871,
+        "p95_ms": 61.892,
+        "p99_ms": 64.124,
+        "max_ms": 64.712,
+        "stdev_ms": 15.227
+      },
+      "split_method1_bypass": {
+        "total_ms": 28.827,
+        "storage_ms": 17.871,
+        "tier_ms": 10.956,
+        "tier_share": 0.3801,
+        "storage_share": 0.6199
+      }
+    },
+    "16x1024B|pass1": {
+      "size": {
+        "label": "16x1024B",
+        "n_fields": 16,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 16384,
+      "data_api": {
+        "n": 30,
+        "min_ms": 28.63,
+        "p50_ms": 33.9,
+        "p95_ms": 46.652,
+        "p99_ms": 55.862,
+        "max_ms": 59.404,
+        "stdev_ms": 6.042
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 14.936,
+        "p50_ms": 22.761,
+        "p95_ms": 69.763,
+        "p99_ms": 72.296,
+        "max_ms": 73.266,
+        "stdev_ms": 18.12
+      },
+      "split_method1_bypass": {
+        "total_ms": 33.9,
+        "storage_ms": 22.761,
+        "tier_ms": 11.139,
+        "tier_share": 0.3286,
+        "storage_share": 0.6714
+      }
+    },
+    "16x2048B|pass1": {
+      "size": {
+        "label": "16x2048B",
+        "n_fields": 16,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 32768,
+      "data_api": {
+        "n": 30,
+        "min_ms": 38.914,
+        "p50_ms": 47.838,
+        "p95_ms": 69.042,
+        "p99_ms": 120.603,
+        "max_ms": 138.868,
+        "stdev_ms": 17.511
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 24.544,
+        "p50_ms": 32.715,
+        "p95_ms": 85.126,
+        "p99_ms": 96.706,
+        "max_ms": 101.059,
+        "stdev_ms": 22.719
+      },
+      "split_method1_bypass": {
+        "total_ms": 47.838,
+        "storage_ms": 32.715,
+        "tier_ms": 15.123,
+        "tier_share": 0.3161,
+        "storage_share": 0.6839
+      }
+    },
+    "16x4096B|pass1": {
+      "size": {
+        "label": "16x4096B",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "data_api": {
+        "n": 30,
+        "min_ms": 57.611,
+        "p50_ms": 70.639,
+        "p95_ms": 81.297,
+        "p99_ms": 81.791,
+        "max_ms": 81.817,
+        "stdev_ms": 6.414
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 14.294,
+        "p50_ms": 49.307,
+        "p95_ms": 93.672,
+        "p99_ms": 99.536,
+        "max_ms": 100.861,
+        "stdev_ms": 19.026
+      },
+      "split_method1_bypass": {
+        "total_ms": 70.639,
+        "storage_ms": 49.307,
+        "tier_ms": 21.332,
+        "tier_share": 0.302,
+        "storage_share": 0.698
+      }
+    },
+    "16x8000B|pass1": {
+      "size": {
+        "label": "16x8000B",
+        "n_fields": 16,
+        "bytes_per_field": 8000
+      },
+      "total_bytes": 128000,
+      "data_api": {
+        "n": 30,
+        "min_ms": 99.396,
+        "p50_ms": 119.023,
+        "p95_ms": 140.116,
+        "p99_ms": 155.371,
+        "max_ms": 160.253,
+        "stdev_ms": 12.505
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 31.158,
+        "p50_ms": 86.431,
+        "p95_ms": 99.951,
+        "p99_ms": 182.362,
+        "max_ms": 216.007,
+        "stdev_ms": 26.022
+      },
+      "split_method1_bypass": {
+        "total_ms": 119.023,
+        "storage_ms": 86.431,
+        "tier_ms": 32.592,
+        "tier_share": 0.2738,
+        "storage_share": 0.7262
+      }
+    },
+    "16x512B|pass2": {
+      "size": {
+        "label": "16x512B",
+        "n_fields": 16,
+        "bytes_per_field": 512
+      },
+      "total_bytes": 8192,
+      "data_api": {
+        "n": 30,
+        "min_ms": 20.352,
+        "p50_ms": 26.464,
+        "p95_ms": 32.78,
+        "p99_ms": 34.263,
+        "max_ms": 34.571,
+        "stdev_ms": 3.376
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 12.419,
+        "p50_ms": 15.468,
+        "p95_ms": 62.458,
+        "p99_ms": 65.262,
+        "max_ms": 65.781,
+        "stdev_ms": 14.494
+      },
+      "split_method1_bypass": {
+        "total_ms": 26.464,
+        "storage_ms": 15.468,
+        "tier_ms": 10.996,
+        "tier_share": 0.4155,
+        "storage_share": 0.5845
+      }
+    },
+    "16x1024B|pass2": {
+      "size": {
+        "label": "16x1024B",
+        "n_fields": 16,
+        "bytes_per_field": 1024
+      },
+      "total_bytes": 16384,
+      "data_api": {
+        "n": 30,
+        "min_ms": 26.972,
+        "p50_ms": 33.48,
+        "p95_ms": 48.511,
+        "p99_ms": 58.12,
+        "max_ms": 61.514,
+        "stdev_ms": 6.699
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 10.069,
+        "p50_ms": 24.504,
+        "p95_ms": 73.671,
+        "p99_ms": 76.508,
+        "max_ms": 77.54,
+        "stdev_ms": 22.27
+      },
+      "split_method1_bypass": {
+        "total_ms": 33.48,
+        "storage_ms": 24.504,
+        "tier_ms": 8.976,
+        "tier_share": 0.2681,
+        "storage_share": 0.7319
+      }
+    },
+    "16x2048B|pass2": {
+      "size": {
+        "label": "16x2048B",
+        "n_fields": 16,
+        "bytes_per_field": 2048
+      },
+      "total_bytes": 32768,
+      "data_api": {
+        "n": 30,
+        "min_ms": 37.632,
+        "p50_ms": 46.108,
+        "p95_ms": 55.47,
+        "p99_ms": 60.979,
+        "max_ms": 62.808,
+        "stdev_ms": 5.068
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 26.088,
+        "p50_ms": 32.059,
+        "p95_ms": 79.074,
+        "p99_ms": 82.598,
+        "max_ms": 84.032,
+        "stdev_ms": 16.787
+      },
+      "split_method1_bypass": {
+        "total_ms": 46.108,
+        "storage_ms": 32.059,
+        "tier_ms": 14.049,
+        "tier_share": 0.3047,
+        "storage_share": 0.6953
+      }
+    },
+    "16x4096B|pass2": {
+      "size": {
+        "label": "16x4096B",
+        "n_fields": 16,
+        "bytes_per_field": 4096
+      },
+      "total_bytes": 65536,
+      "data_api": {
+        "n": 30,
+        "min_ms": 60.819,
+        "p50_ms": 71.087,
+        "p95_ms": 182.752,
+        "p99_ms": 308.256,
+        "max_ms": 331.451,
+        "stdev_ms": 56.626
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 14.43,
+        "p50_ms": 44.568,
+        "p95_ms": 64.329,
+        "p99_ms": 85.688,
+        "max_ms": 94.13,
+        "stdev_ms": 19.015
+      },
+      "split_method1_bypass": {
+        "total_ms": 71.087,
+        "storage_ms": 44.568,
+        "tier_ms": 26.519,
+        "tier_share": 0.373,
+        "storage_share": 0.627
+      }
+    },
+    "16x8000B|pass2": {
+      "size": {
+        "label": "16x8000B",
+        "n_fields": 16,
+        "bytes_per_field": 8000
+      },
+      "total_bytes": 128000,
+      "data_api": {
+        "n": 30,
+        "min_ms": 93.465,
+        "p50_ms": 115.719,
+        "p95_ms": 136.929,
+        "p99_ms": 143.52,
+        "max_ms": 145.094,
+        "stdev_ms": 13.967
+      },
+      "direct_cql": {
+        "n": 30,
+        "min_ms": 18.479,
+        "p50_ms": 78.409,
+        "p95_ms": 101.861,
+        "p99_ms": 169.227,
+        "max_ms": 195.138,
+        "stdev_ms": 37.254
+      },
+      "split_method1_bypass": {
+        "total_ms": 115.719,
+        "storage_ms": 78.409,
+        "tier_ms": 37.31,
+        "tier_share": 0.3224,
+        "storage_share": 0.6776
+      }
+    }
+  },
+  "conditions": {
+    "endpoint": "http://127.0.0.1:8182",
+    "cql_contact_point": "172.23.0.50",
+    "keyspace": "verif_tier_20260917",
+    "collection": "tier_probe",
+    "reps": 30,
+    "warmup_discarded": 5,
+    "passes": 2,
+    "client_platform": "Linux-6.8.0-136-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "TO_BE_COMPLETED_BY_HAND": {
+      "product_and_version": "HCD 2.0.6 (5.0.7.0-ea50e91ba01f), Data API v1.0.33",
+      "topology": "p16 ring, 6 nodes/2 DC, keyspace verif_tier_20260917 = {dc1:3}; nodes 8 GiB/4 vCPU",
+      "data_api_resources": "container p16-data-api: mem_limit 2 GiB, NO CPU limit (nanocpus=0, all 80 host vCPU available), no cpuset pinning, co-located with the nodes on alphadebunker (network presto-hcd-v16-hcd). The tier term is a SLOPE (ms per indexed KiB) precisely because an unconstrained container makes the absolute value unrepresentative; the slope is robust to the missing CPU cap, the absolute latency is not.",
+      "regime": "disk-bound, PROVEN (disk_state_c4.json): 6.05 GiB on disk (>=3x the 2 GiB memtable budget), 40 SSTables post-compaction, 76 compactions crossed, caches invalidated",
+      "colocation": "Data API on the SAME host as the nodes; the tier term absorbs the loopback hop (negligible on-host) either way",
+      "durability": "commitlog_sync periodic 10s; Data API defaults writes/reads LOCAL_QUORUM, serial LOCAL_SERIAL",
+      "data_api_cpu_during_run": {
+        "n_samples": 20,
+        "min_pct": 0.52,
+        "median_pct": 29.73,
+        "max_pct": 230.33,
+        "note": "alternates ~0.5% (arm B, Data API idle while direct CQL runs) and 40-230% (arm A, Data API busy) — third, independent indicator that the tier does substantive work"
+      }
+    }
+  },
+  "known_confounds": [
+    "Arm B skips JSON parsing AND shredding AND response serialisation; the tier term is all three together and this probe does not separate them.",
+    "Arm B reuses already-shredded values, so it never exercises the code path that computes them. That is the point, and it also means arm B is not a fair benchmark of anything — it is a subtraction instrument only.",
+    "The Data API client and the CQL driver differ in connection handling and serialisation overhead; part of the tier term is client-library cost."
+  ],
+  "publication_note": "Characterises one deployment. A tier term measured against an unconstrained API container says nothing about a tier sized for production.",
+  "method2_trace": {
+    "16x512B": {
+      "total_bytes": 8192,
+      "client_p50_ms": 31.369,
+      "coord_select_p50_ms": 4.061,
+      "coord_update_p50_ms": 16.278,
+      "coord_sum_p50_ms": 20.339,
+      "tier_method2_p50_ms": 11.03,
+      "n_select_traces": 35,
+      "n_update_traces": 31
+    },
+    "16x1024B": {
+      "total_bytes": 16384,
+      "client_p50_ms": 34.726,
+      "coord_select_p50_ms": 4.031,
+      "coord_update_p50_ms": 19.833,
+      "coord_sum_p50_ms": 23.864,
+      "tier_method2_p50_ms": 10.862,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x2048B": {
+      "total_bytes": 32768,
+      "client_p50_ms": 49.553,
+      "coord_select_p50_ms": 5.323,
+      "coord_update_p50_ms": 31.128,
+      "coord_sum_p50_ms": 36.451,
+      "tier_method2_p50_ms": 13.102,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x4096B": {
+      "total_bytes": 65536,
+      "client_p50_ms": 74.278,
+      "coord_select_p50_ms": 6.596,
+      "coord_update_p50_ms": 49.824,
+      "coord_sum_p50_ms": 56.42,
+      "tier_method2_p50_ms": 17.858,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    },
+    "16x8000B": {
+      "total_bytes": 128000,
+      "client_p50_ms": 129.049,
+      "coord_select_p50_ms": 9.034,
+      "coord_update_p50_ms": 92.645,
+      "coord_sum_p50_ms": 101.679,
+      "tier_method2_p50_ms": 27.37,
+      "n_select_traces": 36,
+      "n_update_traces": 31
+    }
+  },
+  "method2_tracing_reset": [
+    "Current trace probability: 0.0",
+    "Current trace probability: 0.0",
+    "Current trace probability: 0.0"
+  ],
+  "comparison_per_size": {
+    "16x512B": {
+      "KiB": 8,
+      "total": 27.65,
+      "tier_m1": 10.98,
+      "storage_m1": 16.67,
+      "tier_share_pct": 39.7,
+      "tier_m2": 11.03,
+      "divergence_pct": 0.5,
+      "within_25pct": true
+    },
+    "16x1024B": {
+      "KiB": 16,
+      "total": 33.69,
+      "tier_m1": 10.06,
+      "storage_m1": 23.63,
+      "tier_share_pct": 29.9,
+      "tier_m2": 10.86,
+      "divergence_pct": 8.0,
+      "within_25pct": true
+    },
+    "16x2048B": {
+      "KiB": 32,
+      "total": 46.97,
+      "tier_m1": 14.59,
+      "storage_m1": 32.39,
+      "tier_share_pct": 31.1,
+      "tier_m2": 13.1,
+      "divergence_pct": 11.3,
+      "within_25pct": true
+    },
+    "16x4096B": {
+      "KiB": 64,
+      "total": 70.86,
+      "tier_m1": 23.93,
+      "storage_m1": 46.94,
+      "tier_share_pct": 33.8,
+      "tier_m2": 17.86,
+      "divergence_pct": 34.0,
+      "within_25pct": false
+    },
+    "16x8000B": {
+      "KiB": 125,
+      "total": 117.37,
+      "tier_m1": 34.95,
+      "storage_m1": 82.42,
+      "tier_share_pct": 29.8,
+      "tier_m2": 27.37,
+      "divergence_pct": 27.7,
+      "within_25pct": false
+    }
+  },
+  "tier_slopes_ms_per_KiB": {
+    "method1_bypass": {
+      "pass1": {
+        "ms_per_KiB": 0.1902,
+        "r2": 0.9969
+      },
+      "pass2": {
+        "ms_per_KiB": 0.2481,
+        "r2": 0.9625
+      },
+      "combined_lsq": 0.219,
+      "r2": 0.983
+    },
+    "method2_trace": {
+      "combined_lsq": 0.145,
+      "r2": 0.992
+    }
+  },
+  "storage_slope_ms_per_KiB_method1": 0.547,
+  "rate_reconstruction": "tier 0.219 + storage 0.547 = 0.766 ms/KiB (method 1), matching campaign 3's ~0.77 ms/KiB",
+  "VERDICT": {
+    "where_the_rate_lives": "MAJORITY in the stateful storage engine (~71% of the per-byte rate by method 1), a substantial MINORITY in the stateless tier (~29% by method 1, ~19% by method 2).",
+    "tier_dominates": false,
+    "methods_agree": "within 25% at 8/16/32 KiB; DIVERGE >25% at 64 KiB (34%) and 125 KiB (28%); tier slopes differ ~50% (0.219 vs 0.145). Per the cardinal rule, no single precise split is published; a range is reported and the divergence stated.",
+    "architectural_reading": "The criticism is PARTIALLY softened, not overturned: a real, substantial fraction (a quarter to a third of the rate) sits in a stateless component that scales out by adding instances; but the majority remains in the stateful storage engine, which does not."
+  }
+}
