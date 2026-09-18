@@ -303,3 +303,12 @@ see which instrument produced which number, and who wrote that instrument.
 **Do not modify anything under `data/raw/`.** Those files are untouched evidence,
 byte-identical to the run that produced them. The Python files in this directory
 are likewise the code as it ran.
+
+## `disk_regime_rerun.py` — written, not yet run
+
+Closes the two comparisons that `data/derived/inference.json` marks UNDETERMINABLE, which are the
+comparisons carrying the dossier's strongest architectural claim. It exists because the original
+records kept a median and nothing else: the shared `dist()` helper emits n / p50 / p95 / p99 / max
+/ stdev and drops both the minimum and the series, and separation of support needs the minimum.
+This probe does not call that helper. Rules R1–R4 are fixed in its docstring before execution;
+record the verdict against them and not against what the data suggest afterwards.
