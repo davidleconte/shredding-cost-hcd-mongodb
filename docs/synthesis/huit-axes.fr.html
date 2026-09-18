@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les huit axes mesurés — HCD Data API contre MongoDB</title>
+<style>
+:root{
+ --bg:#FFFFFF; --ink:#1A202C; --muted:#4A5568; --rule:#E2E8F0;
+ --mdb:#0B6E4F; --mdb-bg:#E8F5EF; --mdb-br:#9FD4BD;
+ --hcd:#1F4E9C; --hcd-bg:#E9F0FB; --hcd-br:#A9C4E8;
+ --non:#6B5518; --non-bg:#FFF8E6; --non-br:#E6D49B;
+ --nul:#5A5A5A; --nul-bg:#F2F2F2; --nul-br:#D4D4D4;
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+ --bg:#12161C; --ink:#E8EDF3; --muted:#A0AEC0; --rule:#2A323C;
+ --mdb:#5FD3A8; --mdb-bg:#12291F; --mdb-br:#2C5C46;
+ --hcd:#7FB0F0; --hcd-bg:#121D2E; --hcd-br:#2B4770;
+ --non:#E0C06A; --non-bg:#2A2316; --non-br:#5C4C22;
+ --nul:#A8A8A8; --nul-bg:#1E1E1E; --nul-br:#3A3A3A;}}
+:root[data-theme="dark"]{
+ --bg:#12161C; --ink:#E8EDF3; --muted:#A0AEC0; --rule:#2A323C;
+ --mdb:#5FD3A8; --mdb-bg:#12291F; --mdb-br:#2C5C46;
+ --hcd:#7FB0F0; --hcd-bg:#121D2E; --hcd-br:#2B4770;
+ --non:#E0C06A; --non-bg:#2A2316; --non-br:#5C4C22;
+ --nul:#A8A8A8; --nul-bg:#1E1E1E; --nul-br:#3A3A3A;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:28px 20px 60px}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px;margin:0 0 22px;max-width:80ch}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}
+.key{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+ padding:5px 11px;border-radius:999px;border:1px solid}
+.k-mdb{color:var(--mdb);background:var(--mdb-bg);border-color:var(--mdb-br)}
+.k-hcd{color:var(--hcd);background:var(--hcd-bg);border-color:var(--hcd-br)}
+.k-non{color:var(--non);background:var(--non-bg);border-color:var(--non-br)}
+.k-nul{color:var(--nul);background:var(--nul-bg);border-color:var(--nul-br)}
+.dot{width:9px;height:9px;border-radius:2px;background:currentColor;flex:0 0 auto}
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:13.5px}
+thead th{background:var(--bg);text-align:left;font-size:11.5px;letter-spacing:.06em;
+ text-transform:uppercase;color:var(--muted);padding:12px 14px;border-bottom:2px solid var(--rule);
+ position:sticky;top:0}
+td{padding:13px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+.axis{font-weight:650;width:19%}
+.axis small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:3px}
+.win{width:12%}
+.pill{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;
+ padding:5px 11px;border-radius:7px;border:1px solid;white-space:nowrap}
+.p-mdb{color:var(--mdb);background:var(--mdb-bg);border-color:var(--mdb-br)}
+.p-hcd{color:var(--hcd);background:var(--hcd-bg);border-color:var(--hcd-br)}
+.p-non{color:var(--non);background:var(--non-bg);border-color:var(--non-br)}
+.p-nul{color:var(--nul);background:var(--nul-bg);border-color:var(--nul-br)}
+.marg{width:27%}
+.stat{width:19%;font-size:12.5px;color:var(--muted)}
+.stat b{color:var(--ink);font-weight:650}
+.bar{display:block;height:7px;border-radius:4px;margin:7px 0 4px;position:relative;background:var(--rule)}
+.bar i{position:absolute;top:0;bottom:0;border-radius:4px;display:block}
+.b-mdb i{background:var(--mdb)} .b-hcd i{background:var(--hcd)} .b-non i{background:var(--non);opacity:.55}
+.zero{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--non)}
+.env{margin:0 0 20px;padding:14px 16px;border-radius:10px;background:var(--non-bg);
+ border:1px solid var(--non-br);color:var(--ink);font-size:13px;max-width:none}
+.env .warn{color:var(--non);font-weight:650}
+.scope{width:20%;font-size:12.5px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;
+ border:1px solid;white-space:nowrap;margin-bottom:5px}
+.g-hold{color:var(--mdb);background:var(--mdb-bg);border-color:var(--mdb-br)}
+.g-flip{color:var(--non);background:var(--non-bg);border-color:var(--non-br)}
+.g-unk{color:var(--nul);background:var(--nul-bg);border-color:var(--nul-br)}
+.note{margin-top:22px;padding:14px 16px;border-radius:10px;background:var(--non-bg);
+ border:1px solid var(--non-br);color:var(--non);font-size:13px}
+.note b{color:var(--non)}
+.rule{margin-top:20px;padding:16px 18px;border-radius:10px;border:1px solid var(--rule);font-size:13.5px}
+.rule h2{font-size:15px;margin:0 0 8px}
+.tally{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+.tally div{flex:1 1 150px;border:1px solid;border-radius:10px;padding:12px 14px}
+.tally .n{font-size:26px;font-weight:700;line-height:1}
+.tally .l{font-size:12px;margin-top:3px}
+.t-mdb{color:var(--mdb);background:var(--mdb-bg);border-color:var(--mdb-br)}
+.t-hcd{color:var(--hcd);background:var(--hcd-bg);border-color:var(--hcd-br)}
+.t-nul{color:var(--nul);background:var(--nul-bg);border-color:var(--nul-br)}
+</style></head>
+<body><div class="wrap">
+
+<h1>Les huit axes mesurés — IBM DataStax HCD (Data API) contre MongoDB</h1>
+<p class="sub">La couleur dit <strong>qui gagne</strong>. L'avant-dernière colonne dit <strong>si la direction est établie</strong>,
+par séparation des supports — sans aucune hypothèse de distribution. La dernière dit <strong>si le résultat
+tient hors de l'enveloppe mesurée</strong>, et c'est la colonne qui décide de ce qu'on a le droit d'en faire.</p>
+
+<div class="env">
+<strong>L'enveloppe de mesure, à lire avant le tableau.</strong> Un hôte partagé, 200 000 à 1 000 000 de documents,
+un client unique séquentiel en boucle fermée, régime cache sauf une campagne, un seul datacentre.
+<span class="warn">Cette enveloppe est celle où le moteur décomposant est le plus faible et son comparateur le plus fort.</span>
+Rien de ce qui fait l'argument d'un moteur distribué — partitionnement à l'échelle, écritures concurrentes
+soutenues, réplication multi-site — n'a été exercé une seule fois. Les résultats ci-dessous sont
+équitables <em>pour ce couple de déploiements</em> et pour aucun autre.
+</div>
+
+<div class="legend">
+<span class="key k-mdb"><i class="dot"></i>MongoDB gagne</span>
+<span class="key k-hcd"><i class="dot"></i>HCD gagne</span>
+<span class="key k-non"><i class="dot"></i>Direction non établie</span>
+<span class="key k-nul"><i class="dot"></i>Aucun vainqueur</span>
+</div>
+
+<div class="tablewrap"><table>
+<thead><tr>
+<th class="axis">Axe mesuré</th><th class="win">Gagnant</th>
+<th class="marg">Marge, et la réserve qui l'accompagne</th>
+<th class="stat">Direction établie ?</th><th class="scope">Tient hors de l'enveloppe ?</th></tr></thead>
+<tbody>
+
+<tr>
+<td class="axis">Muter un champ<small>coût par kilo-octet indexé</small></td>
+<td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
+<td class="marg">3 à 13× en latence, l'écart croissant avec le volume indexé.
+<span class="bar b-mdb"><i style="left:22%;right:14%"></i></span>
+<small style="color:var(--muted)">Régime memtable. Le rapport de <em>pentes</em> vaut 44× sur la passe ajustée
+et 116× sur l'autre, non borné par Fieller — à ne jamais citer.</small></td>
+<td class="stat"><b>Certaine</b> — supports disjoints sur 19 des 20 cellules taille × passe</td>
+<td class="scope"><span class="tag g-hold">Tient</span>
+Le coût découle de la décomposition : lire tout, réécrire tout, maintenir tous les index. Plus de nœuds
+répartissent ce coût, ils ne le suppriment pas. <b>Non mesuré :</b> le comportement sous écritures concurrentes
+soutenues, d'aucun des deux côtés.</td>
+</tr>
+
+<tr>
+<td class="axis">Lire un document par identifiant<small>1 M documents</small></td>
+<td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
+<td class="marg">≈ 20× — 0,53 ms contre 10,4 ms.
+<span class="bar b-mdb"><i style="left:30%;right:8%"></i></span>
+<small style="color:var(--muted)">La part du niveau Data API dans cet écart n'a pas été mesurée sur le chemin de lecture.</small></td>
+<td class="stat"><b>Certaine</b> — supports disjoints</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+L'écart est en grande partie le saut HTTP du niveau Data API, non mesuré sur le chemin de lecture.
+Il ne dépend pas du volume ; il dépendrait d'un niveau dimensionné, que ce banc n'avait pas.</td>
+</tr>
+
+<tr>
+<td class="axis">Filtrer sur un champ indexé<small>index déclaré ou générique</small></td>
+<td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
+<td class="marg">≈ 24× — 0,73 ms contre 17,4 ms.
+<span class="bar b-mdb"><i style="left:36%;right:6%"></i></span></td>
+<td class="stat"><b>Certaine</b> — supports disjoints</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+Mesuré à 1 M de documents en cache des deux côtés. Hors cache, et à l'échelle où un index ne tient plus
+en mémoire, la comparaison change de nature et n'a pas été faite.</td>
+</tr>
+
+<tr>
+<td class="axis">Agréger par groupe<small>200 000 documents, 10 groupes</small></td>
+<td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
+<td class="marg"><strong>Lacune de fonction de l'<em>interface</em>, pas une course entre moteurs.</strong>
+Pas de pipeline côté serveur dans la Data API : 134 s contre 0,22 s par la seule voie restante.
+<span class="bar b-mdb"><i style="left:72%;right:2%"></i></span>
+<small style="color:var(--muted)">Le même moteur agrège en ~2 s en CQL natif. Et sa doctrine dit de
+<strong>ne pas agréger à la requête</strong> mais de pré-calculer l'agrégat à l'écriture — ce qui n'est ni
+l'une ni l'autre des deux voies mesurées.</small></td>
+<td class="stat"><b>Certaine</b> — supports disjoints, sur 3 observations</td>
+<td class="scope"><span class="tag g-hold">Tient</span>
+L'absence de pipeline est un fait d'interface : elle arrive au premier document et ne dépend d'aucune
+volumétrie. <b>S'aggrave à l'échelle :</b> le balayage client croît linéairement avec la collection.</td>
+</tr>
+
+<tr>
+<td class="axis">Compter exactement<small>cardinal d'une collection</small></td>
+<td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
+<td class="marg"><strong>Par capacité.</strong> La Data API refuse au-delà d'un seuil documenté (1 000 ici),
+et son estimateur a répondu <strong>0</strong> pour 200 000 documents réels, avant premier flush.</td>
+<td class="stat"><b>Structurelle</b> — aucune observation, l'opération est refusée</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+Le refus est constant ; le coût du comparateur dépend de la voie. Son balayage non indexé croît avec le
+volume — 115 ms à 200 000 documents, une extrapolation linéaire donnant une minute à cent millions, en cache.
+Mais la <em>même campagne</em> a mesuré un comptage indexé à 12,7 ms : une équipe qui compte régulièrement
+déclare un index et ne subit pas le balayage. Aucune inversion n'est établie.</td>
+</tr>
+
+<tr>
+<td class="axis">Fraîcheur d'un index secondaire ordinaire<small>relire ce qu'on vient d'écrire</small></td>
+<td class="win"><span class="pill p-nul"><i class="dot"></i>Aucun</span></td>
+<td class="marg">Index à jour des deux côtés, trouvé à la première requête 40 fois sur 40.
+Le temps écoulé, lui, diffère dans les deux sens.</td>
+<td class="stat">Égalité sur les tentatives</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+Mesuré sur un seul datacentre. En multi-site, l'asymétrie <code>LOCAL_ONE</code> de la recherche vectorielle
+contre des écritures au quorum deviendrait observable — <b>contre</b> le moteur décomposant.</td>
+</tr>
+
+<tr>
+<td class="axis">Filtrer sur un champ non déclaré<small>indexation automatique</small></td>
+<td class="win"><span class="pill p-non"><i class="dot"></i>Non établi</span></td>
+<td class="marg">17,4 ms contre 377 ms de scan — mais le scan le plus rapide (13,3 ms) bat la médiane HCD.
+<span class="bar b-non"><i style="left:10%;right:18%"></i><em class="zero" style="left:22%"></em></span>
+<small style="color:var(--muted)">Ce qui est établi est la <strong>prévisibilité</strong> (~17 ms quoi qu'il arrive), pas la vitesse.</small></td>
+<td class="stat"><b>Non établie</b> — supports recouvrants, intervalle [0,46 ; 65,8] contenant 1</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+Un balayage dégrade avec la collection, un index beaucoup moins : la <em>dispersion</em> du comparateur
+devrait donc croître. Mais la direction n'étant pas établie dans l'enveloppe (colonne précédente), rien
+ne permet d'affirmer qu'elle s'y établirait au-delà. Une direction non établie ne s'amplifie pas.</td>
+</tr>
+
+<tr>
+<td class="axis">Fraîcheur de l'index de recherche<small>écrire puis chercher</small></td>
+<td class="win"><span class="pill p-hcd"><i class="dot"></i>HCD</span></td>
+<td class="marg"><strong>Total sous la fenêtre de rafraîchissement, nul au-dessus.</strong>
+100 % d'échec contre 0 % à délai nul ; 50 % à 500 ms ; 0 % au-delà d'une seconde.
+<span class="bar b-hcd"><i style="left:8%;right:40%"></i></span>
+<small style="color:var(--muted)">Mesuré contre <code>mongot 1.75.1</code> édition <code>localDev</code> — pas l'édition de production.</small></td>
+<td class="stat"><b>Certaine comme proportion</b> — Fisher p ≈ 10⁻¹⁷.
+<br><b style="color:var(--non)">Non établie comme latence</b> — supports recouvrants</td>
+<td class="scope"><span class="tag g-unk">Indéterminé</span>
+La frontière est l'intervalle de rafraîchissement d'une édition de développement mono-nœud. Une
+infrastructure de recherche dédiée peut rafraîchir plus vite ou moins souvent : le banc ne tranche pas.</td>
+</tr>
+
+</tbody></table></div>
+
+<div class="tally">
+<div class="t-mdb"><div class="n">5</div><div class="l">axes à MongoDB<br><span style="opacity:.75">dont 2 par lacune de fonction</span></div></div>
+<div class="t-hcd"><div class="n">2</div><div class="l">axes à HCD<br><span style="opacity:.75">dont 1 non établi, 1 conditionnel</span></div></div>
+<div class="t-nul"><div class="n">1</div><div class="l">axe sans vainqueur</div></div>
+</div>
+
+<div class="note">
+<b>Ne comptez pas les lignes comme un score.</b> Elles proviennent de quatre configurations de déploiement
+et ne sont pas commensurables entre elles. Deux des cinq victoires du comparateur ne sont pas des courses de
+vitesse mais des fonctions absentes de l'interface. Une des deux victoires du moteur décomposant n'est pas
+établie comme direction, et l'autre ne vaut qu'à l'intérieur d'une fenêtre.
+</div>
+
+<div class="rule">
+<h2>Ce qui ne dépend d'aucune volumétrie</h2>
+<p style="margin:0 0 10px">Quatre contraintes arrivent au premier document et ne s'inversent jamais :
+<strong>neuf index automatiques par collection contre un plafond de cent par nœud</strong>, soit environ onze
+collections par nœud ; <strong>huit mille octets par chaîne indexée</strong> ; <strong>aucune agrégation côté
+serveur</strong> ; <strong>aucun comptage exact au-delà du seuil</strong>. Ce sont des faits d'interface, pas
+des mesures de performance, et ils survivent à tout changement d'échelle ou de matériel.</p>
+
+<h2 style="margin-top:14px">Trois régimes où le comparatif pourrait changer — aucun n'a été mesuré</h2>
+<p style="margin:0 0 7px"><strong>1 · Quand le jeu de données dépasse la mémoire d'un nœud.</strong>
+Le comptage exact non indexé du comparateur est un balayage : 115 ms sur 200 000 documents, une
+extrapolation linéaire donnant environ une minute à cent millions — en cache, et l'extrapolation est
+la mienne, pas une mesure. <em>Avec</em> un index déclaré la même campagne mesure 12,7 ms, donc cette
+voie ne dégrade pas de la même façon. Le refus du moteur décomposant, lui, est constant quelle que
+soit la voie.</p>
+<p style="margin:0 0 7px"><strong>2 · Quand la charge d'écriture dépasse ce que le déploiement absorbe.</strong>
+Le comparateur a été mesuré en <em>replica set</em> à trois membres, donc avec un primaire unique ; le moteur
+décomposant écrit sur tous ses réplicas. Mais un comparateur <em>partitionné</em> a un primaire par fragment
+et son plafond d'écriture croît avec le nombre de fragments — ce qui est une propriété du déploiement mesuré,
+pas une limite du produit. Aucune des deux configurations n'a été testée sous charge concurrente.</p>
+<p style="margin:0"><strong>3 · Quand le déploiement s'étend sur plusieurs sites.</strong> Deux effets
+opposés se déclenchent, et <em>les deux</em> vont contre le moteur décomposant : la ronde de consensus,
+mesurée ici à son minimum sur des réplicas partageant un hôte, coûterait des dizaines de millisecondes ;
+et l'asymétrie <code>LOCAL_ONE</code> de la recherche vectorielle deviendrait observable.</p>
+
+<h2 style="margin-top:14px">Une question d'équité, et sa réponse</h2>
+<p style="margin:0 0 8px">Est-il légitime de mesurer un moteur sur une opération que sa propre doctrine
+déconseille ? Cette doctrine est explicite : aucun traitement complexe au moment de la requête — ni
+filtrage, ni jointure, ni recherche, ni agrégation — les données devant être stockées partitionnées,
+triées, dénormalisées et filtrées <em>à l'avance</em>, l'objectif étant de stocker des <strong>réponses
+pré-calculées</strong> aux questions que l'application posera.</p>
+<p style="margin:0 0 8px">La bonne réponse architecturale à « somme ce champ par catégorie » n'est donc
+<strong>ni</strong> le balayage client à 134 s <strong>ni</strong> le <code>GROUP BY</code> inter-partitions :
+c'est une table d'agrégats maintenue à l'écriture, qui lit en millisecondes.</p>
+<p style="margin:0"><strong>Ce qui rend la ligne légitime malgré tout</strong> : le sujet mesuré n'est pas le
+moteur, c'est l'<em>interface</em>, dont l'argumentaire est l'ergonomie document façon comparateur. Une
+équipe qui l'adopte pour cette raison attendra <code>aggregate</code> et découvrira son absence sur un
+<code>COMMAND_UNKNOWN</code>. La comparaison est <strong>équitable au niveau de l'API, inéquitable au niveau
+du moteur</strong>, et les deux moitiés voyagent ensemble.</p>
+
+<h2 style="margin-top:14px">La règle de décision, inchangée</h2>
+<p style="margin:0 0 8px">Deux nombres, et un seul concerne une base de données : l'<strong>intervalle de
+rafraîchissement</strong> de votre déploiement, et le <strong>délai</strong> que votre application laisse
+entre l'écriture et la recherche.</p>
+<p style="margin:0 0 8px"><span class="pill p-hcd" style="font-size:12px"><i class="dot"></i>HCD</span>
+si le second est plus petit que le premier — chaînes d'outils, boucles d'ingestion, tout ce qui compose une
+écriture et une recherche sans humain ni modèle entre les deux.</p>
+<p style="margin:0"><span class="pill p-mdb" style="font-size:12px"><i class="dot"></i>MongoDB</span>
+s'il est plus grand — donc tout ce qui est conversationnel ou au rythme humain — et sur tous les axes
+restants, <em>dans l'enveloppe mesurée</em>.</p>
+</div>
+
+</div></body></html>

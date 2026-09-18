@@ -30,6 +30,7 @@ Exit code 0 when clean, 1 otherwise. Usage:
 from __future__ import annotations
 
 import html
+import os
 import re
 import sys
 import xml.dom.minidom
@@ -199,11 +200,57 @@ def check_pair(p1: str, p2: str) -> list[str]:
     return errs
 
 
+def check_synthesis(volet: str, synth: str) -> list[str]:
+    """The standalone synthesis page restates the axis verdicts for a reader who
+    will never open the article. It is a fourth place for them to drift, so it is
+    checked: every axis named in the article's table must carry the same winner on
+    the synthesis page. Wording is free; the verdict is not."""
+    errs: list[str] = []
+    a = open(volet, encoding="utf-8").read()
+    b = strip(open(synth, encoding="utf-8").read())
+    m = re.search(r"<thead><tr><th>Axis measured</th>.*?</tbody>", a, flags=re.S)
+    if not m:
+        return ["synthesis: the article's axis table was not found"]
+    rows = re.findall(r"<tr><td>(.*?)</td>\s*<td>(.*?)</td>", m.group(0), flags=re.S)
+    FR = {
+        "Mutating one field": ("Muter un champ", "MongoDB"),
+        "Fetching one document by identifier": ("Lire un document par identifiant", "MongoDB"),
+        "Filtering on a declared or wildcard-indexed field": ("Filtrer sur un champ indexé", "MongoDB"),
+        "Aggregating by group": ("Agréger par groupe", "MongoDB"),
+        "Counting exactly": ("Compter exactement", "MongoDB"),
+        "Freshness of an ordinary secondary index": ("Fraîcheur d'un index secondaire ordinaire", "Aucun"),
+        "Filtering on a field nobody declared": ("Filtrer sur un champ non déclaré", "Non établi"),
+        "Freshness of the search index": ("Fraîcheur de l'index de recherche", "HCD"),
+    }
+    for axis_html, win_html in rows:
+        axis = re.sub(r"<[^>]+>", "", axis_html).replace(" (Part II)", "").strip()
+        win = re.sub(r"<[^>]+>", "", win_html).strip()
+        if axis not in FR:
+            errs.append(f"synthesis: the article names an axis the checker does not map: {axis!r}")
+            continue
+        fr_axis, fr_win = FR[axis]
+        if fr_axis not in b:
+            errs.append(f"synthesis: axis {fr_axis!r} is missing from the synthesis page")
+            continue
+        seg = b[b.index(fr_axis): b.index(fr_axis) + 220]
+        if fr_win not in seg:
+            errs.append(f"synthesis: {fr_axis!r} carries {fr_win!r} in the article "
+                        f"and something else on the synthesis page")
+        expected = {"MongoDB": "MongoDB", "Decomposing engine": "HCD", "neither": "Aucun"}.get(win)
+        if expected and expected != fr_win:
+            errs.append(f"synthesis: the article's winner for {axis!r} is {win!r}, "
+                        f"the checker's map says {fr_win!r} — one of them is stale")
+    return errs
+
+
 def main() -> int:
     if len(sys.argv) != 3:
         print(__doc__)
         return 2
     errs = check_file(sys.argv[1]) + check_file(sys.argv[2])
+    synth = "docs/synthesis/huit-axes.fr.html"
+    if os.path.exists(synth):
+        errs += check_synthesis(sys.argv[1], synth)
     errs += check_pair(sys.argv[1], sys.argv[2])
     if not errs:
         print("clean — every reference resolves, numbering dense, tables agree")
