@@ -75,7 +75,19 @@ SEP = "[    ]"
 # A published figure: three or more decimals, not preceded by a word character
 # or a dot (so "p50 133 984.229" starts at 133, and "v1.0.33" is not a figure),
 # and not followed by a further digit.
-FIGURE = re.compile(r"(?<![\w.])\d{1,3}(?:" + SEP + r"\d{3})*\.\d{3,}(?!\d)")
+# BLIND SPOT FOUND AND CLOSED, 18 September 2026. The original pattern was
+#   \d{1,3}(?:SEP\d{3})*\.\d{3,}
+# which requires one to three integer digits before any thousands-separator group.
+# A figure of four or more integer digits written WITHOUT a separator therefore
+# matched nothing and was not a "figure" as far as this check was concerned. That
+# was not academic: `1015.201`, the mongot write-to-visible p50, is written without
+# a separator in fourteen documents, and `133984.229`, `2011.399` and `1154.313`
+# likewise appear unseparated somewhere. Rewriting 1015.201 to 1015.999 across
+# RESULTS.md left this check reporting "0 orphans" and exiting 0. The alternation
+# below covers both spellings; closing it moved the count from 377 occurrences /
+# 113 distinct to 404 / 120 and left the orphan count at 0 — the gap hid coverage,
+# not fabrication — and the same tamper is now reported with its line numbers.
+FIGURE = re.compile(r"(?<![\w.])\d{1,3}(?:" + SEP + r"\d{3})+\.\d{3,}(?!\d)|(?<![\w.])\d+\.\d{3,}(?!\d)")
 
 # Any numeric literal inside an evidence file.
 EVIDENCE_NUMBER = re.compile(r"-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")

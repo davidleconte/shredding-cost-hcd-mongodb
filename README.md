@@ -33,8 +33,11 @@ freshness axis is a miss-rate result, exactly tested, and bounded to write-to-se
 about one second ([docs/STATISTICS.md §3.3](docs/STATISTICS.md), §3.17). **Principal limitation.**
 "Write cost" is operationalised as client-observed latency and never as bytes, so the flagship
 per-byte coefficient is not a property of the system: it takes the values **×7.50**, **×5.94** and
-**×1.52** in three regimes on the same machine. And no probe persisted its per-observation series, so
-no confidence interval can ever be computed from this artefact by anyone, including the author. What
+**×1.52** in three regimes on the same machine. And **sixteen of the seventeen probes** discarded their
+per-observation series, so for the thirty-four evidence files they wrote no confidence interval can
+ever be computed by anyone, including the author. Campaign 7bis is the exception and the measure of
+what was lost: its probe keeps every observation, so the aggregation axis carries real bootstrap
+intervals and a rank test — the only axis in the dossier that does. What
 this dossier establishes is **mechanism and direction**. It does not establish production magnitudes.
 
 ## Contribution
@@ -104,7 +107,7 @@ Full statements, falsification criteria, and which criteria are `[PRE]` rather t
 | **MongoDB** | 8.0.32, three-member replica set, `w:majority` + `j:true`. Search freshness only: 8.3.11 `atlas-local`, mongot 1.75.1 `localDev` — a different deployment (audit I8) |
 | **Host** | One QEMU VM, 80 vCPU, 220 GiB RAM, **shared**, at load average 14–16 throughout. No root, so the page cache was never dropped |
 | **Dates** | 17–18 September 2026. `run_at_utc` is recorded in **26 of the 38** raw files; the twelve exceptions and one hand-typed stamp are listed in [data/README.md](data/README.md) |
-| **Statistics** | Percentiles only; **no means for latency**. n = 30 per point, two passes at most, **no confidence intervals — and none is recoverable**, see [docs/STATISTICS.md §2](docs/STATISTICS.md) |
+| **Statistics** | Percentiles only; **no means for latency**. n = 30 per point, two passes at most, **no confidence intervals on any axis but one, and none is recoverable for the rest**; campaign 7bis retained its observations and carries bootstrap intervals, see [docs/STATISTICS.md §2](docs/STATISTICS.md) and [docs/campagne7bis.fr.md](docs/campagne7bis.fr.md) |
 
 The full table with every arm and every raw-file reference is
 [RESULTS.md §2](RESULTS.md#2-the-headline-table); the register is

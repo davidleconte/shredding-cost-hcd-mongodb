@@ -95,16 +95,15 @@ Every number in the table below is regenerated from the tree by
 <!-- BEGIN ARTIFACT FACTS — generated, do not hand-edit -->
 | Fact | Value |
 |---|---|
-| `data/raw/` JSON files | **38** |
-| their total size in bytes | **220 736** |
-| of those, carrying a `run_at_utc` | 26 |
+| `data/raw/` JSON files | **39** |
+| their total size in bytes | **225 540** |
+| of those, carrying a `run_at_utc` | 27 |
 | carrying none | 12 |
-| `data/MANIFEST.sha256` entries | 38 |
-| `probes/*.py` | **17** (plus 2 `.orig` reference copies) |
+| `data/MANIFEST.sha256` entries | 39 |
+| `probes/*.py` | **18** (plus 2 `.orig` reference copies) |
 | `.github/scripts/check_*.py` | 9 |
 | `git tag -l` | (none) |
-| tracked files | 116 |
-| untracked paths | `.github/GRADE-REPORT.md` |
+| tracked files | 118 |
 <!-- END ARTIFACT FACTS -->
 
 What does not derive mechanically: **eight campaign reports** — the seven in `docs/campaigns/`
@@ -255,7 +254,7 @@ on every push:
 | Every file under `data/raw/` parses as JSON | **38/38 pass**, plus 208 latency-distribution invariants (`min ≤ p50 ≤ p95 ≤ p99 ≤ max`, `n ≥ 1`) — CI job 3 |
 | `probe_comparative.py --compare cmp_mongo cmp_hcd cmp_hcdcql` reproduces `comparison_v2.json` | **byte-exact apart from `run_at_utc`** |
 | `probe_comparative.py --compare cmp_mongo cmp_hcd` reproduces `comparison.json` | **byte-exact apart from `run_at_utc` *and* a top-level `VERDICT` object the recomputation does not emit** — see §8.1 |
-| Figure traceability: every number with ≥ 3 decimals in the seven English Markdown documents is reachable in the committed evidence — `.github/scripts/check_figure_traceability.py`, published and run as CI check 7 | **377 occurrences, 113 distinct values, 0 orphans** — under a rule that had to be **weakened twice** before it held, and the weakenings are the finding. (i) *Reachable* means in `data/raw/*.json` **or** in `data/derived/inference.json`; eight occurrences reach only the second exactly, and six distinct values only after rounding there — the `README.md` ratio-interval endpoints `0.465`, `65.842`, `0.155`, `36.683`, plus `0.966` and `1.421`, the interval of challenge D12. All six are **computed and were never measured** and must not be quoted as observations. (ii) A value may match *after rounding to the precision the document prints*: nine distinct values do, three of them against `data/raw/` (`0.0774` ← `0.077422`, `0.1112` ← `0.111247` in `findings_fieldbyte.json`; `0.996` ← `0.9959` in `comparison_v2.json`) and six against the derived layer. Rounding widens the target a published figure is allowed to hit, and the script names every such match individually rather than folding it into the total. **Under the exact-`data/raw/`-only rule this row once stated**, the current tree yields **10 orphans, not 0**. The document list covers `data/README.md` and **excludes `ARTIFACT.md`**, so this audit cannot launder its own quotations into the count. The three counts in this cell drift whenever a document acquires a figure; they are re-derived by CI job 7 on every push, which is the only reason they are quotable here at all |
+| Figure traceability: every number with ≥ 3 decimals in the seven English Markdown documents is reachable in the committed evidence — `.github/scripts/check_figure_traceability.py`, published and run as CI check 7 | **404 occurrences, 120 distinct values, 0 orphans** — under a rule that had to be **weakened twice** before it held, and the weakenings are the finding. (i) *Reachable* means in `data/raw/*.json` **or** in `data/derived/inference.json`; eight occurrences reach only the second exactly, and six distinct values only after rounding there — the `README.md` ratio-interval endpoints `0.465`, `65.842`, `0.155`, `36.683`, plus `0.966` and `1.421`, the interval of challenge D12. All six are **computed and were never measured** and must not be quoted as observations. (ii) A value may match *after rounding to the precision the document prints*: nine distinct values do, three of them against `data/raw/` (`0.0774` ← `0.077422`, `0.1112` ← `0.111247` in `findings_fieldbyte.json`; `0.996` ← `0.9959` in `comparison_v2.json`) and six against the derived layer. Rounding widens the target a published figure is allowed to hit, and the script names every such match individually rather than folding it into the total. **Under the exact-`data/raw/`-only rule this row once stated**, the current tree yields **10 orphans, not 0**. The document list covers `data/README.md` and **excludes `ARTIFACT.md`**, so this audit cannot launder its own quotations into the count. The three counts in this cell drift whenever a document acquires a figure; they are re-derived by CI job 7 on every push, which is the only reason they are quotable here at all |
 
 **A scoped claim is therefore defensible and should be made explicitly:** *Functional over the
 offline-derivation subset* — the raw evidence, the merge/comparison code path, and the
@@ -444,6 +443,7 @@ allocation, not the byte count.)
 | `findings_agg_cqlref.json` | 2114 | `ea7d1b8dd04c3b0de56f1d95736295341d5016c38350b3db5e19c5aa46295813` | `2026-09-18T09:33:35.542303+00:00` | `agg_cql_arm.py` |
 | `findings_agg_hcd.json` | 3071 | `d13fb3b823d5bdaf7fb8a4985bfe7dbd870efbf5ed955e8c09e3ee3af7dc1fd2` | `2026-09-18T09:29:31.556897+00:00` | `probe_aggregation.py` |
 | `findings_agg_mongodb.json` | 3121 | `e640bfc9c8fa5776d8cee559e50343a7b35d4256ec4bb930df57910bb47200de` | `2026-09-18T09:09:39.086556+00:00` | `probe_aggregation.py` |
+| `findings_cql_groupby_expressibility.json` | 4804 | `e78f2cf28e054f6b32d615052fe40f34e50793b96ebb9508fea89bd104bcccf9` | `2026-09-18T20:27:53.919795+00:00` | `cql_groupby_expressibility.py` |
 | `findings_disk_rf3.json` | 4280 | `55609dc8aeb71a25f924911eceefa3dfecaa873eb4215107d6c6d2c8d476e87e` | `2026-09-17T21:33:23.725151+00:00` | `verify_storage_claims.py` + `probe3_variant_b.py` (**gap 1, unpublished**) |
 | `findings_fieldbyte.json` | 17769 | `c85e78495270132c749475346d486c69987016c5f15597aac56b631d9058290e` | `2026-09-17T21:36:25.094922+00:00` | `probe_field_vs_byte.py` |
 | `findings_hcd_vec_freshness.json` | 511 | `100e6531006fae14c14e48938a346aec8d5570a06c27b11e6e17e408354a64d4` | — *not stamped* | **none in repo** (`probes/README.md` gap 2) |
@@ -523,7 +523,7 @@ Prerequisite: `cd` to the repository root. Nothing here requires a network.
 | **V9** | **M21/M22** — HCD's Data API refuses exact count above 1000 documents, and `estimatedDocumentCount()` returns **0** against a true 200 000 | `python3 -c "import json;c=json.load(open('data/raw/findings_agg_hcd.json'))['result']['counts'];print(c['count_all_error'][:40],c['estimated'],c['count_all_correct'])"` | prints the `TooManyDocumentsToCountException`, `0`, `False` |
 | **V10** | **M20's evidence is a string literal, not a captured response** | `grep -n 'structural' probes/probe_aggregation.py` then `grep -rn 'aggregate(' probes/*.py` | the `structural` field at line 196 is a fixed string emitted unconditionally, and every `aggregate(` call in `probes/` targets **MongoDB**: the pymongo `$group` at `probe_aggregation.py:109`, the same in `probe_agg_7bis.py`'s `run_mongo`, and the `$search` pipelines in `mongot_floor.py`, `mongot_freshness.py` and `turn_latency.py`. An earlier revision of this cell said *the only* call, which stopped being true when campaign 7bis landed; the conclusion is untouched — **no probe ever issues `aggregate`, `$group` or `distinct` against HCD**, which is what V10 exists to establish. §8.4 |
 | **V11** | Every cross-engine slope, r² and ratio is fitted on **pass 1 only** | `grep -n 'pass1' probes/probe_comparative.py` | line 255 hard-codes `k = f"{sz.label}\|pass1"`; pass-2 points sit unused in `cmp_mongo.json` / `cmp_hcd.json` / `cmp_hcdcql.json` — §8.5 |
-| **V12** | Figure traceability: every figure in the seven documents is reachable in `data/raw/` or `data/derived/inference.json`, and every rounded or derived-only match is named in the output | `python .github/scripts/check_figure_traceability.py` — published, runnable offline, and CI check 7. Its document list is fixed in the file and excludes `ARTIFACT.md` | `377 occurrences, 113 distinct values, 0 orphan values`; **9 of the 113 match only after rounding, and 6 of those 9 only in `data/derived/inference.json`** — §2.2. Under the exact-`data/raw/`-only rule this row once asserted, the same tree gives 10 orphans. These three counts move whenever a document acquires a figure, so read them from the script's output rather than from this cell; CI job 7 re-derives them on every push |
+| **V12** | Figure traceability: every figure in the seven documents is reachable in `data/raw/` or `data/derived/inference.json`, and every rounded or derived-only match is named in the output | `python .github/scripts/check_figure_traceability.py` — published, runnable offline, and CI check 7. Its document list is fixed in the file and excludes `ARTIFACT.md` | `404 occurrences, 120 distinct values, 0 orphan values`; **9 of the 120 match only after rounding, and 6 of those 9 only in `data/derived/inference.json`** — §2.2. Under the exact-`data/raw/`-only rule this row once asserted, the same tree gives 10 orphans. These three counts move whenever a document acquires a figure, so read them from the script's output rather than from this cell; CI job 7 re-derives them on every push |
 | **V13** | The declared harness patches touch no size, threshold, repetition count or verdict rule | `diff probes/verify_storage_claims.py.orig probes/verify_storage_claims.py` | only the two declared mechanical fixes. **This check is meaningful only for this one probe**: `probe_tier_vs_storage.py.orig` was reconstructed by reverting the patch it is used to show (mtime 10:03 > 09:35), and no `.orig` exists for `verify_storage_claims_rf3.py` or `disk_regime_driver.py` |
 | **V14** | The mongot reserve is on the record | `python3 -c "import json;print(json.load(open('data/raw/findings_mongot_provenance.json'))['versions'])"` | `mongot_version 1.75.1`, `mongot_edition localDev`, `mongod_version 8.3.11` |
 
@@ -717,13 +717,13 @@ Reproduced* remains unreachable, permanently, and the artefact should keep sayin
 ## 8. Defects found by this assessment
 
 Each is a defect of **provenance or labelling**, not of data. No figure in this dossier was found
-to be fabricated; the figure-traceability check (§2.2, V12) reaches **all 113 distinct values** in
+to be fabricated; the figure-traceability check (§2.2, V12) reaches **all 120 distinct values** in
 the committed evidence. Six of them it reaches only in `data/derived/inference.json` and only after
 rounding — **derived, never measured**: the four `README.md` ratio-interval endpoints plus `0.966`
 and `1.421`, the interval of challenge D12. Three more it reaches in `data/raw/` only after
 rounding. Those nine are the labelling distinction that the earlier "0 orphans against `data/raw/`"
 wording erased, and `ARTIFACT.md` itself is outside the checked set. The counts in this paragraph
-were 108 and seven when it was written; they move with every figure a document acquires, which is
+were 108 and seven when it was written, then 113 and nine; they move with every figure a document acquires, which is
 why CI job 7 re-derives them rather than this sentence asserting them.
 
 ### 8.1 `comparison.json` carries a block no probe emits

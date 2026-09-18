@@ -184,7 +184,8 @@ larger than any plausible contamination. Contamination that slows HCD makes the 
 ### I7 — Statistical weakness ⭑
 
 **The finding.** n = 30–50 per point, two passes, **medians only, no confidence intervals, no
-significance test**. Between-pass variance of roughly 10–15 % (×1.92 against ×2.21 on the same
+significance test** — in campaigns 1–7. Campaign 7bis, which retained its observations, is the one
+exception and does not lift this finding for anything else. Between-pass variance of roughly 10–15 % (×1.92 against ×2.21 on the same
 variant-A probe, `data/raw/findings.json`) is **larger than some of the claimed effects**. The
 MongoDB fits are weak by construction: r² 0.7809 (default arm) and 0.8794 (wildcard arm)
 (`data/raw/comparison_v2.json`) — near-zero slopes drowned in noise. A single sequential client:
@@ -675,7 +676,13 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
     reach, not of the table's layout. Measured on the ring on 18 September 2026, the same `GROUP BY
     cat` against a `PRIMARY KEY (id)` table is **refused** — `InvalidRequest code=2200 "Group by is
     currently only supported on the columns of the PRIMARY KEY"`, `ALLOW FILTERING` included — so
-    C3b is expressible only because the table is pre-partitioned by the group key. **The arm D12 read
+    C3b is expressible only because the table is pre-partitioned by the group key.
+    That measurement is published as evidence — `data/raw/findings_cql_groupby_expressibility.json`,
+    probe `probes/cql_groupby_expressibility.py`, with rules R1–R3 fixed before execution. **Rule R3
+    fired and narrows the argument**: C3a's sweep shape, `SELECT SUM(amt) … WHERE cat='c3'`, *is*
+    accepted against an unaligned table once `ALLOW FILTERING` is added, and C3a is the arm behind
+    campaign 7's headline 2 011.399 ms. So the categorical claim holds for C3b and not for the whole
+    CQL path; what the probe does not measure is what filtering costs. **The arm D12 read
     as refuting the requirement demonstrates it.** What survives of D12, and it is most of it: the ×1.28 **between
     the two query shapes** is not established; `agg_cql` retains no per-observation series; and the
     **scale reserve** is untouched by the annulment — 200 000 rows on ten partitions bounds nothing at

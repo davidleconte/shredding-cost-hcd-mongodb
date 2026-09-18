@@ -627,7 +627,8 @@ supplied script — the shredded layout, the traced cycle, the field-versus-byte
 solid ones (`docs/audit-adversarial.fr.md`, `docs/challenges.fr.md`, C5).
 
 **6. Thirty to fifty repetitions, two passes, medians only.** No confidence intervals, no
-significance tests. The between-pass variance is roughly 10–15 %, which exceeds some of the
+significance tests — except in campaign 7bis, whose probe keeps every observation and whose report
+therefore carries both. The between-pass variance is roughly 10–15 %, which exceeds some of the
 effects claimed, and the MongoDB slopes carry r² of 0.78 and 0.88 because they are so nearly flat
 that noise dominates — which *is* the result, and is also a reason not to quote those slopes to
 four digits (audit finding I7).

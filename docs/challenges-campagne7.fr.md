@@ -305,6 +305,22 @@ peuvent parler du coût de partitionnement au-delà de `n = 200 000, p = 10`.
 > change rien. **C3b n'est exprimable que parce que la table est pré-partitionnée par la clé de
 > groupe.** Le bras que D12 prenait pour la réfutation de l'exigence en est la démonstration.
 >
+> **Cette mesure est publiée comme preuve**, et non plus seulement affirmée :
+> `data/raw/findings_cql_groupby_expressibility.json`, sonde
+> `probes/cql_groupby_expressibility.py`, règles R1–R3 fixées avant exécution. Une première version
+> de ce post-scriptum citait la mesure sans fichier, ce que la règle de lecture n° 9 du dossier
+> interdit ; la faute était la mienne et elle est réparée ici.
+>
+> **La règle R3 s'est déclenchée et restreint l'argument ci-dessus.** Le refus porte sur la forme
+> `GROUP BY` de C3b, pas sur la forme *sweep* de C3a. `SELECT SUM(amt) … WHERE cat='c3'` contre une
+> table `PRIMARY KEY (id)` est d'abord refusée — *« Cannot execute this query as it might involve
+> data filtering »* — puis **acceptée dès qu'on ajoute `ALLOW FILTERING`**. Or C3a est le bras qui
+> produit le 2 011,399 ms de tête de la campagne 7. Donc : ce qui est catégoriquement inexprimable
+> sans pré-partitionnement, c'est le bras que D12 appelait « non aligné », et lui seul. Le chemin CQL
+> dans son ensemble reste praticable sur une table non alignée, à un coût que cette sonde ne mesure
+> pas. L'annulation de D12 tient — elle ne portait que sur C3b — mais elle ne doit pas être
+> généralisée au-delà.
+>
 > **Conséquence.** Le ×1,28 et son intervalle [0,966 ; 1,421] sont justes, mais ils comparent deux
 > *chemins de requête* sur un schéma pré-conçu. Ils ne disent rien du coût de pré-conception. Le
 > verdict « non soutenue par la mesure censée l'établir » est donc retiré : aucune mesure n'était

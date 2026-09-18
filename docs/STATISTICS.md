@@ -65,12 +65,20 @@ has never claimed they were.
 
 **Verify this first, because everything in §3 is a consequence of it.**
 
-Of the 36 files under `data/raw/`, 25 carry at least one latency distribution. Of those 25,
-**exactly two preserve the individual observations**:
+Of the 38 files under `data/raw/`, 27 carry at least one latency distribution. Of those 27,
+**exactly four preserve the individual observations**, and the four split into two kinds.
 [`vector_freshness_idle.json`](../data/raw/vector_freshness_idle.json) and
-[`vector_freshness_loaded.json`](../data/raw/vector_freshness_loaded.json), each holding a
-60-element `cycles[]` array with a per-cycle `insert_to_vec_visible_ms`. Every other
-latency-bearing file stores the summary and nothing else. The observations that produced the
+[`vector_freshness_loaded.json`](../data/raw/vector_freshness_loaded.json) each hold a
+60-element `cycles[]` array with a per-cycle `insert_to_vec_visible_ms` — kept as a side effect of
+the probe's shape, not as a policy.
+[`findings_agg7bis_hcd.json`](../data/raw/findings_agg7bis_hcd.json) and
+[`findings_agg7bis_mongodb.json`](../data/raw/findings_agg7bis_mongodb.json) hold fourteen `raw_ms`
+arrays between them — every timed observation in execution order, kept **deliberately**, with a
+`raw_note` in the file saying why. Campaign 7bis is the only campaign that fixed the cause rather
+than describing the loss, and it is the only one whose figures a third party can re-test rather
+than re-read. An earlier revision of this section counted 36 files and two exceptions; campaign
+7bis made both numbers false, which is itself an argument for the policy it introduced.
+Every other latency-bearing file stores the summary and nothing else. The observations that produced the
 summary are gone: the probe processes exited, no vector was serialised, and no third party can
 recover them.
 
@@ -273,7 +281,9 @@ already called it INCONCLUSIVE.
 
 ### 3.4 Claims resting on n < 10
 
-One arm in the repository has *n* < 10: **the HCD Data API aggregation arm, n = 3**
+Two arms in the repository have *n* < 10: **the HCD Data API aggregation arm, n = 3**, and campaign
+7bis's post-compaction scan arm, n = 5 (`findings_agg7bis_hcd.json`,
+`C2_scan_post_compaction_ms`). The discussion below is written about the first
 ([`findings_agg_hcd.json`](../data/raw/findings_agg_hcd.json), `result.C2_client_scan_aggregate_ms`).
 
 - **Its p95 and p99 carry no information.** With three observations, the 95th percentile is an
@@ -452,7 +462,8 @@ One arm in the repository has *n* < 10: **the HCD Data API aggregation arm, n = 
 
 [`vector_freshness_idle.json`](../data/raw/vector_freshness_idle.json) and
 [`vector_freshness_loaded.json`](../data/raw/vector_freshness_loaded.json) preserve their
-per-cycle observations. This is the only place in the repository where a bootstrap, a rank test
+per-cycle observations. Until campaign 7bis this was the only place in the repository where a
+bootstrap, a rank test
 and a permutation test could be run at all, so they were run — as a demonstration of what the
 other 91 comparisons could have had.
 

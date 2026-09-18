@@ -331,9 +331,13 @@ six conditions in §8 and the dossier fails it.
 
 **What was not computed, and this is not a footnote.**
 
-- **No confidence intervals.** Anywhere.
-- **No significance tests.** Anywhere. Verdicts come from pre-registered
-  threshold rules on p50 ratios, not from statistics.
+- **No confidence intervals**, and no significance tests, in campaigns 1–7. Verdicts there come
+  from pre-registered threshold rules on p50 ratios, not from statistics.
+- **Campaign 7bis is the single exception**, and it is one because it fixed the cause: its probe
+  retains `raw_ms`, every timed observation in execution order, so its report carries bootstrap
+  confidence intervals and a Mann-Whitney statistic. It is the only campaign whose numbers a third
+  party can re-test rather than re-read. Nothing else in the dossier can be given the same
+  treatment, because the observations behind it no longer exist.
 - **Inter-pass variance sometimes exceeds the claimed effect.** The clearest
   instance is campaign 1's variant A: update growth ×1.92 on pass 1 and ×2.21 on
   pass 2 — a spread of roughly 10–15 % between two passes of the same

@@ -6,7 +6,7 @@
 # stock GitHub runner with no database of any kind. It therefore re-runs nothing
 # and re-measures nothing.
 #
-# A green check asserts exactly seven things:
+# A green check asserts exactly nine things:
 #
 #   1. evidence-integrity  every file under data/raw/ still hashes to the value
 #                          committed in data/MANIFEST.sha256
@@ -285,11 +285,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           failed=0
-          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7"; do
+          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7" "$R8" "$R9"; do
             [ "$result" = "success" ] || failed=1
           done
           if [ "$failed" -ne 0 ]; then
-            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7" >&2
+            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7 R8=$R8 R9=$R9" >&2
             exit 1
           fi
-          echo "All seven verification checks succeeded."
+          echo "All nine verification checks succeeded."

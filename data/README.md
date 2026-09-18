@@ -564,6 +564,26 @@ M1–M17 — never saw them.
   available is to pull every document to the client. This is an unfavourable structural
   finding, published with the two empty distributions that prove the operations failed.
 
+### `findings_cql_groupby_expressibility.json`
+- **Probe:** `probes/cql_groupby_expressibility.py`.
+- **Not a latency measurement.** It carries no percentile and answers one structural question:
+  whether a CQL `GROUP BY` on the group key is expressible at all against a table that is not
+  partitioned by it. Read `result` and `verdicts`, not timings — the `elapsed_ms` fields are
+  incidental and must not be quoted.
+- **Why it exists:** the annulment of challenge D12 rested on this fact, and the fact had been
+  published in `RESULTS.md`, `LIMITATIONS.md` and the challenge document as "measured on the ring"
+  with **no file to cite** — which reading rule 9 of this repository forbids. The probe repairs
+  that by putting the measurement where every other claim's evidence lives.
+- **Rules R1–R3 were fixed before execution** and are written into the file. **R1 did not fire**:
+  `GROUP BY cat` against `PRIMARY KEY (id)` is refused, `code=2200`, with and without
+  `ALLOW FILTERING`, so the structural argument holds. **R2 passed**: the aligned table's result
+  matches the Python ground truth exactly. **R3 fired**, and narrows the argument — C3a's sweep
+  shape, `SELECT SUM(amt) … WHERE cat='c3'`, *is* accepted against the unaligned table once
+  `ALLOW FILTERING` is added, and C3a is the arm behind campaign 7's headline 2 011.399 ms.
+- **Ring hygiene:** no SAI index is created, so the node's SAI budget is untouched, and the
+  keyspace is dropped on exit. Verified after the run: 101 indexes on each of the three nodes,
+  no residual keyspace, no snapshot.
+
 ### `findings_agg7bis_hcd.json` and `findings_agg7bis_mongodb.json`
 - **Probe:** `probes/probe_agg_7bis.py --engine hcd` and `--engine mongodb` (campaign 7bis,
   the re-run of the aggregation axis).
@@ -632,7 +652,7 @@ the file it is in; the right column is what contests it, inside this same dossie
 Standing limits that apply to every file without exception: one shared, already-loaded host;
 one build of each engine; single-client closed-loop sequential load, so nothing here says
 anything about concurrency; percentiles from n = 30–50 with no confidence intervals and no
-significance testing (audit I7); and five of the probes were written by the measurer himself
+significance testing outside campaign 7bis (audit I7); and five of the probes were written by the measurer himself
 (audit I2), which weighs against the measurements that rest on them.
 
 ---

@@ -1,0 +1,164 @@
+{
+  "probe": "cql_groupby_expressibility.py",
+  "run_at_utc": "2026-09-18T20:27:53.919795+00:00",
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80
+  },
+  "conditions": {
+    "keyspace": "d12x",
+    "replication": "NetworkTopologyStrategy dc1:3",
+    "rows_per_table": 2000,
+    "categories": 10,
+    "indexes_created": "none \u2014 the ring's SAI budget is untouched",
+    "keyspace_dropped_on_exit": true
+  },
+  "verdict_rules_preregistered": {
+    "R1": "GROUP BY cat accepted on a table whose PRIMARY KEY lacks cat => the D12 annulment's structural argument fails and must be withdrawn",
+    "R2": "aligned GROUP BY result != Python ground truth => comparison void",
+    "R3": "C3a sweep accepted on the unaligned table => the expressibility argument covers C3b only, not the arm behind campaign 7's headline 2 011.399 ms"
+  },
+  "result": {
+    "C3b_groupby_on_aligned": {
+      "statement": "SELECT cat, SUM(amt) AS sm, COUNT(*) AS n FROM d12x.aligned GROUP BY cat",
+      "accepted": true,
+      "rows": 10,
+      "elapsed_ms": 45.051,
+      "result": {
+        "c6": {
+          "n": 200,
+          "sum": 101352.2
+        },
+        "c1": {
+          "n": 200,
+          "sum": 99591.2
+        },
+        "c2": {
+          "n": 200,
+          "sum": 99743.4
+        },
+        "c9": {
+          "n": 200,
+          "sum": 98808.8
+        },
+        "c0": {
+          "n": 200,
+          "sum": 98439.0
+        },
+        "c5": {
+          "n": 200,
+          "sum": 101200.0
+        },
+        "c3": {
+          "n": 200,
+          "sum": 98895.6
+        },
+        "c4": {
+          "n": 200,
+          "sum": 100047.8
+        },
+        "c7": {
+          "n": 200,
+          "sum": 100504.4
+        },
+        "c8": {
+          "n": 200,
+          "sum": 100656.6
+        }
+      },
+      "server_message": null
+    },
+    "C3b_groupby_on_unaligned": {
+      "statement": "SELECT cat, SUM(amt) AS sm, COUNT(*) AS n FROM d12x.unaligned GROUP BY cat",
+      "accepted": false,
+      "rows": null,
+      "elapsed_ms": 8.761,
+      "result": null,
+      "error_type": "InvalidRequest",
+      "server_message": "Error from server: code=2200 [Invalid query] message=\"Group by is currently only supported on the columns of the PRIMARY KEY, got cat\""
+    },
+    "C3b_groupby_on_unaligned_allowfilt": {
+      "statement": "SELECT cat, SUM(amt) AS sm, COUNT(*) AS n FROM d12x.unaligned GROUP BY cat ALLOW FILTERING",
+      "accepted": false,
+      "rows": null,
+      "elapsed_ms": 9.314,
+      "result": null,
+      "error_type": "InvalidRequest",
+      "server_message": "Error from server: code=2200 [Invalid query] message=\"Group by is currently only supported on the columns of the PRIMARY KEY, got cat\""
+    },
+    "C3a_sweep_on_aligned": {
+      "statement": "SELECT SUM(amt) AS sm, COUNT(*) AS n FROM d12x.aligned WHERE cat='c3'",
+      "accepted": true,
+      "rows": 1,
+      "elapsed_ms": 14.321,
+      "result": null,
+      "server_message": null
+    },
+    "C3a_sweep_on_unaligned": {
+      "statement": "SELECT SUM(amt) AS sm, COUNT(*) AS n FROM d12x.unaligned WHERE cat='c3'",
+      "accepted": false,
+      "rows": null,
+      "elapsed_ms": 2.986,
+      "result": null,
+      "error_type": "InvalidRequest",
+      "server_message": "Error from server: code=2200 [Invalid query] message=\"Cannot execute this query as it might involve data filtering and thus may have unpredictable performance. If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING\""
+    },
+    "C3a_sweep_on_unaligned_allowfilt": {
+      "statement": "SELECT SUM(amt) AS sm, COUNT(*) AS n FROM d12x.unaligned WHERE cat='c3' ALLOW FILTERING",
+      "accepted": true,
+      "rows": 1,
+      "elapsed_ms": 44.033,
+      "result": null,
+      "server_message": null
+    }
+  },
+  "ground_truth": {
+    "c0": {
+      "n": 200,
+      "sum": 98439.0
+    },
+    "c1": {
+      "n": 200,
+      "sum": 99591.2
+    },
+    "c2": {
+      "n": 200,
+      "sum": 99743.4
+    },
+    "c3": {
+      "n": 200,
+      "sum": 98895.6
+    },
+    "c4": {
+      "n": 200,
+      "sum": 100047.8
+    },
+    "c5": {
+      "n": 200,
+      "sum": 101200.0
+    },
+    "c6": {
+      "n": 200,
+      "sum": 101352.2
+    },
+    "c7": {
+      "n": 200,
+      "sum": 100504.4
+    },
+    "c8": {
+      "n": 200,
+      "sum": 100656.6
+    },
+    "c9": {
+      "n": 200,
+      "sum": 98808.8
+    }
+  },
+  "verdicts": {
+    "R1_triggered": false,
+    "R2_aligned_result_correct": true,
+    "R3_triggered": true
+  },
+  "reading": "Establishes, or refutes, one structural claim: whether CQL's GROUP BY on the group key is expressible at all against a table not partitioned by it. It is not a latency measurement and carries no percentile."
+}

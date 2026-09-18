@@ -108,7 +108,6 @@ def facts() -> dict[str, str]:
     entries = [l for l in manifest.read_text(encoding="utf-8").splitlines()
                if l.strip() and not l.startswith("#")]
     scripts = sorted((REPO / ".github" / "scripts").glob("check_*.py"))
-    untracked = [l[3:] for l in git("status", "--porcelain").splitlines() if l.startswith("??")]
     return {
         "raw_files": str(len(files)),
         "raw_bytes": f"{total:,}".replace(",", " "),
@@ -120,13 +119,18 @@ def facts() -> dict[str, str]:
         "check_scripts": str(len(scripts)),
         "tags": git("tag", "-l") or "(none)",
         "tracked_files": str(len(git("ls-files").splitlines())),
-        "untracked": ", ".join(f"`{u}`" for u in untracked) or "none",
     }
-    # Deliberately absent: commit count, HEAD and the commit window. A generated block
-    # must not contain a fact that generating it changes — the commit that writes this
-    # block moves HEAD, so a block naming HEAD is stale the instant it is committed and
-    # the check can never pass. Those three live in §1.4 as prose about a named past
-    # state, which is what they actually are.
+    # Deliberately absent, and each for its own reason.
+    #   Commit count, HEAD, commit window: a generated block must not contain a fact that
+    #   generating it changes. The commit that writes this block moves HEAD, so a block
+    #   naming HEAD is stale the instant it is committed and the check can never pass.
+    #   Untracked paths: worse, because it passed locally and failed in CI. The author's
+    #   working tree is not a property of the artefact. A block naming it embeds whatever
+    #   scratch file happens to sit beside the repository on one machine, and a clean
+    #   checkout — which is what CI and every reader has — computes something different.
+    #   That is how this check first went red: it published .github/GRADE-REPORT.md, an
+    #   untracked local file, into a committed document.
+    # All of these live in §1.4 as prose about a named past state, which is what they are.
 
 
 def facts_block() -> str:
@@ -140,8 +144,7 @@ def facts_block() -> str:
             + f"| `probes/*.py` | **{f['probes']}** (plus {f['probe_orig']} `.orig` reference copies) |\n"
             + f"| `.github/scripts/check_*.py` | {f['check_scripts']} |\n"
             + f"| `git tag -l` | {f['tags']} |\n"
-            + f"| tracked files | {f['tracked_files']} |\n"
-            + f"| untracked paths | {f['untracked']} |\n")
+            + f"| tracked files | {f['tracked_files']} |\n")
 
 
 def splice(text: str, begin: str, end: str, body: str) -> str:
