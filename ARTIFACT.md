@@ -23,11 +23,13 @@ repository's own prose it does so to **narrow** a claim, never to widen one — 
 §8, where it narrows one of the repository's own self-accusations because that self-accusation is
 factually overstated.
 
-**Assessment date:** 18 September 2026.
-**Assessed tree:** working tree at commit `166225e` (HEAD), plus untracked paths — see §1.4. The
-tree was being edited by other sessions while this assessment ran; §1.4 records what was present
-and what had not yet been committed, and every check in §5 was executed against the state
-described there.
+**Assessment date:** 18 September 2026. **First written** against commit `166225e`; **re-verified
+and re-stated** against commit `3350cbf` the same day, after ten further commits landed.
+**Assessed tree:** working tree at commit `3350cbf` (HEAD) — see §1.4, which records both states.
+The tree was being edited by other sessions throughout; every count in this document is now
+regenerated from the tree by `.github/scripts/check_artifact_table.py` and verified in CI, because
+the first writing of it went stale within hours and nothing caught that. Where a defect this
+document found has since been **fixed**, §8 says so rather than deleting the finding.
 
 ---
 
@@ -37,67 +39,119 @@ described there.
 
 | Path | Contract | Mutability |
 |---|---|---|
-| `data/raw/` | **36 JSON files. The evidence.** Every published figure must resolve here or to a named campaign report. Byte-identical to what the probe wrote — not reformatted, not re-keyed, not corrected after refutation. | **Frozen.** Never edit. A correction is a new file plus a note in the campaign report. §4 makes any later alteration detectable. |
+| `data/raw/` | **The evidence** — file count and total size in §1.3, generated from the tree. Every published figure must resolve here or to a named campaign report. Byte-identical to what the probe wrote — not reformatted, not re-keyed, not corrected after refutation. | **Frozen.** Never edit. A correction is a new file plus a note in the campaign report. §4 makes any later alteration detectable. |
 | `data/README.md` | Data dictionary: one entry per raw file, its host fingerprint, and the rules for quoting a number out of the directory. | Prose; may be corrected. |
-| `data/derived/` | Re-analysis computed *from* `data/raw/`. Currently `inference.json` (148 KB), the companion to `docs/STATISTICS.md`. | Regenerable. Not evidence. |
-| `probes/` | **16 Python instruments**, the code as it ran, plus 2 `.orig` reference copies. | Frozen as a record. Patches are declared in `probes/README.md`. |
+| `data/derived/` | Re-analysis computed *from* `data/raw/`. Currently `inference.json` (137 KiB), the companion to `docs/STATISTICS.md`. | Regenerable. Not evidence. |
+| `probes/` | **The Python instruments**, the code as it ran, plus `.orig` reference copies; counts in §1.3. | Frozen as a record. Patches are declared in `probes/README.md`. |
 | `probes/README.md` | Probe index **and provenance register** — which instrument was vendor-supplied, which was patched, which the measurer wrote — plus a numbered list of its own gaps (1–8). | Prose; may be corrected. |
-| `docs/campaigns/01..07` | The seven campaign reports, in French, as written at the time (campaign 6 amended additively, declared in `README.md`). | Working records. |
+| `docs/campaigns/01..07`, `docs/campagne7bis.fr.md` | **Eight** campaign reports, in French, as written at the time (campaign 6 amended additively, declared in `README.md`). 7bis is the re-run of the aggregation axis; it sits outside `docs/campaigns/` because it is a re-run rather than a new axis, and it reversed three of campaign 7's findings. | Working records. |
 | `docs/audit-adversarial.fr.md`, `docs/challenges.fr.md`, `docs/challenges-campagne7.fr.md` | The hostile half: integrity findings I1–I9, challenges C1–C15, meta-challenges D1–D5, and the campaign-7 round. French is authoritative; `LIMITATIONS.md` is an English synthesis **reorganised by severity**, not a translation. | Prose. |
 | `docs/adr/ADR-001-modelling-policy.md` | Modelling policy and the evidence register for M1–M8, M10–M19. **M20–M23 are not in it.** | Prose. |
+| `docs/RESEARCH-DESIGN.md`, `docs/THREATS-TO-VALIDITY.md`, `docs/RELATED-WORK.md` | The design reconstruction, the threat register (I/C/D identifiers classified by validity type), and the positioning against prior work. | Prose. |
+| `docs/synthesis/huit-axes.fr.html` | The eight-axis synthesis, in French. | Prose. |
+| `docs/figures/` | `regime-collapse.svg`, re-rendered from `data/raw/` and diffed byte for byte in CI. | Regenerable. |
 | `docs/STATISTICS.md` | What may and may not be inferred: separation of support, the discarded-series defect, coordinated omission, quoting rules. | Prose. |
 | `docs/article/` | **Out of scope for this artefact.** The author's own publication, under verification. Defects in it are flagged, never edited. | Out of scope. |
 | `env/` | `requirements.txt` and the MongoDB replica-set compose file. **Half the system under test is absent** — see §3.3. | Reconstruction. |
-| `README.md`, `RESULTS.md`, `METHODOLOGY.md`, `LIMITATIONS.md`, `REPRODUCING.md`, `DISCLAIMER.md` | The English documents. `RESULTS.md` §3 is the normative M1–M23 register. | Prose. |
+| `README.md`, `RESULTS.md`, `METHODOLOGY.md`, `LIMITATIONS.md`, `REPRODUCING.md`, `DISCLAIMER.md`, `CONTRIBUTING.md`, `ARTIFACT.md` | The English documents. `RESULTS.md` §3 is the normative register, M1–M8 and M10–M23. | Prose. |
+| `.github/` | **Normative, not prose.** `workflows/verify-evidence.yml` and the `check_*.py` scripts it runs (counts in §1.3), the two manifests `evidence.sha256` and `probe-citations.sha256`, issue and pull-request templates, and the working records `IMPROVEMENT-PLAN.md`, `WORK-ORDER-d12-html.fr.md`. | CI is normative; the working records are prose. |
+| `LICENSE`, `LICENSE-docs`, `CITATION.cff`, `.gitignore` | Apache-2.0 for code, CC BY 4.0 for documents and data; citation metadata; ignore rules. | Fixed. |
 | `CITATION.cff` | Citation metadata. Incomplete — no `version`, no `commit`, no `identifiers`, no DOI. | See §7. |
 
 ### 1.2 What the evidence is, and what it is not
 
 `data/raw/` is **unedited**. It is **not complete**, and the distinction is load-bearing:
 
-- **No probe persisted a per-observation latency.** The shared `dist()` / `distribution()` helper
-  in every latency probe consumes the sample list and returns `{n, min_ms, p50_ms, p95_ms,
-  p99_ms, max_ms, stdev_ms}`. The samples are gone. No reader — including the author — can
+- **Sixteen of the seventeen probes persisted no per-observation latency.** The shared `dist()` /
+  `distribution()` helper in every latency probe written before campaign 7bis consumes the sample
+  list and returns `{n, min_ms, p50_ms, p95_ms, p99_ms, max_ms, stdev_ms}`. Those samples are
+  gone. For any latency figure produced by those sixteen, no reader — including the author — can
   recompute a percentile, bootstrap an interval, test a distributional claim, or apply a different
-  estimator, for any latency figure in this dossier.
-- **Two files are the exception.** `vector_freshness_idle.json` and
+  estimator.
+  An earlier revision of this line read *"No probe persisted a per-observation latency"*. That was
+  true when it was written and **campaign 7bis made it false the same day**: `probe_agg_7bis.py`
+  defines a `dist()` that returns the same seven keys **plus `raw_ms`**, "every timed observation,
+  in execution order", with a `raw_note` saying why. It is the only probe in the tree containing
+  `raw_ms`.
+- **Four files are the exception, two of them new.** `vector_freshness_idle.json` and
   `vector_freshness_loaded.json` retain all 60 per-cycle `insert_to_vec_visible_ms` observations
-  under `cycles[]`. They are the only re-analysable series in the artefact, and
-  `docs/STATISTICS.md` uses them.
-- Consequently "raw evidence" in this repository means **unedited derived summaries**. §5 marks
-  every claim that can be checked against them and §6 marks what can never be checked at all.
+  under `cycles[]`, and `docs/STATISTICS.md` uses them. `findings_agg7bis_hcd.json` (five `raw_ms`
+  arrays) and `findings_agg7bis_mongodb.json` (nine) retain every timed observation of the
+  aggregation re-run. Those two are why `docs/campagne7bis.fr.md` carries the first bootstrap
+  confidence intervals and the first rank test in the dossier — on both arms, which no earlier
+  comparison could support.
+- Consequently "raw evidence" in this repository means **unedited derived summaries**, with four
+  files excepted. §5 marks every claim that can be checked against them and §6 marks what can
+  never be checked at all. The exception matters to §6 in particular: what is permanently
+  uncheckable there is uncheckable for the thirty-four files that kept no observations, not for
+  the corpus as a whole.
 
 ### 1.3 Scale
 
-36 evidence files, 204 018 bytes. 16 probes. 7 campaign reports. 23 numbered measurements (M1–M8,
-M10–M23; **no M9 was ever assigned**, and the register says so rather than renumbering).
+Every number in the table below is regenerated from the tree by
+`.github/scripts/check_artifact_table.py` and checked in CI (job 9). Do not hand-edit it.
+
+<!-- BEGIN ARTIFACT FACTS — generated, do not hand-edit -->
+| Fact | Value |
+|---|---|
+| `data/raw/` JSON files | **38** |
+| their total size in bytes | **220 736** |
+| of those, carrying a `run_at_utc` | 26 |
+| carrying none | 12 |
+| `.github/evidence.sha256` entries | 38 |
+| `probes/*.py` | **17** (plus 2 `.orig` reference copies) |
+| `.github/scripts/check_*.py` | 9 |
+| `git rev-list --count HEAD` | **17**, HEAD `3350cbf` |
+| `git tag -l` | (none) |
+| tracked files | 116 |
+| untracked paths | `.github/GRADE-REPORT.md` |
+| commit window (UTC) | 2026-09-18 10:03:02 to 2026-09-18 17:08:26 |
+<!-- END ARTIFACT FACTS -->
+
+What does not derive mechanically: **eight campaign reports** — the seven in `docs/campaigns/`
+plus `docs/campagne7bis.fr.md`, the re-run of the aggregation axis, which reversed three of
+campaign 7's findings — and **22 numbered measurements**, M1–M8 and M10–M23. **No M9 was ever
+assigned**, and the register says so rather than renumbering. An earlier revision of this line
+said twenty-three, which contradicted its own enumeration: 8 + 14 = 22, and `RESULTS.md` §3 says
+the same.
 
 ### 1.4 State of the tree at assessment
 
-`git rev-list --count HEAD` = **7**; HEAD is `166225e`. **`git tag -l` is empty.** All seven
-commits fall between `2026-09-18 10:03:02` and `11:06:43 +0000` — i.e. **after every measurement
-run**, the last of which is stamped `2026-09-18T09:33:35` in `findings_agg_cqlref.json`. (One raw
-file, `findings_mongot_provenance.json`, carries `2026-09-18T10:05:00`; it is a docker-image
-provenance read, not a measurement.)
-
-`git status` shows eight untracked paths, most of them written by remediation work in flight
-during this assessment: `ARTIFACT.md` (this file), `docs/STATISTICS.md`,
+**As first assessed, at `166225e`.** Seven commits, no tags, all of them falling between
+`2026-09-18 10:03:02` and `11:06:43 +0000` — i.e. **after every measurement run**, the last of
+which is stamped `2026-09-18T09:33:35` in `findings_agg_cqlref.json`. (One raw file,
+`findings_mongot_provenance.json`, carries `2026-09-18T10:05:00`; it is a docker-image provenance
+read, not a measurement.) `git status` then showed eight untracked paths, written by remediation
+work in flight during the assessment: `ARTIFACT.md` (this file), `docs/STATISTICS.md`,
 `data/derived/inference.json`, `docs/RESEARCH-DESIGN.md`, `docs/THREATS-TO-VALIDITY.md`,
-`docs/figures/`, `CONTRIBUTING.md` and `.github/` (which now holds
-`scripts/check_evidence_manifest.py`, `scripts/check_links.py`, `scripts/check_inference.py`,
-`evidence.sha256`, issue and pull-request templates, and a 66 KB `IMPROVEMENT-PLAN.md`).
+`docs/figures/`, `CONTRIBUTING.md` and `.github/`.
 
-**Two consequences for any badge claim.**
+Two consequences were drawn from that, and **both are now discharged**:
 
-1. **Nothing above is published.** `README.md` already links `docs/STATISTICS.md`; that link
-   resolves on disk and **in no committed state of the repository**, so a reader who clones today
-   gets a dangling reference. Committing these paths is a prerequisite to §2.
-2. **One useful independent cross-check fell out of the overlap.** `.github/evidence.sha256`, a
-   manifest produced by a different session from the one that wrote §4, was compared line by line
-   against the digests computed here: **36 of 36 agree exactly.** Two independent runs of
-   `sha256sum` over `data/raw/` produce the same result, which is the first genuinely independent
-   confirmation in this repository that the evidence directory is in the state its documents
-   describe.
+1. ~~**Nothing above is published.**~~ All eight paths were committed in `ff84757` and are at
+   `origin/main`. `README.md`'s links to `docs/STATISTICS.md` resolve in a clean clone. The
+   prerequisite this section set for §2 has been met.
+2. **The independent cross-check stands, and has been re-run.** `.github/evidence.sha256`, a
+   manifest produced by a different session from the one that wrote §4, agreed line by line with
+   the digests computed here: 36 of 36 then, and **38 of 38 now** — `sha256sum -c` reports 38 OK,
+   0 failures. Two independent runs of `sha256sum` over `data/raw/` produce the same result, which
+   remains the only genuinely independent confirmation in this repository that the evidence
+   directory is in the state its documents describe.
+
+**As re-verified, at `3350cbf`.** The commit count, HEAD, tag list, tracked-file count, untracked
+paths and commit window are all in the generated table in §1.3. The material changes since
+`166225e`, each of which invalidated something this document had asserted:
+
+| Landed | What it changed here |
+|---|---|
+| `ff84757` — the remediation paths committed | discharged both consequences above; §2.1's "no committed checksum manifest" and §2.2's "no committed workflow" became false |
+| CI workflow `verify-evidence.yml` | §2.2's "no CI" became false; there are now **nine** jobs, the last two added the same day |
+| `c849781` — campaign 7bis | `data/raw/` 36 → 38 files, `probes/` 16 → 17, an eighth campaign report, and — materially for §1.2 and §6 — **the first probe that keeps its raw observations** |
+| `3350cbf` — challenge D12 annulled | added `check_probe_citations.py` and its manifest; shifted line numbers inside `probe_aggregation.py`, which this document cites |
+
+The last row is the reason §1.3's counts are now generated rather than typed: this document's own
+§5 cites `probe_aggregation.py` by line number, and a six-line docstring inserted elsewhere in the
+tree silently moved every one of them.
 
 ---
 
@@ -115,12 +169,17 @@ during this assessment: `ARTIFACT.md` (this file), `docs/STATISTICS.md`,
 This is the only badge whose absence is purely administrative, and it is the one to fix first.
 
 The badge requires artifacts **permanently available for retrieval**. What exists is a GitHub
-repository with seven commits, **no tag**, **no release**, **no committed checksum manifest**, and
-**no DOI** (`grep -rniE 'zenodo|doi|orcid' .` returns nothing outside `docs/article/`;
-`CITATION.cff` carries no `identifiers`, no `version`, no `commit`). `README.md`'s "Cite this"
-block points at a mutable URL that resolves to whatever `HEAD` happens to be. A manifest now
-exists on disk at `.github/evidence.sha256` (§1.4) but is untracked, and an uncommitted manifest
-protects nothing.
+repository (commit count and HEAD in §1.3) with **no tag**, **no release** and **no DOI**;
+`CITATION.cff` carries no `identifiers`, no `version`, no `commit`. `README.md`'s "Cite this"
+block points at a mutable URL that resolves to whatever `HEAD` happens to be.
+
+Two clauses of the original assessment have since been **discharged and are struck here rather
+than deleted**: ~~no committed checksum manifest~~ — `.github/evidence.sha256` was committed in
+`ff84757`, is at `origin/main`, holds one entry per evidence file and is re-verified by CI on every
+push; and ~~`grep -rniE 'zenodo|doi|orcid' .` returns nothing outside `docs/article/`~~ — that grep
+now matches in `README.md`, `CONTRIBUTING.md`, `METHODOLOGY.md`, `RESULTS.md` and this file, all of
+them *discussing* the missing DOI rather than carrying one. **The badge is still not claimable**:
+discussing a DOI is not minting one, and §7 is unchanged.
 
 Three consequences, stated without hedging:
 
@@ -128,10 +187,11 @@ Three consequences, stated without hedging:
 2. **A citation cannot be pinned.** "M13 = 44×" cannot be bound to a state of the repository, and
    the prose *does* change substantively: commit `bdbc5c0` rewrote figures and claims across eight
    files including `README.md` and `RESULTS.md`.
-3. **"Byte-identical to the run" is unverifiable by a reader.** Without a *published* manifest, the
-   central evidential claim of the dossier is something the reader is asked to believe — in a
-   dossier whose entire method is refusing to be believed. §4 closes this half; committing it
-   closes it in fact.
+3. ~~**"Byte-identical to the run" is unverifiable by a reader.**~~ **Closed.** The manifest is
+   published and CI re-verifies it, so a reader can check the evidence directory against a
+   committed digest without trusting the author. This was the one consequence of the three that
+   committing could close, and committing closed it. The other two need an archival deposit, which
+   GitHub cannot provide — see §7.
 
 I record a disagreement with the framing this assessment was commissioned under, which held the
 badge to be plainly claimable. It is not. The artefact's *contents* are public and substantially
@@ -161,28 +221,37 @@ The failure is on the ACM *complete* criterion, and the artefact's own register 
   compose file only. There is no compose or Dockerfile for HCD plus the Data API;
   `REPRODUCING.md` §4 declares the Data API container's environment **`[U] not recorded**` and the
   HCD image's registry prefix unrecorded. Every HCD-side measurement is therefore unexercisable.
-- **No published entry point and no CI.** There is no `Makefile` and no committed test or
-  workflow. An evaluator's first action — "run the artefact" — has no defined start in any
-  published state. Checking scripts exist on disk under `.github/scripts/` (§1.4) and are
-  untracked; until they are committed and wired to a workflow, this defect stands.
-- **8 of 16 probes will not even answer `--help`** without drivers installed, because they import
-  `astrapy` / `pymongo` at module scope: `agg_cql_arm.py`, `hcd_cql_arm.py`, `method2_trace.py`,
-  `mongot_floor.py`, `mongot_freshness.py`, `rmw_postflush.py`, `turn_latency.py`,
-  `vector_freshness_rf3.py`. The other eight answer offline, and **all 16 byte-compile** with no
-  dependency installed (`python3 -m py_compile probes/*.py`), which is what makes the scoped claim
-  below possible.
+- **No published entry point.** There is still no `Makefile`: an evaluator's first action — "run
+  the artefact" — has no single defined start. ~~and no CI … Checking scripts exist on disk under
+  `.github/scripts/` and are untracked; until they are committed and wired to a workflow, this
+  defect stands.~~ **That half is discharged.** The scripts were committed in `ff84757` and wired
+  to `.github/workflows/verify-evidence.yml`, which now runs nine jobs on every push (§1.3 counts
+  them). What an evaluator can do without a `Makefile` is run any one of them directly; what they
+  still cannot do is run "the artefact", because half the system under test is absent — the
+  blocking defect above, which no amount of CI touches.
+- **8 of 17 probes will not answer `--help`**: `agg_cql_arm.py`, `hcd_cql_arm.py`,
+  `method2_trace.py`, `mongot_floor.py`, `mongot_freshness.py`, `rmw_postflush.py`,
+  `turn_latency.py`, `vector_freshness_rf3.py`. That list was verified by running `--help` against
+  each of the seventeen, not inferred. Seven of the eight refuse because they import a driver at
+  **module scope** — and the driver is not always the one an earlier revision of this line named:
+  `agg_cql_arm.py` imports `cassandra`, not `astrapy` or `pymongo`. The eighth, `turn_latency.py`,
+  imports both drivers *inside* its functions and refuses for an unrelated reason: it has **no
+  argument parser at all**, reading `sys.argv[1]` directly, so `--help` is taken for an engine
+  name. The other **nine** answer offline, and **all 17 byte-compile** with no dependency installed
+  (`python3 -m py_compile probes/*.py`), which is what makes the scoped claim below possible.
 
 **What passes today, and it is more than most Functional-badged artefacts carry.** Four checks were
-run for this document with no network and no engine — the first three by hand against the committed
-tree, the fourth as a script against the tree as assessed in §1.4, because two of the files it reads
-(`README.md`'s ratio intervals, `data/derived/inference.json`) are newer than `HEAD`:
+run for this document with no network and no engine. When first written, the fourth had to be run
+against a working tree newer than `HEAD`, because two of the files it reads were not yet committed;
+**that caveat is gone** — every file all four checks read is committed, and all four now run in CI
+on every push:
 
 | Check | Result |
 |---|---|
-| All 36 files under `data/raw/` parse as JSON | **36/36 pass** |
+| Every file under `data/raw/` parses as JSON | **38/38 pass**, plus 208 latency-distribution invariants (`min ≤ p50 ≤ p95 ≤ p99 ≤ max`, `n ≥ 1`) — CI job 3 |
 | `probe_comparative.py --compare cmp_mongo cmp_hcd cmp_hcdcql` reproduces `comparison_v2.json` | **byte-exact apart from `run_at_utc`** |
 | `probe_comparative.py --compare cmp_mongo cmp_hcd` reproduces `comparison.json` | **byte-exact apart from `run_at_utc` *and* a top-level `VERDICT` object the recomputation does not emit** — see §8.1 |
-| Figure traceability: every number with ≥ 3 decimals in the seven English Markdown documents is reachable in the committed evidence — `.github/scripts/check_figure_traceability.py`, published and run as CI check 7 | **354 occurrences, 108 distinct values, 0 orphans** — under a rule that had to be **weakened twice** before it held, and the weakenings are the finding. (i) *Reachable* means in `data/raw/*.json` **or** in `data/derived/inference.json`, and four values are reachable only in the second: the ratio-interval endpoints `0.465`, `65.842` and `0.155`, `36.683` in `README.md`, which are **computed and were never measured** and must not be quoted as observations. (ii) A value may match *after rounding to the precision the document prints*: `0.0774` ← `0.077422` and `0.1112` ← `0.111247` (`findings_fieldbyte.json`), `0.996` ← `0.9959` (`comparison_v2.json`). Rounding widens the target a published figure is allowed to hit. **Under the rule this row previously stated** — exact, `data/raw/` only, *282 occurrences, 111 distinct, 0 orphans* — the current tree yields **7 orphans, not 0**; that wording was already false when `README.md` acquired the ratio intervals. The document list covers `data/README.md` and **excludes `ARTIFACT.md`**, so this audit cannot launder its own quotations into the count |
+| Figure traceability: every number with ≥ 3 decimals in the seven English Markdown documents is reachable in the committed evidence — `.github/scripts/check_figure_traceability.py`, published and run as CI check 7 | **377 occurrences, 113 distinct values, 0 orphans** — under a rule that had to be **weakened twice** before it held, and the weakenings are the finding. (i) *Reachable* means in `data/raw/*.json` **or** in `data/derived/inference.json`; eight occurrences reach only the second exactly, and six distinct values only after rounding there — the `README.md` ratio-interval endpoints `0.465`, `65.842`, `0.155`, `36.683`, plus `0.966` and `1.421`, the interval of challenge D12. All six are **computed and were never measured** and must not be quoted as observations. (ii) A value may match *after rounding to the precision the document prints*: nine distinct values do, three of them against `data/raw/` (`0.0774` ← `0.077422`, `0.1112` ← `0.111247` in `findings_fieldbyte.json`; `0.996` ← `0.9959` in `comparison_v2.json`) and six against the derived layer. Rounding widens the target a published figure is allowed to hit, and the script names every such match individually rather than folding it into the total. **Under the exact-`data/raw/`-only rule this row once stated**, the current tree yields **10 orphans, not 0**. The document list covers `data/README.md` and **excludes `ARTIFACT.md`**, so this audit cannot launder its own quotations into the count. The three counts in this cell drift whenever a document acquires a figure; they are re-derived by CI job 7 on every push, which is the only reason they are quotable here at all |
 
 **A scoped claim is therefore defensible and should be made explicitly:** *Functional over the
 offline-derivation subset* — the raw evidence, the merge/comparison code path, and the
@@ -242,7 +311,9 @@ which is why supplying more artefacts cannot remove them:
    database* (`disk_state.json → evidence.page_cache_note`).
 4. **The search-freshness half used a different MongoDB from the mutation half** — a single-node
    `atlas-local` container on which `w:majority` is trivially satisfied (audit finding I8).
-5. **No per-observation data survives** (§1.2), so even a bit-perfect re-run could not be compared
+5. **No per-observation data survives for thirty-four of the thirty-eight evidence files** (§1.2) —
+   an earlier revision said none survived, which campaign 7bis made false — so for those, even a
+   bit-perfect re-run could not be compared
    to the original by any statistical test. There is nothing to test against.
 
 Reasons 1–4 say that the published magnitudes are properties of one unrepeatable
@@ -271,29 +342,35 @@ re-runner should be able to observe, with no magnitude in it. §5 supplies one.
 | **pymongo** | — | **UNPINNED** | `env/requirements.txt` declares the omission deliberate: no file records the version. See §3.2 defect D-ENV-1. |
 | **MongoDB (mutation, read, search, aggregation)** | `mongo:8.0.32`, 3-member replica set `rs0`, each `--memory 8g --cpus 4`, network `cmpnet` | **tag only** | `env/docker-compose.mongodb-rs.yml`; `cmp_mongo.json → conditions.TO_BE_COMPLETED_BY_HAND`. See D-ENV-2. |
 | **MongoDB / mongot (search freshness only)** | `mongodb/mongodb-atlas-local`, **digest `sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1`**; mongod **8.3.11**; mongot **1.75.1, `localDev` edition**; base `registry.access.redhat.com/ubi9-minimal`; image created `2026-09-17T09:15:42Z`; `vcs_ref 28eadd3b1a5a834acaab9dbfe06d7a5df73b64ee` | **digest — the only digest-pinned image in the artefact** | `data/raw/findings_mongot_provenance.json` |
-| **HCD** | `hcd:2.0.6-ubi`, **registry prefix not recorded**; running release `5.0.7.0-ea50e91ba01f` (`nodetool version`, `system.local`) | **incomplete tag** | `REPRODUCING.md` §4, `docs/campaigns/01-verification.fr.md`. See D-ENV-3. |
+| **HCD** | `cp.icr.io/cp/cpd/ibm-datastax-hcd/hcd:2.0.6-ubi`; running release `5.0.7.0-ea50e91ba01f` (`nodetool version`, `system.local`) | **fully qualified** | `data/raw/findings.json` (`conditions.TO_BE_COMPLETED_BY_HAND.product_and_version`) records the full reference; `REPRODUCING.md` §4 and `docs/campaigns/01-verification.fr.md` print the short tag. See D-ENV-3. |
 | **Data API** | `stargateio/data-api:v1.0.33`, 2 GiB memory limit, no CPU limit, co-located with the nodes | **tag only**; **container environment `[U] not recorded**` | `REPRODUCING.md` §4. See D-ENV-4. |
 | **Durability, HCD** | `commitlog_sync periodic`, 10 000 ms, `trickle_fsync true`; writes at `LOCAL_QUORUM` + `LOCAL_SERIAL` | value | `docs/campaigns/01-verification.fr.md` |
-| **Durability, MongoDB** | `WriteConcern(w="majority", j=True)`, set per collection in probe code, **not** in the compose file | value | `probes/probe_comparative.py` and five others |
+| **Durability, MongoDB** | `WriteConcern(w="majority", j=True)`, set per collection in probe code, **not** in the compose file | value | seven probes construct it: `probe_comparative.py`, `probe_aggregation.py`, `probe_agg_7bis.py`, `probe_read_search.py`, `mongot_floor.py`, `mongot_freshness.py`, `turn_latency.py` |
 | **Ports** | Data API 8181 (campaign 1), 8182 (campaigns 3–4); `atlas-local` published on 27020; CQL 9042 default, `agg_cql_arm.py` defaults 9142 | value | `REPRODUCING.md` §2, `findings.json`, `findings_tier.json` |
-| **JDK / heap** | heap only: 2 GiB (campaign 1), 4 GiB (campaigns 2–7). **Vendor and version not recorded.** | **absent** | `findings.json:conditions`. See D-ENV-1. |
+| **JDK / heap** | heap only. `findings.json:conditions` records `heap 2 GiB (Xmx)` for campaign 1 and **nothing for the later campaigns**; the 4 GiB figure quoted in an earlier revision of this row is not in that file and its source was not identified on re-verification, so it is withdrawn here rather than carried. **Vendor and version not recorded.** | **absent** | `findings.json:conditions`. See D-ENV-1. |
 | **Docker engine** | **not recorded** | **absent** | — |
 | **mongod `buildInfo`** | **not recorded** | **absent** | — |
 
 ### 3.2 Environment defects
 
-- **D-ENV-1 — three components have no recorded identity.** pymongo, the JDK, the Docker engine
-  version and mongod `buildInfo`. The repository is honest about pymongo and silent about the
-  other three. *Remedy: `env/environment.md` listing each fact with its source and `[U] not
+- **D-ENV-1 — four components have no recorded identity.** pymongo, the JDK, the Docker engine
+  version and mongod `buildInfo` — the sentence enumerates four, and an earlier revision counted
+  them as three. The repository is honest about pymongo and silent about the other three. *Remedy: `env/environment.md` listing each fact with its source and `[U] not
   recorded` where it is absent — do not guess — plus a `probes/collect_env.py` that a re-runner
   executes first and commits beside their results.*
 - **D-ENV-2 — `mongo:8.0.32` is a drifting tag.** A tag is a mutable pointer. Two evaluators
   pulling it on different days can get different images. *Remedy: record the RepoDigest at next
   pull and pin `mongo@sha256:…` in the compose file. The campaign record does not contain it, so
   it cannot be recovered retroactively — mark it `[U]` rather than inventing one.*
-- **D-ENV-3 — the HCD image has no registry prefix.** `hcd:2.0.6-ubi` is not a resolvable
-  reference. The running build is pinned by release string, which identifies the binary but does
-  not let anyone obtain it.
+- **D-ENV-3 — the HCD image's registry prefix is recorded in the evidence and dropped everywhere
+  a reader looks.** An earlier revision of this entry said the prefix was *not recorded*. It is:
+  `data/raw/findings.json` carries
+  `cp.icr.io/cp/cpd/ibm-datastax-hcd/hcd:2.0.6-ubi` in full. What the reader-facing documents print
+  is the bare `hcd:2.0.6-ubi`, which is not a resolvable reference. The defect is therefore a
+  transcription loss, not a measurement gap, and it is cheaper to fix than the original entry
+  implied: *remedy — print the fully qualified reference in `REPRODUCING.md` §4 and in the pinning
+  table above, both of which now do.* The image is behind IBM entitlement either way, so a reader
+  without a licence still cannot obtain it; that part of the original entry stands.
 - **D-ENV-4 — `REPRODUCING.md` §3.4 instructs an unpinned pull.**
   `docker run -d --name atlas-local -p 27020:27017 mongodb/mongodb-atlas-local` resolves to
   `:latest`, which will **not** be the 8.3.11 / mongot 1.75.1 `localDev` build that produced the
@@ -341,57 +418,58 @@ sha256sum data/raw/*.json | tee data/MANIFEST.sha256   # mint
 sha256sum -c data/MANIFEST.sha256                       # verify
 ```
 
-36 files, **204 018 bytes** total (the 280 KB figure sometimes quoted is `du`'s on-disk block
-allocation, not the byte count).
+File count and total size are in the generated table in §1.3, not typed here — the figure that was
+typed here went stale within hours. (A ~280 KB figure sometimes quoted is `du`'s on-disk block
+allocation, not the byte count.)
 
 <!-- BEGIN EVIDENCE MANIFEST — generated, do not hand-edit -->
-
 | File | Bytes | SHA-256 | `run_at_utc` | Producer |
 |---|---:|---|---|---|
-| `cmp_hcd.json` | 6180 | `3f65187df1f77830e763bef589953d3ce1d45d1b9d362601228afaacebfe12fc` | `2026-09-18T06:14:06.821001Z` | `probe_comparative.py` |
+| `cmp_hcd.json` | 6180 | `3f65187df1f77830e763bef589953d3ce1d45d1b9d362601228afaacebfe12fc` | `2026-09-18T06:14:06.821001+00:00` | `probe_comparative.py` |
 | `cmp_hcdcql.json` | 5417 | `af69cc2157458c5fd289c167aeec03d1806306cc425fa0d7cc52e19c81533638` | — *not stamped* | `hcd_cql_arm.py` |
-| `cmp_mongo.json` | 10863 | `f9881df2b3658a22f7b2e084d59ee332259da37c2771cf35d5bc4492d4ef38ff` | `2026-09-18T06:13:39.479032Z` | `probe_comparative.py` |
-| `comparison.json` | 3122 | `293711d254cef8da99da361d6808cf1b88b2c452f85770d78443c54df9eba722` | `2026-09-18T06:14:12.531755Z` | `probe_comparative.py` (merge) **+ a hand-added `VERDICT` block — see §8.1** |
-| `comparison_v2.json` | 2626 | `08ba8fb29a794bbcc79148d7f05c603457048ccfdda40fa195e121becddc57ff` | `2026-09-18T06:31:40.491106Z` | `probe_comparative.py` (merge) |
+| `cmp_mongo.json` | 10863 | `f9881df2b3658a22f7b2e084d59ee332259da37c2771cf35d5bc4492d4ef38ff` | `2026-09-18T06:13:39.479032+00:00` | `probe_comparative.py` |
+| `comparison.json` | 3122 | `293711d254cef8da99da361d6808cf1b88b2c452f85770d78443c54df9eba722` | `2026-09-18T06:14:12.531755+00:00` | `probe_comparative.py` (merge) **+ a hand-added `VERDICT` block — see §8.1** |
+| `comparison_v2.json` | 2626 | `08ba8fb29a794bbcc79148d7f05c603457048ccfdda40fa195e121becddc57ff` | `2026-09-18T06:31:40.491106+00:00` | `probe_comparative.py` (merge) |
 | `control_read_A_run1.json` | 1835 | `17656ed7580083830a6552c8c0356dc31c810a18769c1d8951c941a0061ecc47` | — *not stamped* | **none in repo** (`probes/README.md` gap 3) |
 | `control_read_A_run2.json` | 1829 | `499051bafd3acce217af0f3ad9e7150dcae983f315f1c0530eed66a907d2d81e` | — *not stamped* | **none in repo** (`probes/README.md` gap 3) |
-| `disk_state.json` | 1710 | `adb23b44a840c6fcb5dbba6bded9072e74e71b70e162e146587c8f0f2602c3d1` | `2026-09-17T21:29:41.731243Z` | `disk_regime_driver.py` |
-| `disk_state_c4.json` | 1710 | `d254419eeacd2e605b226c9628462d9e157bedc935c1e1093d225571fab5b904` | `2026-09-17T22:31:02.926107Z` | `disk_regime_driver.py` |
-| `findings.json` | 32926 | `b1d245c8f0eb5964d63e7f3b967ffee5a498d05e24d4a6513e7758f0f3788677` | `2026-09-17T14:59:03.702466Z` | `verify_storage_claims.py` |
-| `findings_agg_cqlref.json` | 2114 | `ea7d1b8dd04c3b0de56f1d95736295341d5016c38350b3db5e19c5aa46295813` | `2026-09-18T09:33:35.542303Z` | `agg_cql_arm.py` |
-| `findings_agg_hcd.json` | 3071 | `d13fb3b823d5bdaf7fb8a4985bfe7dbd870efbf5ed955e8c09e3ee3af7dc1fd2` | `2026-09-18T09:29:31.556897Z` | `probe_aggregation.py` |
-| `findings_agg_mongodb.json` | 3121 | `e640bfc9c8fa5776d8cee559e50343a7b35d4256ec4bb930df57910bb47200de` | `2026-09-18T09:09:39.086556Z` | `probe_aggregation.py` |
-| `findings_disk_rf3.json` | 4280 | `55609dc8aeb71a25f924911eceefa3dfecaa873eb4215107d6c6d2c8d476e87e` | `2026-09-17T21:33:23.725151Z` | `verify_storage_claims.py` + `probe3_variant_b.py` (**gap 1, unpublished**) |
-| `findings_fieldbyte.json` | 17769 | `c85e78495270132c749475346d486c69987016c5f15597aac56b631d9058290e` | `2026-09-17T21:36:25.094922Z` | `probe_field_vs_byte.py` |
+| `disk_state.json` | 1710 | `adb23b44a840c6fcb5dbba6bded9072e74e71b70e162e146587c8f0f2602c3d1` | `2026-09-17T21:29:41.731243+00:00` | `disk_regime_driver.py` |
+| `disk_state_c4.json` | 1710 | `d254419eeacd2e605b226c9628462d9e157bedc935c1e1093d225571fab5b904` | `2026-09-17T22:31:02.926107+00:00` | `disk_regime_driver.py` |
+| `findings.json` | 32926 | `b1d245c8f0eb5964d63e7f3b967ffee5a498d05e24d4a6513e7758f0f3788677` | `2026-09-17T14:59:03.702466+00:00` | `verify_storage_claims.py` |
+| `findings_agg7bis_hcd.json` | 6784 | `5404bfdedb0640134bdfba30b5c6cf6bbdd93a8d647992fa7a1d45144baf63e4` | `2026-09-18T14:01:30.742167+00:00` | `probe_agg_7bis.py` |
+| `findings_agg7bis_mongodb.json` | 9934 | `8df19b8e34331aefed866791fad38820cb7e461919168fceb6c626f500cb02dd` | `2026-09-18T13:09:59.643933+00:00` | `probe_agg_7bis.py` |
+| `findings_agg_cqlref.json` | 2114 | `ea7d1b8dd04c3b0de56f1d95736295341d5016c38350b3db5e19c5aa46295813` | `2026-09-18T09:33:35.542303+00:00` | `agg_cql_arm.py` |
+| `findings_agg_hcd.json` | 3071 | `d13fb3b823d5bdaf7fb8a4985bfe7dbd870efbf5ed955e8c09e3ee3af7dc1fd2` | `2026-09-18T09:29:31.556897+00:00` | `probe_aggregation.py` |
+| `findings_agg_mongodb.json` | 3121 | `e640bfc9c8fa5776d8cee559e50343a7b35d4256ec4bb930df57910bb47200de` | `2026-09-18T09:09:39.086556+00:00` | `probe_aggregation.py` |
+| `findings_disk_rf3.json` | 4280 | `55609dc8aeb71a25f924911eceefa3dfecaa873eb4215107d6c6d2c8d476e87e` | `2026-09-17T21:33:23.725151+00:00` | `verify_storage_claims.py` + `probe3_variant_b.py` (**gap 1, unpublished**) |
+| `findings_fieldbyte.json` | 17769 | `c85e78495270132c749475346d486c69987016c5f15597aac56b631d9058290e` | `2026-09-17T21:36:25.094922+00:00` | `probe_field_vs_byte.py` |
 | `findings_hcd_vec_freshness.json` | 511 | `100e6531006fae14c14e48938a346aec8d5570a06c27b11e6e17e408354a64d4` | — *not stamped* | **none in repo** (`probes/README.md` gap 2) |
-| `findings_mongot_floor.json` | 686 | `b4d6eb235d377c75cadbef7954316c3c5e5f60ae5a5640507f3ab6dbe716b940` | `2026-09-18T08:05:09.148201Z` | `mongot_floor.py` |
-| `findings_mongot_freshness.json` | 1190 | `279dc7a7a2a34c0b450cd698a0426ff09859e39d7fbdb0a86d8f03a1358150a7` | `2026-09-18T07:45:19.338661Z` | `mongot_freshness.py` |
-| `findings_mongot_provenance.json` | 3280 | `3c70da5adaa231585974cb8c8c3360319733235ad47ab9fee15881c315be6ae4` | `2026-09-18T10:05:00Z` | none — docker image label + on-image file read |
-| `findings_rf3.json` | 10028 | `891df4c8121cdd2c056a7f3b3f232360768014fe3d41d6e61cdf11a01d208e50` | `2026-09-17T16:21:37.277964Z` | `verify_storage_claims.py` *(self-declared; the register names `verify_storage_claims_rf3.py` — see §8.3)* |
-| `findings_rf3_rate50.json` | 9612 | `e686dadda102a1f84a40128a1fc9327aed39608fda9a6c40570f2178b1ccd1d7` | `2026-09-17T16:21:37.277964Z` | `verify_storage_claims.py` *(as above)* |
-| `findings_rf3_rate50_rep2.json` | 9617 | `4d9dc780f688eeb2073d9d764e9a2f7d95f49470d35311a7b0bf8713e4dd723c` | `2026-09-17T16:26:59.779266Z` | `verify_storage_claims.py` *(as above)* |
-| `findings_rs_hcd.json` | 1698 | `1341ba0fd8d8e92c040163bd7c9ab6a94ff8043681c641cce4b7899c60054e3c` | `2026-09-18T07:35:40.370231Z` | `probe_read_search.py` |
-| `findings_rs_mongo.json` | 2557 | `5bd795ecec7398c822cc49c76091dc36f8fbaece2f4dfa6c82441f315d89ad08` | `2026-09-18T07:17:06.155963Z` | `probe_read_search.py` |
-| `findings_tier.json` | 15126 | `1412549cf0d256c1953473cc61258c668e356ebbf6a92cb169ee50e86a7200f7` | `2026-09-17T22:34:06.905113Z` | `probe_tier_vs_storage.py` |
+| `findings_mongot_floor.json` | 686 | `b4d6eb235d377c75cadbef7954316c3c5e5f60ae5a5640507f3ab6dbe716b940` | `2026-09-18T08:05:09.148201+00:00` | `mongot_floor.py` |
+| `findings_mongot_freshness.json` | 1190 | `279dc7a7a2a34c0b450cd698a0426ff09859e39d7fbdb0a86d8f03a1358150a7` | `2026-09-18T07:45:19.338661+00:00` | `mongot_freshness.py` |
+| `findings_mongot_provenance.json` | 3280 | `3c70da5adaa231585974cb8c8c3360319733235ad47ab9fee15881c315be6ae4` | `2026-09-18T10:05:00+00:00` | none — docker image label + on-image file read |
+| `findings_rf3.json` | 10028 | `891df4c8121cdd2c056a7f3b3f232360768014fe3d41d6e61cdf11a01d208e50` | `2026-09-17T16:21:37.277964+00:00` | `verify_storage_claims.py` *(self-declared; the register names `verify_storage_claims_rf3.py` — see §8.3)* |
+| `findings_rf3_rate50.json` | 9612 | `e686dadda102a1f84a40128a1fc9327aed39608fda9a6c40570f2178b1ccd1d7` | `2026-09-17T16:21:37.277964+00:00` | `verify_storage_claims.py` *(as above)* |
+| `findings_rf3_rate50_rep2.json` | 9617 | `4d9dc780f688eeb2073d9d764e9a2f7d95f49470d35311a7b0bf8713e4dd723c` | `2026-09-17T16:26:59.779266+00:00` | `verify_storage_claims.py` *(as above)* |
+| `findings_rs_hcd.json` | 1698 | `1341ba0fd8d8e92c040163bd7c9ab6a94ff8043681c641cce4b7899c60054e3c` | `2026-09-18T07:35:40.370231+00:00` | `probe_read_search.py` |
+| `findings_rs_mongo.json` | 2557 | `5bd795ecec7398c822cc49c76091dc36f8fbaece2f4dfa6c82441f315d89ad08` | `2026-09-18T07:17:06.155963+00:00` | `probe_read_search.py` |
+| `findings_tier.json` | 15126 | `1412549cf0d256c1953473cc61258c668e356ebbf6a92cb169ee50e86a7200f7` | `2026-09-17T22:34:06.905113+00:00` | `probe_tier_vs_storage.py` |
 | `findings_tier_method2.json` | 1621 | `3526a54cdb0625dc53b67a4f823d5e11700ffdda7ead23cc0cebe265543afe0d` | — *not stamped* | `method2_trace.py` |
 | `findings_turn_hcd.json` | 1111 | `6e77f16140f9f82de8f485945fcc0430b177cab043cac6bdc458b160298e755a` | — *not stamped* | `turn_latency.py` |
 | `findings_turn_mongodb.json` | 1126 | `210b83fc92ed3ba23c2cf9c6e2865d999f9e62525604416629c155675b7678bc` | — *not stamped* | `turn_latency.py` |
-| `findings_vector_rf3.json` | 3621 | `15deefc117d93227cae1932252bd30a5dcf0718211443429e072a8815e44f69d` | `2026-09-17T16:5x (p16 ring)` — **hand-typed, imprecise** | `vector_freshness_rf3.py` *(by register, not by file)* |
+| `findings_vector_rf3.json` | 3621 | `15deefc117d93227cae1932252bd30a5dcf0718211443429e072a8815e44f69d` | `2026-09-17T16:5x (p16 ring)` | `vector_freshness_rf3.py` *(by register, not by file)* |
 | `probe4_rf3_supplementary.json` | 11906 | `0b9a90028278355e4857367b68dce7356d4625586749aff40cb48b1ade4fa48e` | — *not stamped* | `verify_storage_claims_rf3.py` run *(not named in the file)* |
 | `rmw_postflush.json` | 1269 | `d063f432b4f2911df91f0e21491308f7fe1af8367b968f338fb8e0be47b27c73` | — *not stamped* | `rmw_postflush.py` |
-| `smoke_hcd.json` | 3703 | `1552c1fa8a4c2df3a82b6d15c5bf0f1a023fa81c91b6d8420fa713bac41c6cab` | `2026-09-18T06:13:22.002920Z` | `probe_comparative.py` |
-| `smoke_mongo.json` | 5938 | `304f06f13443d8843389eff7043c01aa5ab41876e41bfe00f702e32b3221a529` | `2026-09-18T06:12:46.794036Z` | `probe_comparative.py` |
+| `smoke_hcd.json` | 3703 | `1552c1fa8a4c2df3a82b6d15c5bf0f1a023fa81c91b6d8420fa713bac41c6cab` | `2026-09-18T06:13:22.002920+00:00` | `probe_comparative.py` |
+| `smoke_mongo.json` | 5938 | `304f06f13443d8843389eff7043c01aa5ab41876e41bfe00f702e32b3221a529` | `2026-09-18T06:12:46.794036+00:00` | `probe_comparative.py` |
 | `tier_comparison.json` | 1031 | `6ff56c6193574aeb483d18b4108a03cc84a0b06225f7c020163b64b4cef88ed1` | — *not stamped* | **none in repo** (`probes/README.md` gap 4) |
 | `vector_freshness_idle.json` | 9909 | `53e89397ea3b99506ae1190d485fde80cd54373c54f3ab34ecec53769f9655a1` | — *not stamped* | `vector_freshness_rf3.py` *(by register, not by file)* |
 | `vector_freshness_loaded.json` | 9905 | `23a0b40bc3a30d9e5713b8003b962961c922989b54955865b25387107d3d98d6` | — *not stamped* | `vector_freshness_rf3.py` *(by register, not by file)* |
-
 <!-- END EVIDENCE MANIFEST -->
 
 ### 4.1 What the manifest exposes
 
 Counting from the table, not from prose:
 
-- **12 of 36 files carry no `run_at_utc`**, and none of them carries any alternative run
+- **12 of 38 files carry no `run_at_utc`**, and none of them carries any alternative run
   timestamp under another key (verified by a recursive key scan). Two of them —
   `rmw_postflush.json` (M15, the measurement that demoted the dossier's own flagship coefficient)
   and the two `findings_turn_*.json` (M19, which bounds HCD's only decisive win) — are **headline
@@ -400,11 +478,12 @@ Counting from the table, not from prose:
   instrument provenance.
 - **1 further file carries a hand-typed, incomplete stamp**: `findings_vector_rf3.json`,
   `"2026-09-17T16:5x (p16 ring)"`.
-- **23 of 36 carry a machine-written stamp.**
-- **`README.md` line 61 and `DISCLAIMER.md` are therefore both wrong**: `run_at_utc` is *not*
-  "stamped in every raw file". `data/README.md` states the true position correctly, at line 112 —
-  i.e. the correct statement is in the file nobody reads first and the false one is in the two
-  files everybody reads first. See §8.2.
+- **25 of 38 carry a machine-written stamp.** The twelve unstamped files are unchanged since the first assessment; the two files campaign 7bis added both carry machine-written stamps.
+- **`DISCLAIMER.md` line 18 is still wrong**: it says `run_at_utc` covers "every file under
+  `data/raw/`". It does not. `README.md` has since been corrected — the claim moved to line 106 and
+  now names a count rather than asserting universality — so half of the defect recorded in §8.2 is
+  closed and half stands. `data/README.md` states the true position and names all twelve
+  exceptions. See §8.2.
 - **4 raw files have no producing script in the repository** (`probes/README.md` gaps 2–4):
   `control_read_A_run1.json`, `control_read_A_run2.json`, `findings_hcd_vec_freshness.json`,
   `tier_comparison.json`. **1 further file was produced by no script at all**:
@@ -429,7 +508,7 @@ Prerequisite: `cd` to the repository root. Nothing here requires a network.
 | # | Claim | Command | Passes when |
 |---|---|---|---|
 | **V0** | The evidence is unaltered since this document was written | `sha256sum -c data/MANIFEST.sha256` | every line reports `OK` (mint the manifest from §4 first) |
-| **V1** | All evidence is well-formed | `python3 -c "import json,glob;[json.load(open(f)) for f in glob.glob('data/raw/*.json')];print(len(glob.glob('data/raw/*.json')))"` | prints `36`, no exception |
+| **V1** | All evidence is well-formed | `python3 -c "import json,glob;[json.load(open(f)) for f in glob.glob('data/raw/*.json')];print(len(glob.glob('data/raw/*.json')))"` | prints `38`, no exception |
 | **V2** | The published three-arm merge is the published code's output | `python3 probes/probe_comparative.py --compare data/raw/cmp_mongo.json data/raw/cmp_hcd.json data/raw/cmp_hcdcql.json --out /tmp/v2.json` then diff against `data/raw/comparison_v2.json` | identical apart from `run_at_utc` |
 | **V3** | `comparison.json` carries content no probe emits | same, with `cmp_mongo.json cmp_hcd.json` only | identical apart from `run_at_utc` **and** the top-level `VERDICT` key, which the recomputation does not produce — §8.1 |
 | **V4** | **M1** — the shredded row is 12 physical columns with 9 automatic SAI on a collection that declared nothing | `python3 -c "import json;e=json.load(open('data/raw/findings.json'))['findings'][0]['evidence'];print(e['column_count'],e['index_count'])"` | prints `12 9` |
@@ -438,9 +517,9 @@ Prerequisite: `cd` to the repository root. Nothing here requires a network.
 | **V7** | **M15** — the flagship per-byte coefficient is a *regime* property spanning ×7.50 / ×5.94 / ×1.52 on the same system | `python3 -c "import json;d=json.load(open('data/raw/rmw_postflush.json'));print(d['p50_growth_factor'],d['comparison'])"` | prints `1.52` and the three-way comparison object |
 | **V8** | **M19** — MongoDB's search miss rate falls to 0/30 at τ ≥ 1000 ms; HCD is 0/30 at every τ | `python3 -c "import json;[print(e,{k:v['miss'] for k,v in json.load(open(f'data/raw/findings_turn_{e}.json'))['miss_rate_by_tau_ms'].items()}) for e in ('hcd','mongodb')]"` | HCD all zeros; MongoDB `30,28,25,15,10,0,0,0,0` |
 | **V9** | **M21/M22** — HCD's Data API refuses exact count above 1000 documents, and `estimatedDocumentCount()` returns **0** against a true 200 000 | `python3 -c "import json;c=json.load(open('data/raw/findings_agg_hcd.json'))['result']['counts'];print(c['count_all_error'][:40],c['estimated'],c['count_all_correct'])"` | prints the `TooManyDocumentsToCountException`, `0`, `False` |
-| **V10** | **M20's evidence is a string literal, not a captured response** | `grep -n 'structural' probes/probe_aggregation.py` then `grep -rn 'aggregate(' probes/*.py` | the `structural` field at line 196 is a fixed string emitted unconditionally, and the only `aggregate(` call in the whole of `probes/` is the pymongo `$group` at `probe_aggregation.py:109`, **against MongoDB** — no probe ever issues `aggregate`, `$group` or `distinct` against HCD. §8.4 |
+| **V10** | **M20's evidence is a string literal, not a captured response** | `grep -n 'structural' probes/probe_aggregation.py` then `grep -rn 'aggregate(' probes/*.py` | the `structural` field at line 196 is a fixed string emitted unconditionally, and every `aggregate(` call in `probes/` targets **MongoDB**: the pymongo `$group` at `probe_aggregation.py:109`, the same in `probe_agg_7bis.py`'s `run_mongo`, and the `$search` pipelines in `mongot_floor.py`, `mongot_freshness.py` and `turn_latency.py`. An earlier revision of this cell said *the only* call, which stopped being true when campaign 7bis landed; the conclusion is untouched — **no probe ever issues `aggregate`, `$group` or `distinct` against HCD**, which is what V10 exists to establish. §8.4 |
 | **V11** | Every cross-engine slope, r² and ratio is fitted on **pass 1 only** | `grep -n 'pass1' probes/probe_comparative.py` | line 255 hard-codes `k = f"{sz.label}\|pass1"`; pass-2 points sit unused in `cmp_mongo.json` / `cmp_hcd.json` / `cmp_hcdcql.json` — §8.5 |
-| **V12** | Figure traceability: every figure in the seven documents is reachable in `data/raw/` or `data/derived/inference.json`, and every rounded or derived-only match is named in the output | `python .github/scripts/check_figure_traceability.py` — published, runnable offline, and CI check 7. Its document list is fixed in the file and excludes `ARTIFACT.md` | `354 occurrences, 108 distinct values, 0 orphan values`; **7 of the 108 match only after rounding, and 4 of those 7 only in `data/derived/inference.json`** — §2.2. Under the exact-`data/raw/`-only rule this row previously asserted, the same tree gives 7 orphans |
+| **V12** | Figure traceability: every figure in the seven documents is reachable in `data/raw/` or `data/derived/inference.json`, and every rounded or derived-only match is named in the output | `python .github/scripts/check_figure_traceability.py` — published, runnable offline, and CI check 7. Its document list is fixed in the file and excludes `ARTIFACT.md` | `377 occurrences, 113 distinct values, 0 orphan values`; **9 of the 113 match only after rounding, and 6 of those 9 only in `data/derived/inference.json`** — §2.2. Under the exact-`data/raw/`-only rule this row once asserted, the same tree gives 10 orphans. These three counts move whenever a document acquires a figure, so read them from the script's output rather than from this cell; CI job 7 re-derives them on every push |
 | **V13** | The declared harness patches touch no size, threshold, repetition count or verdict rule | `diff probes/verify_storage_claims.py.orig probes/verify_storage_claims.py` | only the two declared mechanical fixes. **This check is meaningful only for this one probe**: `probe_tier_vs_storage.py.orig` was reconstructed by reverting the patch it is used to show (mtime 10:03 > 09:35), and no `.orig` exists for `verify_storage_claims_rf3.py` or `disk_regime_driver.py` |
 | **V14** | The mongot reserve is on the record | `python3 -c "import json;print(json.load(open('data/raw/findings_mongot_provenance.json'))['versions'])"` | `mongot_version 1.75.1`, `mongot_edition localDev`, `mongod_version 8.3.11` |
 
@@ -471,7 +550,8 @@ Recorded here so that no future badge claim overreaches it.
 
 1. **No confidence interval, significance test, bootstrap, rank test, autocorrelation check,
    stationarity check, distributional-overlap measure or alternative percentile estimator is ever
-   recoverable** for any latency figure in this dossier, with the sole exception of the two
+   recoverable** for any latency figure produced by the sixteen probes that discard their samples,
+   with four files excepted — the two
    vector-freshness files identified in §1.2. The per-observation samples were discarded at write
    time by the probes' shared summarising helper. At n = 30 a distribution-free 95.7 % median interval requires x₍₁₀₎ and
    x₍₂₁₎; neither is stored. This is permanent.
@@ -481,23 +561,42 @@ Recorded here so that no future badge claim overreaches it.
    carry this caveat only for the single n = 3 aggregation arm; it applies to the whole corpus.
 3. **`stdev_ms` is the population standard deviation about a mean the dossier declines to
    publish.** `data/README.md` calls it "sample standard deviation" and `METHODOLOGY.md` calls it
-   population; the implementation is `statistics.pstdev` in **all twelve probes that emit a
+   population; the implementation is `statistics.pstdev` in **all thirteen probes that emit a
    distribution** (`grep -c pstdev probes/*.py`). The two documents contradict each other and
    `METHODOLOGY.md` is the correct one.
 4. **Pre-registration is testimonial.** `METHODOLOGY.md` asserts the protocol was fixed before the
-   numbers. The git history is entirely after the last measurement run stamp (§1.4), and **all 16
-   probe files carry the same mtime to the second — `2026-09-18 09:35:57`** — a single post-hoc
-   import, so file times carry no ordering information either. The repository itself accepts mtime
+   numbers. The git history is entirely after the last measurement run stamp (§1.4), and **fourteen of the
+   seventeen probe files carry the same mtime to the second — `2026-09-18 09:35:57`** — a single
+   post-hoc import, so file times carry no ordering information either. The three exceptions carry
+   later times (`probe_agg_7bis.py`, and `agg_cql_arm.py` and `probe_aggregation.py` from the
+   docstring edits of 18 September) and add nothing: a file touched *after* the measurements cannot
+   evidence a protocol fixed *before* them. When first written this line said all sixteen; the
+   count moved and the argument did not. The repository itself accepts mtime
    as evidence when it uses it to discredit `probe_tier_vs_storage.py.orig`; the same instrument
-   applied to this claim returns nothing. Only two raw files echo a verdict rule back from the code at run time
-   (`findings.json`, `findings_fieldbyte.json`).
+   applied to this claim returns nothing. **Six** raw files echo a pre-registered *rule* back from the code at run time — `findings.json`
+   (`rule`, `read_control_pre_registered_rule`), `findings_fieldbyte.json` (`verdict_rule`),
+   `findings_disk_rf3.json` (`verdict_by_control_rule`), `findings_rf3.json`
+   (`verdict_by_harness_rule`, `verdict_latency_by_control_rule`) and both campaign-7bis files
+   (`verdict_rules_preregistered`) — and twelve carry a verdict key of some kind. An earlier
+   revision of this line said *only two*, which understated the repository's own position; the
+   correction runs against this document's pessimism and is recorded for that reason. What does not
+   change is that a rule written into the output at run time evidences the rule, not the moment it
+   was fixed.
 5. **"Each probe carried its decision rule in its own source before it ran" is false as a
-   generalisation.** Counting by `grep -ciE "verdict|threshold|SUPPORTED|INCONCLUSIVE"`, **six of
-   sixteen** probes carry a verdict or threshold construct — `verify_storage_claims.py`,
-   `verify_storage_claims_rf3.py`, `probe_field_vs_byte.py`, `probe_tier_vs_storage.py`,
-   `disk_regime_driver.py`, `vector_freshness_rf3.py`. One more, `mongot_floor.py`, carries a
-   classification heuristic that the dossier's own meta-challenge D5 already flags as the author's
-   judgement rather than a test. **Nine carry none**, and they include every instrument that
+   generalisation.** Counting by `grep -ciE "verdict|threshold|SUPPORTED|INCONCLUSIVE"`, **nine of
+   seventeen** probe files now return a non-zero count, but **the grep over-counts by one and the
+   over-count is instructive**: `agg_cql_arm.py` matches only because a docstring added on
+   18 September quotes an engine error message containing the word *supported*
+   (`"Group by is currently only supported on the columns of the PRIMARY KEY"`), and the pattern is
+   case-insensitive. That is prose, not a construct. **Eight carry a real one** —
+   `verify_storage_claims.py`, `verify_storage_claims_rf3.py`, `probe_field_vs_byte.py`,
+   `probe_tier_vs_storage.py`, `disk_regime_driver.py`, `vector_freshness_rf3.py`, and
+   `probe_agg_7bis.py`, which carries the strongest in the corpus: a block headed
+   *PRE-REGISTERED VERDICT RULES, fixed before execution* and a `verdict_rules_preregistered` key
+   written into its output, so the rules that would have refuted the campaign are in the evidence
+   file itself. One more, `mongot_floor.py`, carries a classification heuristic that the dossier's
+   own meta-challenge D5 already flags as the author's judgement rather than a test. **Eight carry
+   none**, and they include every instrument that
    produced a post-campaign-4 headline: `hcd_cql_arm.py` (M14, the 40×/72× engine-to-engine
    result), `rmw_postflush.py` (M15, the ×1.52 that demoted the flagship coefficient),
    `probe_read_search.py` (M16, one of the two HCD wins), `mongot_freshness.py` (M17, the other),
@@ -511,7 +610,7 @@ Recorded here so that no future badge claim overreaches it.
    *permission gate* — `cross_engine_comparison_permitted`, which refuses to emit a cross-engine
    ratio unless both records come from the same host with the same series shape and repetition
    counts. And `probe_aggregation.py` carries a pre-declared **correctness** criterion,
-   `sums_match()` at line 63, which checks every arm's result against a deterministic ground truth
+   `sums_match()` at `probe_aggregation.py:69`, which checks every arm's result against a deterministic ground truth
    to a stated tolerance — a stronger form of pre-registration than a latency threshold, and the
    reason M23's arms can be described as "exact against ground truth" at all.
 6. **No axis was measured under concurrency.** Every probe is a single sequential closed-loop
@@ -541,20 +640,15 @@ that basis.
 
 Roughly a day's work. **No new measurement is required.**
 
-1. **Commit what is on disk but untracked** (§1.4): `docs/STATISTICS.md`,
-   `data/derived/inference.json`, `docs/RESEARCH-DESIGN.md`, `docs/THREATS-TO-VALIDITY.md`,
-   `docs/figures/`, `CONTRIBUTING.md`, `.github/`, and this file. `README.md` already links the
-   first of these, so the dangling reference closes at the same commit.
-2. **Publish the manifest.** `.github/evidence.sha256` already exists on disk and its 36 digests
-   were verified against §4 line for line. Commit it, or mint the canonical copy where a reader
-   will look for it:
-   ```bash
-   sha256sum data/raw/*.json > data/MANIFEST.sha256
-   git add data/MANIFEST.sha256 && git commit -m "Ajoute le manifeste SHA-256 des preuves"
-   ```
-   Add `sha256sum -c data/MANIFEST.sha256` as step 1 of `REPRODUCING.md`, and wire
-   `.github/scripts/check_evidence_manifest.py` to a workflow so a later alteration fails CI at the
-   commit that introduces it.
+1. ~~**Commit what is on disk but untracked**~~ — **done** in `ff84757`. Every path this step
+   named is tracked and at `origin/main`, and `README.md`'s links resolve in a clean clone.
+2. ~~**Publish the manifest.**~~ — **done**. `.github/evidence.sha256` is committed, holds one
+   digest per evidence file, and `.github/scripts/check_evidence_manifest.py` runs as CI job 1, so
+   a later alteration fails CI at the commit that introduces it. The one part of this step not
+   taken is the canonical location: the manifest lives under `.github/` rather than at
+   `data/MANIFEST.sha256`, where a reader following `REPRODUCING.md` would look for it. Either move
+   it or add `sha256sum -c .github/evidence.sha256` as step 1 of `REPRODUCING.md`; the protection
+   exists, the signposting does not.
 3. **Correct the two false integrity claims first** (§8.2). A deposit freezes whatever is in the
    tree, including its errors.
 4. **Tag, signed.**
@@ -618,11 +712,14 @@ Reproduced* remains unreachable, permanently, and the artefact should keep sayin
 ## 8. Defects found by this assessment
 
 Each is a defect of **provenance or labelling**, not of data. No figure in this dossier was found
-to be fabricated; the figure-traceability check (§2.2, V12) reached all 108 distinct values in the
-committed evidence. It reached four of them only in `data/derived/inference.json` — **derived, never
-measured** — and three more only after rounding. Those seven are the labelling distinction that the
-earlier “0 orphans against `data/raw/`” wording erased, and `ARTIFACT.md` itself is outside the
-checked set.
+to be fabricated; the figure-traceability check (§2.2, V12) reaches **all 113 distinct values** in
+the committed evidence. Six of them it reaches only in `data/derived/inference.json` and only after
+rounding — **derived, never measured**: the four `README.md` ratio-interval endpoints plus `0.966`
+and `1.421`, the interval of challenge D12. Three more it reaches in `data/raw/` only after
+rounding. Those nine are the labelling distinction that the earlier "0 orphans against `data/raw/`"
+wording erased, and `ARTIFACT.md` itself is outside the checked set. The counts in this paragraph
+were 108 and seven when it was written; they move with every figure a document acquires, which is
+why CI job 7 re-derives them rather than this sentence asserting them.
 
 ### 8.1 `comparison.json` carries a block no probe emits
 
@@ -641,13 +738,21 @@ code, and publish that revision if one exists.*
 
 ### 8.2 Two front-matter claims about the evidence are false
 
-`README.md` line 61 (`run_at_utc` "stamped in every raw file") and the corresponding line in
-`DISCLAIMER.md` are contradicted by the manifest: **12 of 36 files carry none**, and a thirteenth
-carries a hand-typed `"2026-09-17T16:5x (p16 ring)"`. `data/README.md` line 112 states the true
-position and names all twelve. This is the cheapest claim in the repository to check and it is in
-the first two documents a reviewer reads. *Remedy: "`run_at_utc` in 23 of 36 raw files, one further
-file hand-stamped; the twelve exceptions are listed in `data/README.md`". Then put the count in CI
-so the two documents cannot diverge again.*
+**Status: half closed, half standing.**
+
+~~`README.md` line 61 (`run_at_utc` "stamped in every raw file")~~ — **fixed**. That claim is now at
+`README.md` line 106 and reads as a count, not a universal. `DISCLAIMER.md` line 18 still asserts
+`run_at_utc` for "every file under `data/raw/`", and is contradicted by the manifest: **12 of 38
+files carry none**, and a thirteenth carries a hand-typed `"2026-09-17T16:5x (p16 ring)"`.
+`data/README.md` states the true position and names all twelve. This is the cheapest claim in the
+repository to check and it sits in one of the first documents a reviewer reads. *Remedy for the
+standing half: "`run_at_utc` in 26 of 38 raw files, one of those hand-stamped; the twelve exceptions
+are listed in `data/README.md`."*
+
+The second half of the original remedy — *"then put the count in CI so the two documents cannot
+diverge again"* — has been done for this document only: §1.3's counts are generated and checked by
+CI job 9. `README.md` and `DISCLAIMER.md` are still hand-typed, which is why `README.md`'s count
+went stale (it said 24 of 36) between the first writing of this section and its re-verification.
 
 Related, and in the same class: `data/README.md` line 14 says fingerprints are "recorded by the
 probe, not added by hand", while the same file documents `conditions.TO_BE_COMPLETED_BY_HAND`
@@ -679,13 +784,17 @@ from the campaign report, no captured artefact", alongside M6 and M8 which are a
 way. Expensive half: re-issue the three commands against the same build and ship the HTTP
 responses.*
 
-### 8.5 The headline ratios are pass-1-selected, undeclared
+### 8.5 The headline ratios are pass-1-selected, and declared in only one document
 
 `probes/probe_comparative.py:255` hard-codes `k = f"{sz.label}|pass1"`, so every cross-engine slope,
 r² and ratio — 44×, 79×, 40×, 72× — is fitted on pass 1 alone. Pass-2 points were collected, sit in
-`cmp_mongo.json` / `cmp_hcd.json` / `cmp_hcdcql.json`, and are unused. Nothing in `METHODOLOGY.md`,
-`RESULTS.md`, `LIMITATIONS.md`, `probes/README.md` or `data/README.md` declares the choice, while
-audit finding I7 characterises inter-pass variance as "roughly 10–15 %". The direction of the
+`cmp_mongo.json` / `cmp_hcd.json` / `cmp_hcdcql.json`, and are unused. `docs/RESEARCH-DESIGN.md` line 381 now
+declares it — *"the published 44×/79× are fitted on pass 1 only (`probes/probe_comparative.py:255`
+selects `pass1`)"* — which lands after this section was first written and narrows the defect without
+closing it. Nothing in `METHODOLOGY.md`, `RESULTS.md`, `LIMITATIONS.md`, `probes/README.md` or
+`data/README.md` declares the choice, and those are the documents in which a reader meets the four
+numbers. A disclosure a reader reaches only through the design reconstruction is a disclosure in the
+wrong place. Audit finding I7 characterises inter-pass variance as "roughly 10–15 %". The direction of the
 result is unaffected and unaffectable; the *precision* implied by two significant figures is not
 supported. It is worth noting that this occurs in the instrument the dossier ranks as its
 strongest — vendor-supplied, unmodified — which is a point about the limits of provenance ranking,
@@ -713,25 +822,36 @@ comparative claim about either engine. *Remedy: restate gap 8 to name what is ac
 ### 8.7 Housekeeping
 
 - `probes/__pycache__/` is present in the working tree; `.gitignore` covers it, so it is not
-  published — but it contains compiled copies of `verify_storage_claims.py` and
-  `probe_tier_vs_storage.py` under `.py.cpython-312.pyc` names, i.e. the `.orig` files were
-  imported at some point. Harmless; noted because the artefact's own provenance argument turns on
-  which files were executed.
-- No probe carries an SPDX header (§2.3).
+  published. When this section was first written it held compiled copies under `.py.cpython-312.pyc`
+  names, i.e. the `.orig` files had been imported at some point — noted because the artefact's own
+  provenance argument turns on which files were executed. **That observation is no longer
+  reproducible**: the directory now holds exactly seventeen entries, one per probe, all of the
+  ordinary `<module>.cpython-312.pyc` form, because the byte-compile check reported in §2.2
+  (`python3 -m py_compile probes/*.py`) was re-run over the tree. The original reading is left
+  standing rather than deleted, with this note: a verification step overwrote the evidence for one
+  of this document's own minor findings, which is a small instance of the harness writing into what
+  it measures.
+- No probe carries an SPDX header (§2.3) — re-checked, still none of the seventeen.
 
 ---
 
 ## 9. Provenance of this document
 
 Every factual claim above was established by executing a command against the working tree on
-18 September 2026, not by reading prose. The commands are in §5. The manifest in §4 was generated
+18 September 2026, not by reading prose. The commands are in §5. The document was written against
+commit `166225e` and **re-verified command by command against `3350cbf`** the same day; every count
+that moved is now regenerated by `.github/scripts/check_artifact_table.py` and re-derived in CI, so
+the next time the tree moves under this document the failure is loud rather than silent. Where a
+finding was true at `166225e` and has since been fixed, it is struck and marked, not removed. The manifest in §4 was generated
 by `sha256sum`, not transcribed. The four badge definitions quoted in §2 are verbatim, each
 including its final sentence, and were checked word for word against the v1.1 wording reproduced at
 <https://sigir.org/general-information/acm-sigir-artifact-badging/>; `acm.org` returns HTTP 403 to
 automated retrieval, so the policy page was not read directly.
 
 Nothing under `data/raw/`, `probes/` or `docs/article/` was modified in the writing of this
-document.
+document, nor in its re-verification. Those directories did change between the two, by work
+recorded elsewhere — campaign 7bis added two evidence files and one probe, and the annulment of
+challenge D12 edited two probe docstrings — and §1.4 lists what each change invalidated here.
 
 Where this document disagrees with the repository — §2.1 on *Artifacts Available*, §8.6 on gap 8 —
 the disagreement is recorded rather than resolved silently, and the reader is given the command

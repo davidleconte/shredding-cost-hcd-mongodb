@@ -103,7 +103,7 @@ Full statements, falsification criteria, and which criteria are `[PRE]` rather t
 | **HCD** | HCD 2.0.6, `nodetool version` `5.0.7.0-ea50e91ba01f`, Data API v1.0.33; RF = 1 (campaign 1), `{dc1:3}` thereafter |
 | **MongoDB** | 8.0.32, three-member replica set, `w:majority` + `j:true`. Search freshness only: 8.3.11 `atlas-local`, mongot 1.75.1 `localDev` — a different deployment (audit I8) |
 | **Host** | One QEMU VM, 80 vCPU, 220 GiB RAM, **shared**, at load average 14–16 throughout. No root, so the page cache was never dropped |
-| **Dates** | 17–18 September 2026. `run_at_utc` is recorded in **24 of the 36** raw files; the twelve exceptions and one hand-typed stamp are listed in [data/README.md](data/README.md) |
+| **Dates** | 17–18 September 2026. `run_at_utc` is recorded in **26 of the 38** raw files; the twelve exceptions and one hand-typed stamp are listed in [data/README.md](data/README.md) |
 | **Statistics** | Percentiles only; **no means for latency**. n = 30 per point, two passes at most, **no confidence intervals — and none is recoverable**, see [docs/STATISTICS.md §2](docs/STATISTICS.md) |
 
 The full table with every arm and every raw-file reference is

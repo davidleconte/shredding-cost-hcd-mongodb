@@ -173,6 +173,20 @@ jobs:
           "8 · Source-line citations — every file.py:NNN still names the line it was blessed against"
           python .github/scripts/check_probe_citations.py
 
+  artifact-facts:
+    name: 9 · ARTIFACT.md self-description (counts and manifest table)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Regenerate ARTIFACT.md's manifest table and facts block and diff them
+        run: >-
+          bash .github/scripts/run_check.sh
+          "9 · ARTIFACT.md — its evidence table and headline counts still match the tree"
+          python .github/scripts/check_artifact_table.py
+
   derived-numbers:
     name: 5 · derived numbers (inference.json vs data/raw)
     runs-on: ubuntu-latest
@@ -228,6 +242,7 @@ jobs:
       - figure-integrity
       - figure-traceability
       - probe-citations
+      - artifact-facts
     steps:
       - name: Write the verification table and fail if any check failed
         env:
@@ -239,6 +254,7 @@ jobs:
           R6: ${{ needs.figure-integrity.result }}
           R7: ${{ needs.figure-traceability.result }}
           R8: ${{ needs.probe-citations.result }}
+          R9: ${{ needs.artifact-facts.result }}
         shell: bash
         run: |
           set -uo pipefail
@@ -257,6 +273,7 @@ jobs:
             echo "| 6 | figure integrity | \`docs/figures/regime-collapse.svg\` re-renders byte for byte from \`data/raw/\` | $(mark "$R6") |"
             echo "| 7 | figure traceability | every figure with >= 3 decimals in the seven English documents occurs in \`data/raw/\` or \`data/derived/inference.json\` | $(mark "$R7") |"
             echo "| 8 | source-line citations | every \`file.py:NNN\` in the Markdown still names the line it was blessed against | $(mark "$R8") |"
+            echo "| 9 | ARTIFACT.md self-description | its evidence table and headline counts regenerate identically from the tree | $(mark "$R9") |"
             echo
             echo "**What this run did NOT do.** It started no HCD ring and no MongoDB"
             echo "replica set, so it re-measured nothing. A green result means the"
