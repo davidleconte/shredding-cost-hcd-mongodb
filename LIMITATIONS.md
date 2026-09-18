@@ -414,9 +414,11 @@ already exceeds HCD's HTTP floor.
 
 `attempts = 1` means "found on the first query" — but that query arrives ~45 ms after the write (the
 HTTP round trip). **An HCD index lag anywhere between 0 and 45 ms would be undetectable.** The honest
-statement is "HCD lag < 45 ms (below the measurement floor) against ~1 s for mongot 1.75.1 `localDev`"
-— not "for MongoDB", which the provenance check forbids (I9, D2, C10) — a gap of at
-least 22×, direction robust, **but zero is not proven**. This is the same limit M7 recorded on the
+statement is "HCD lag < 45 ms (below the measurement floor) against a mongot 1.75.1 `localDev`
+refresh interval whose corrected p50 is 664.3 ms (M18, `data/raw/findings_mongot_floor.json`)" — not
+"for MongoDB", which the provenance check forbids (I9, D2, C10) — a gap of about **14.8×** on the
+medians (664.3 / 44.972), not the 22× that the superseded, self-synchronised p50 of 1015.201 ms gave
+(C10 above); direction robust, **but zero is not proven**. This is the same limit M7 recorded on the
 vector axis, where 120/120 cycles found the just-written vector top-1 on the first `LOCAL_ONE` search
 and the verdict was recorded as NOT DETECTABLE rather than as a confirmation.
 
@@ -631,11 +633,15 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
 - **Two axes were never measured at all.** Vector ANN search performance (as opposed to vector
   freshness, which M7 could only bound below the HTTP floor), and the freshness of HCD's lexical path
   against mongot's `$vectorSearch` (C14 / D4, explicitly unresolved).
-- **The aggregation probe carries no audited verdict.** `data/raw/findings_agg_hcd.json`,
-  `data/raw/findings_agg_mongodb.json` and `data/raw/findings_agg_cqlref.json` exist and were
-  produced by `probes/probe_aggregation.py` and `probes/agg_cql_arm.py`, but no campaign report
-  covers them and neither the adversarial audit nor the challenge documents examined them. Nothing in
-  those files has been challenged, so no figure from them should be quoted as audited evidence.
+- **Campaign 7 has a report, but no adversarial verdict.** `data/raw/findings_agg_hcd.json`,
+  `data/raw/findings_agg_mongodb.json` and `data/raw/findings_agg_cqlref.json` were produced by
+  `probes/probe_aggregation.py` and `probes/agg_cql_arm.py`, are covered in full by the campaign
+  report `docs/campaigns/07-aggregation.fr.md`, and carry the identifiers M20–M23. What they do not
+  carry is an adversarial verdict: `docs/audit-adversarial.fr.md` is written against M1–M17 over six
+  campaigns, `docs/challenges.fr.md` against M1–M13, and neither document examines the aggregation
+  axis. **No figure from M20–M23 has been challenged**, so each stands on the reserves its own report
+  attaches to it — the HCD scan arm's n = 3, the cache regime that M22's zero proves, the
+  apples-to-oranges label the CQL arm carries in its own result file — and on nothing beyond them.
 - **Reproduction is not possible in the strict sense.** The ring's state mutated across campaigns
   (`system.paxos` from 0 to ~13 GiB per node; the 20 `supply_chain_hcd` indexes dropped and recreated
   six times), and the machine was never idle. What can be reproduced is the *method*: the probes are

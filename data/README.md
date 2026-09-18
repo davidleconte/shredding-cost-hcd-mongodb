@@ -1,6 +1,6 @@
 # `data/raw/` — data dictionary
 
-Thirty-five JSON files. Every one of them is byte-identical to the output the probe wrote
+Thirty-six JSON files. Every one of them is byte-identical to the output the probe wrote
 when it ran. They are not reformatted, not re-keyed, not pruned of the runs that went
 against the author, and not corrected after the fact. Where a later measurement refuted an
 earlier one, the earlier file stays exactly as it was and the refutation lives in a separate
@@ -37,9 +37,11 @@ new file and a note in the campaign report.
    with the claim. `findings_vector_rf3.json` is the one raw file that carries these markers
    inside the JSON itself (in `article_bearing` and `verdict`).
 4. **Cite the measurement identifier.** The register of measurements M1–M19 lives in
-   `docs/adr/ADR-001-modelling-policy.md` under *Evidence register*. Each file below names
-   the Mxx it backs, or says plainly that no Mxx has been assigned to it. The register has no
-   M9 entry; the identifiers run M1–M8 and M10–M19.
+   `docs/adr/ADR-001-modelling-policy.md` under *Evidence register*; it has no M9 entry, so
+   the identifiers there run M1–M8 and M10–M19. **M20–M23 are not in the ADR** — they were
+   assigned in this repository for campaign 7 and are registered in `RESULTS.md` §3 and
+   reported in `docs/campaigns/07-aggregation.fr.md`. Each file below names the Mxx it backs,
+   or says plainly that no Mxx has been assigned to it.
 
 For how the measurements were taken, see `METHODOLOGY.md`; for what they do not establish,
 `LIMITATIONS.md`; for the probes that wrote these files, `probes/README.md`.
@@ -129,7 +131,7 @@ how it was written and that is how it stays.
 | 4 — tier vs storage | `docs/campaigns/04-tier-vs-storage.fr.md` | `disk_state_c4.json`, `findings_tier.json`, `findings_tier_method2.json`, `tier_comparison.json` |
 | 5 — mutation comparison | `docs/campaigns/05-mutation-comparison.fr.md` | `smoke_hcd.json`, `smoke_mongo.json`, `cmp_hcd.json`, `cmp_mongo.json`, `comparison.json`, `cmp_hcdcql.json`, `comparison_v2.json` |
 | 6 — freshness, read, search | `docs/campaigns/06-freshness-read-search.fr.md` | `findings_rs_hcd.json`, `findings_rs_mongo.json`, `findings_mongot_freshness.json`, `findings_hcd_vec_freshness.json`, `findings_mongot_floor.json`, `findings_turn_hcd.json`, `findings_turn_mongodb.json` |
-| 7 — aggregation | no campaign report in this repository | `findings_agg_mongodb.json`, `findings_agg_hcd.json`, `findings_agg_cqlref.json` |
+| 7 — aggregation | `docs/campaigns/07-aggregation.fr.md` | `findings_agg_mongodb.json`, `findings_agg_hcd.json`, `findings_agg_cqlref.json` |
 
 ---
 
@@ -440,8 +442,10 @@ deployment — two different MongoDBs in one campaign, which is challenge C15.
 - **Numbers as measured:** `$search` write-to-visible p50 1015.201 ms, stdev 35.172; ordinary
   `find({_id})` p50 1.306 ms.
 - **This number must never be quoted alone.** `findings_mongot_floor.json` establishes that
-  the ~1015 ms was the worst phase of a periodic refresh cycle, inflated roughly 1.6× by a
-  self-synchronised probe. The tight stdev of 35 ms is the signature of that self-synchronisation,
+  the ~1015 ms was the worst phase of a periodic refresh cycle, inflated ×1.53 on the medians
+  (p50 1015.201 → 664.3 ms) by a self-synchronised probe. The "~1.6×" in ADR-001 rev. 12 is the
+  ratio of the `mean_ms` fields (1021.553 / 646.3 = ×1.58), which this dossier does not publish
+  for latency. The tight stdev of 35 ms is the signature of that self-synchronisation,
   not of a stable system property. The file is kept unedited.
 - **Scope:** `deployment` records a single-node replica set, so `w:majority` is trivial. It is
   not the 3-member replica set used for the read and search halves.
@@ -514,10 +518,11 @@ deployment — two different MongoDBs in one campaign, which is challenge C15.
 
 ## Campaign 7 — aggregation
 
-Run 18 September 2026, 200 000 documents, ten categories of 20 000. **No campaign report for
-this campaign exists in `docs/campaigns/`, and no Mxx has been assigned to these three files
-in the ADR-001 evidence register.** They are raw evidence awaiting a report; treat any figure
-from them as unreported rather than reported.
+Run 18 September 2026, 200 000 documents, ten categories of 20 000. These three files back
+**M20–M23**, assigned in this repository: their register entries are in `RESULTS.md` §3 and
+their report is `docs/campaigns/07-aggregation.fr.md`. **No Mxx has been assigned to them in
+the ADR-001 evidence register**, which stops at M19, and the adversarial audit — which covers
+M1–M17 — never saw them.
 
 ### `findings_agg_mongodb.json`
 - **Probe:** `probes/probe_aggregation.py --engine mongodb`.
@@ -575,18 +580,47 @@ the file it is in; the right column is what contests it, inside this same dossie
 | Bytes dominate field count | `findings_fieldbyte.json` | Strict two-pass verdict is `INCONCLUSIVE` at the 1.15 boundary (1.128, 1.187), though neither pass approaches 1.5 |
 | `UPDATE … IF` p50 13.738 ms | `findings_rf3.json`, `probe4_rf3_supplementary.json` | Three replicas share one host: sub-millisecond inter-replica latency, so Paxos is measured where it hurts least (challenge C3). Coordinator-side, not client latency |
 | Vector freshness 120/120 first-try hits | `findings_vector_rf3.json` | The file's own verdict: `NOT DETECTABLE`. Bounded below the ~74 ms HTTP floor; neither confirms nor refutes |
-| `$search` lag p50 1015.201 ms | `findings_mongot_freshness.json` | Superseded by `findings_mongot_floor.json`: worst phase of a refresh cycle, inflated ~1.6× by a self-synchronised probe |
+| `$search` lag p50 1015.201 ms | `findings_mongot_freshness.json` | Superseded by `findings_mongot_floor.json`: worst phase of a refresh cycle, inflated ×1.53 on the medians (p50 1015.201 → 664.3 ms) by a self-synchronised probe; the "~1.6×" of ADR-001 rev. 12 is the mean-to-mean ratio (1021.553 / 646.3 = ×1.58) |
 | `$search` lag p50 664.3 ms, floor 89.1 ms | `findings_mongot_floor.json` | `atlas-local`, single node, interval not user-tunable there; text `$search` against HCD *vector* search; n = 60, one pass, author-written classification threshold |
 | HCD "synchronous", `attempts` median 1 | `findings_hcd_vec_freshness.json` | Means "below the ~45 ms HTTP floor", not "zero" (challenge C11) |
 | HCD 22× faster filtered read | `findings_rs_hcd.json` vs `findings_rs_mongo.json` | Against *default* MongoDB. Wildcard-indexed MongoDB is 23.7× faster than HCD on the same query (challenge C12) |
 | HCD 0 % miss at τ = 0 | `findings_turn_hcd.json` | Decisive below ~1 s; at τ ≥ 1000 ms MongoDB also misses 0 %, so the edge is moot for conversational RAG (challenge D1) |
-| Server-side aggregation absent on HCD | `findings_agg_hcd.json` | No campaign report and no Mxx assigned yet; the two empty distributions are failures, not zero-cost operations |
+| Server-side aggregation absent on HCD | `findings_agg_hcd.json` | Reported as M20–M23 in `docs/campaigns/07-aggregation.fr.md`, but **never adversarially challenged**: the audit covers M1–M17 and the challenges M1–M13, and neither examines the aggregation axis. The two empty distributions are failures, not zero-cost operations |
+| Aggregation 602× — Data API client scan-and-aggregate p50 133 984.229 ms against MongoDB server-side `$group` p50 222.711 ms | `findings_agg_hcd.json` vs `findings_agg_mongodb.json` (M23) | A Data API **tier** gap, not an engine result: the same engine, on the same host and corpus, aggregates in p50 2 011.399 ms through native CQL (`findings_agg_cqlref.json`), 66.6× faster than the Data API path — and that arm's own `LABEL` disqualifies it as like-for-like, because reaching it means abandoning the document model. HCD arm **n = 3**, so its p95/p99 carry no information; `counts.estimated` 0 against a true 200 000 proves the corpus was still memtable-resident (M22), so this is a cache regime, not a proven disk regime |
 
 Standing limits that apply to every file without exception: one shared, already-loaded host;
 one build of each engine; single-client closed-loop sequential load, so nothing here says
 anything about concurrency; percentiles from n = 30–50 with no confidence intervals and no
 significance testing (audit I7); and five of the probes were written by the measurer himself
 (audit I2), which weighs against the measurements that rest on them.
+
+---
+
+## Evidence held back from this directory
+
+This directory is not the whole of the run's raw evidence, and a reader should not take it
+for a complete record. An archive, `verif-storage-20260917/raw_evidence.tar.gz`, exists
+outside this repository and holds **13 files, none of them byte-identical to anything
+published here**: two scripts — `probe3_variant_b.py` and `control_read.py` — and eleven
+evidence files — `findings_rate50.json`, `findings_rate50_rep2.json`,
+`control_read_A_rep2.json`, `control_read_B.json`, `probe3_variant_b.json`,
+`probe4_traced.json`, `probe4_supplementary_cl.json`, `probe4_traced_statements.json`,
+`freshness_attempts.json`, `stats_run50.log` and `stats_run50_rep2.log`. Most are the
+RF = 1 counterparts of files published here for RF = 3, and they are not redundant with
+them.
+
+One consequence stated plainly, because it bears on a number this dossier already
+publishes: **the ×1.56 variant-B read control quoted in `RESULTS.md` M3 — p50
+7.390 → 11.523 ms — is recorded in `control_read_B.json`, which is in that archive and
+not in this directory.** The two files M3 cites for its controls,
+`control_read_A_run1.json` and `control_read_A_run2.json`, carry the variant-A control for
+the RF = 3 collection `storage_probe_rf3` (p50 9.748 → 18.179 ms and 8.671 → 16.059 ms)
+and do not contain those figures.
+
+This repository records no decision to withhold the archive and no reason for it. The fact
+is set down here rather than left silent, because the alternative is a reader concluding
+that `data/raw/` is everything the run produced. `probes/README.md`, gap 8, lists the
+archive file by file.
 
 ---
 

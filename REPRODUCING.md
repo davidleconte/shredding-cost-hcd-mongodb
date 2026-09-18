@@ -508,7 +508,9 @@ Two caveats that must be quoted with these numbers rather than after them. `mong
 self-synchronises: because each cycle inserts and then immediately polls, every insert lands just
 after a commit, and the resulting p50 of 1015.201 ms is the **worst phase** of a periodic cycle.
 `mongot_floor.py` corrects it — de-synchronised p50 664.3 ms, minimum 89.1 ms, maximum 1170.2 ms
-— and the author records the correction as an overstatement of his own figure by roughly 1.6×
+— an overstatement of his own figure by ×1.53 on the medians (1015.201 → 664.3 ms). ADR-001
+rev. 12 records it as "~1.6×", which is the ratio of the `mean_ms` fields (1021.553 / 646.3 =
+×1.58) that this dossier does not publish for latency
 (`data/raw/findings_mongot_floor.json`, `docs/adr/ADR-001-modelling-policy.md`, M18). Symmetrically,
 HCD's "synchronous, no lag" is *lag below the probe's HTTP round-trip floor*: a poll attempt
 median of 1 at p50 44.972 ms bounds the window under about 45 ms, it does not prove it is zero

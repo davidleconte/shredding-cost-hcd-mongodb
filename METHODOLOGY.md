@@ -79,11 +79,14 @@ In practice this decomposed into four standing rules.
      0.7775 to 0.7037 ms/KiB, so the engine-to-engine ratio is 40×, not ~31×
      (`data/raw/comparison_v2.json`, M14).
    - The author's own headline freshness figure, ~1015 ms of `mongot` lag, was
-     **overstated by roughly 1.6×** by a self-synchronised probe of his own
-     design, and was corrected downward by his own re-measurement to a p50 of
-     664.3 ms (`data/raw/findings_mongot_freshness.json` then
-     `data/raw/findings_mongot_floor.json`, M17 then M18). A later provenance
-     check cut against the author a second time: **both** figures were produced
+     **overstated by ×1.53 on the medians** (p50 1015.201 → 664.3 ms) by a
+     self-synchronised probe of his own design, and was corrected downward by
+     his own re-measurement (`data/raw/findings_mongot_freshness.json` then
+     `data/raw/findings_mongot_floor.json`, M17 then M18). ADR-001 rev. 12
+     records that correction as "~1.6×", which is the ratio of the `mean_ms`
+     fields (1021.553 / 646.3 = ×1.58) that this dossier does not publish for
+     latency (§6); on the percentiles the self-correction is ×1.53. A later
+     provenance check cut against the author a second time: **both** figures were produced
      by mongot `localDev`, so neither is a MongoDB Atlas Search number at all
      (`data/raw/findings_mongot_provenance.json`).
    - The one axis clearly favourable to HCD — synchronous search freshness — was
@@ -440,9 +443,11 @@ benchmark number in its body.
 
 ## 9. How to quote a number from this repository
 
-1. **Name the measurement identifier** (M1–M19) beside the figure. The evidence
-   register in `docs/adr/ADR-001-modelling-policy.md` maps each identifier to its
-   method, its verdict and its caveats.
+1. **Name the measurement identifier** (M1–M23) beside the figure. The evidence
+   register in `docs/adr/ADR-001-modelling-policy.md` maps M1–M8 and M10–M19 to
+   their method, verdict and caveats. **M20–M23 are not in the ADR**: they were
+   assigned in this repository for campaign 7, and their entries are in
+   `RESULTS.md` §3.
 2. **Name the regime** for any per-byte, per-KiB or growth figure (§5). A rate
    without its regime is a misquote.
 3. **Carry the contest with the number.** Where the adversarial audit or the

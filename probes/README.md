@@ -43,7 +43,7 @@ epistemic legend but does not currently appear in the documents in `docs/`.)
 | `disk_regime_driver.py` | Measures nothing by design. It forces a disk-bound state and refuses to report success unless it can evidence four obligations: on-disk data exceeds the memtable budget, SSTables exist, at least one compaction completed, caches were invalidated. Measurement is then a separate harness run against that state. | The disk-regime precondition of M10, M11, M12 | `disk_state.json` (campaign 3), `disk_state_c4.json` (campaign 4) | **vendor-supplied, patched** (3 patches) |
 | `probe_field_vs_byte.py` | Separates the two terms campaign 1 grew together. Series 1 holds field count fixed at 16 and varies bytes per field (512 → 8000); series 2 holds indexed volume fixed at 64 KiB and varies field count (9 → 128). An internal control (16 × 4096 B) appears in both series. | M11 | `findings_fieldbyte.json` | **vendor-supplied, unmodified** |
 | `probe_tier_vs_storage.py` | Method 1 (bypass): the same logical mutation run (a) through the Data API and (b) as the identical CQL statement pair against the same row, with shredded values read back rather than recomputed. The difference is the stateless-tier term. | M12 (method 1) | `findings_tier.json` | **vendor-supplied, patched** (1 patch) |
-| `probe_tier_vs_storage.py.orig` | Nothing — never executed. The unmodified original, kept so the campaign-4 prepared-statement patch can be diffed byte for byte. | — | — | **vendor-supplied, unmodified** (reference copy) |
+| `probe_tier_vs_storage.py.orig` | Nothing — never executed, and not an artefact of the run. It was **reconstructed during the documentation pass** by reverting the declared campaign-4 prepared-statement patch in the patched script: no pre-patch copy of this probe survives in the evidence snapshot (which does retain `verify_storage_claims.py.orig`) or in `raw_evidence.tar.gz`, and its mtime (2026-09-18 10:03) is later than the patched probe it is supposed to predate (09:35). It is a convenience for reading the diff, not independent evidence of what the original contained. | — | — | **reconstructed after the fact** (derived from the patched file, not a retained original) |
 | `method2_trace.py` | Method 2 (trace): the second, independent estimate of the same tier term — client-observed Data API latency minus the coordinator-side duration of the CQL statements it issued, read from `system_traces.sessions`. | M12 (method 2) | `findings_tier_method2.json` | **written by the measurer** |
 | `probe_comparative.py` | The identical sixteen-field mutation series against HCD's Data API and against MongoDB, with MongoDB run **twice** (no ballast index, and a `$**` wildcard index matching HCD's automatic indexing). Refuses to emit a cross-engine ratio unless both engines ran on the same host, in the same session, with the same series shape and repetition counts. | M13 | `cmp_hcd.json`, `cmp_mongo.json`, `comparison.json`, `comparison_v2.json`, `smoke_hcd.json`, `smoke_mongo.json` | **vendor-supplied, unmodified** |
 | `hcd_cql_arm.py` | The same single-field mutation driven straight through the CQL driver — the same `SELECT` + conditional `UPDATE` the Data API issues (M2) — with the stateless tier removed, so the MongoDB comparison becomes engine-vs-engine rather than stack-vs-stack. | M14 | `cmp_hcdcql.json` (merged into `comparison_v2.json`) | **written by the measurer** (the file says so in its own docstring) |
@@ -53,8 +53,8 @@ epistemic legend but does not currently appear in the documents in `docs/`.)
 | `mongot_freshness.py` | MongoDB's write-to-searchable lag on `$search` (mongot ingests asynchronously off the change stream), contrasted against a synchronous `find({_id})` in the same cycles. | M17 (the MongoDB half) | `findings_mongot_freshness.json` | **written by the measurer** |
 | `mongot_floor.py` | The true floor of that lag. Sleeps a random 0–1200 ms before each insert so inserts land at uniformly random phases of the commit cycle, then polls at 5 ms. Distinguishes a refresh interval from a fixed pipeline delay. | M18 | `findings_mongot_floor.json` | **written by the measurer** |
 | `turn_latency.py` | Miss-rate of a search issued τ ms after the write, swept over τ = 0…3000 ms, 30 cycles per point. Answers whether the freshness lag survives a realistic RAG turn latency. | M19 | `findings_turn_hcd.json`, `findings_turn_mongodb.json` | **written by the measurer** |
-| `probe_aggregation.py` | The aggregation axis: count-all, filtered count, and `GROUP BY cat / SUM(amt)` at 200 000 documents, with a deterministic ground truth so every arm is checked for **correctness**, not only for speed. | No Mxx assigned — see gaps | `findings_agg_hcd.json`, `findings_agg_mongodb.json` | **written by the measurer** |
-| `agg_cql_arm.py` | The labelled apples-to-oranges reference for the same aggregation: a purpose-built **native CQL** table pre-partitioned by the group key. Not the document model, not the Data API. Shows what the storage engine can do once the document model is abandoned. | No Mxx assigned — see gaps | `findings_agg_cqlref.json` | **written by the measurer** |
+| `probe_aggregation.py` | The aggregation axis: count-all, filtered count, and `GROUP BY cat / SUM(amt)` at 200 000 documents, with a deterministic ground truth so every arm is checked for **correctness**, not only for speed. | M20–M23 — assigned in this repository, not in ADR-001; see gaps | `findings_agg_hcd.json`, `findings_agg_mongodb.json` | **written by the measurer** |
+| `agg_cql_arm.py` | The labelled apples-to-oranges reference for the same aggregation: a purpose-built **native CQL** table pre-partitioned by the group key. Not the document model, not the Data API. Shows what the storage engine can do once the document model is abandoned. | M23, CQL arms — assigned in this repository, not in ADR-001; see gaps | `findings_agg_cqlref.json` | **written by the measurer** |
 
 ---
 
@@ -92,9 +92,12 @@ verdict rule.
 |---|---|---|
 | arm B statement binding | Simple statements with `%s` → **prepared statements** with `?` | The collection primary key is a `frozen<tuple<tinyint,text>>`. Binding it in a simple statement is rejected server-side (`Unexpected receiver type 'tuple<tinyint,text>'; only list and vector are expected`); a prepared statement carries the column type and binds the tuple correctly. This is how a real client binds a typed key. No threshold, size or repetition changed. |
 
-**Auditability caveat, stated plainly.** Two probes ship an unmodified original
-in this directory, so their patches can be machine-checked rather than taken on
-trust:
+**Auditability caveat, stated plainly.** One probe — `verify_storage_claims.py`
+— ships a genuinely retained original in this directory, byte-identical to the
+copy in the evidence snapshot, so its patches can be machine-checked rather than
+taken on trust. The second `.orig` is weaker, and the register above says why:
+it was reconstructed after the run by reverting the patch it is used to show.
+Both diffs are still worth running:
 
 ```bash
 diff probes/verify_storage_claims.py.orig  probes/verify_storage_claims.py    # 14 changed lines, 2 patches
@@ -104,7 +107,10 @@ diff probes/probe_tier_vs_storage.py.orig  probes/probe_tier_vs_storage.py    # 
 Both diffs consist only of the declared changes and their in-code `Mechanical fix`
 rationale. Neither touches a document size, a threshold, a repetition count, a
 warm-up count or a verdict rule — which is the property a reader should actually
-check, and can.
+check. For `verify_storage_claims.py` that check is independent evidence. For
+`probe_tier_vs_storage.py` it is true by construction, since the `.orig` was made
+by reverting exactly that patch, and it therefore cannot rule out an undeclared
+change made before the file was first saved.
 
 The patches to `verify_storage_claims_rf3.py` and `disk_regime_driver.py` are
 documented in-code as `Mechanical fix` comments and in the campaign reports, but
@@ -167,8 +173,9 @@ A provenance register that hid its own holes would defeat its purpose.
 
 1. **`probe3_variant_b.py` is referenced but absent.** ADR-001 names it as an
    instrument of M10, alongside `disk_regime_driver.py` and
-   `verify_storage_claims.py`. It is not in this directory. The variant-B numbers
-   it produced survive in `findings_disk_rf3.json`
+   `verify_storage_claims.py`. It is not in this directory — and it was not lost: it
+   survives, unpublished, in the off-repository archive listed in gap 8. The variant-B
+   numbers it produced survive in `findings_disk_rf3.json`
    (`variantB_indexed_chunks`, update p50 20.389 → 121.189 ms, growth ×5.94) and
    in `findings_rf3.json`, but **the code that produced them is not published
    here**, so their provenance class cannot be established from this repository.
@@ -180,23 +187,32 @@ A provenance register that hid its own holes would defeat its purpose.
    RF = 3 collection (`storage_probe_rf3`). Related: campaign 1 records that the
    pass-1 read-control JSON was **overwritten by pass 2** because the filename was
    fixed, and that its p50 values and wire sizes were transcribed from the run log
-   and marked as transcribed in `findings.json`.
+   and marked as transcribed in `findings.json`. The script `RESULTS.md` names for that
+   overwrite, `control_read.py`, is real and not an invented filename: it is one of the
+   two scripts in the archive of gap 8, and the archived copy already carries the repair
+   — a `RUN` argument that labels the output per pass, under an inline comment recording
+   that a fixed name overwrote run 1 on 2026-09-17.
 4. **`tier_comparison.json` is a derived merge with no producing script here.**
    It joins the method-1 and method-2 tier estimates size by size — including the
    `divergence_pct` and `within_25pct` fields that carry M12's cardinal caveat
    (agreement within 25 % at 8, 16 and 32 KiB; **34.0 %** divergence at 64 KiB and
    **27.7 %** at 125 KiB). Neither `probe_tier_vs_storage.py` nor
    `method2_trace.py` writes it.
-5. **The aggregation axis carries no `Mxx`.** `probe_aggregation.py` and
-   `agg_cql_arm.py` post-date the M1–M19 register in ADR-001 and are not entered
-   in it. Their findings are in `data/raw/` and are real
+5. **The aggregation axis carries M20–M23, which ADR-001 does not.**
+   `probe_aggregation.py` and `agg_cql_arm.py` post-date the M1–M19 register in
+   ADR-001 and are not entered in it; their measurements were numbered M20–M23 in
+   this repository, in `RESULTS.md` §3. Their findings are in `data/raw/` and are real
    (`findings_agg_hcd.json` records HCD's `countDocuments` failing outright with
    `TooManyDocumentsToCountException` above 1000 documents, and a client
    scan-and-aggregate p50 of **133 984.229 ms** over 200 000 documents against
    MongoDB's server-side `$group` at p50 **222.711 ms** in
-   `findings_agg_mongodb.json`), but they have not been folded into the
-   measurement register, and the adversarial audit — which covers M1–M17 — never
-   saw them.
+   `findings_agg_mongodb.json` — and, on the same engine, same host, same corpus,
+   against native CQL's per-partition sweep at p50 **2 011.399 ms** in
+   `findings_agg_cqlref.json`, the arm `agg_cql_arm.py` listed above — which
+   locates the 134 s in the Data API tier rather than in the storage engine, at
+   the price of abandoning the document model and pre-designing a table
+   partitioned by the group key), but they were never folded into the ADR's
+   register, and the adversarial audit — which covers M1–M17 — never saw them.
 6. **`mongot_floor.py` (M18) and `turn_latency.py` (M19) post-date the audit.**
    The audit counts **five** measurer-written scripts. These two are measurer-written
    by the same pattern as the others (each closes a self-issued challenge, C10 and
@@ -213,6 +229,39 @@ A provenance register that hid its own holes would defeat its purpose.
    the first `LOCAL_ONE` search, insert-to-visible p50 **74.735 ms**
    (`vector_freshness_idle.json`) — which bounds the window below the measurement
    floor rather than proving it is zero.
+8. **Thirteen files of this campaign's evidence exist and are not published.** The run
+   left an archive, `verif-storage-20260917/raw_evidence.tar.gz`, outside this
+   repository. It holds 13 files, **none of them byte-identical to anything in
+   `data/raw/` or in this directory**:
+   - **the two scripts this register and `RESULTS.md` name as unfindable** —
+     `probe3_variant_b.py` (gap 1) and `control_read.py` (gap 3);
+   - **nine further evidence files**, all from the RF = 1 keyspace
+     `verif_stockage_20260917` — `findings_rate50.json` and `findings_rate50_rep2.json`
+     (the RF = 1 fixed-rate passes, distinct from the published RF = 3
+     `findings_rf3_rate50*.json`); `control_read_A_rep2.json` and `control_read_B.json`
+     (the RF = 1 read controls); `probe3_variant_b.json` (the RF = 1 variant-B finding,
+     verdict `SUPPORTED`); `probe4_traced.json`, `probe4_supplementary_cl.json` and
+     `probe4_traced_statements.json` (the M4 consistency-level trace, the last being the
+     raw per-statement dump; `probe4_traced.json` records `consistency_levels_observed`
+     as `LOCAL_QUORUM` 70 **alongside `ONE` 42 and `LOCAL_ONE` 2** over 200 traces
+     examined, where M4 is stated in ADR-001 as "70/70 statements at `LOCAL_QUORUM`");
+     and `freshness_attempts.json` (the RF = 1 freshness histogram, 40/40 found on the
+     first attempt);
+   - **two container-stat logs**, `stats_run50.log` and `stats_run50_rep2.log`, which
+     this repository's `.gitignore` would exclude by its `*.log` rule in any case.
+
+   This is not a redundant copy of what is published. **The ×1.56 variant-B read control
+   quoted in `RESULTS.md` M3 — p50 7.390 → 11.523 ms — is recorded in
+   `control_read_B.json`, which is in that archive and not in `data/raw/`.** M3 cites
+   `control_read_A_run1.json` and `control_read_A_run2.json`, which carry the variant-A
+   control for the *RF = 3* collection (9.748 → 18.179 and 8.671 → 16.059 ms) and do not
+   contain those figures. So a published number rests on an unpublished file.
+
+   No filename in that archive appears anywhere in this repository's prose, and the
+   archive itself is named nowhere in it. **This register records no decision to withhold
+   these files and no reason for it**; the omission is stated here so that the gap reads
+   as one of publication rather than of survival. Until the archive is published, gaps 1
+   and 3 stand as written — a withheld file settles nothing a reader can check.
 
 ---
 
