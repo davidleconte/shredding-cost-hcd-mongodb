@@ -9,7 +9,7 @@
 # A green check asserts exactly seven things:
 #
 #   1. evidence-integrity  every file under data/raw/ still hashes to the value
-#                          committed in .github/evidence.sha256
+#                          committed in data/MANIFEST.sha256
 #   2. link-integrity      every relative Markdown link in every tracked .md file
 #                          points at a path that GIT TRACKS — not merely one
 #                          that exists on the author's disk
@@ -111,10 +111,10 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Compare data/raw/ against .github/evidence.sha256
+      - name: Compare data/raw/ against data/MANIFEST.sha256
         run: >-
           bash .github/scripts/run_check.sh
-          "1 · Evidence integrity — data/raw/ vs .github/evidence.sha256"
+          "1 · Evidence integrity — data/raw/ vs data/MANIFEST.sha256"
           python .github/scripts/check_evidence_manifest.py
 
   link-integrity:
@@ -265,7 +265,7 @@ jobs:
             echo
             echo "| # | Check | What it asserts | Result |"
             echo "|---|-------|-----------------|--------|"
-            echo "| 1 | evidence integrity | every file under \`data/raw/\` hashes to \`.github/evidence.sha256\` | $(mark "$R1") |"
+            echo "| 1 | evidence integrity | every file under \`data/raw/\` hashes to \`data/MANIFEST.sha256\` | $(mark "$R1") |"
             echo "| 2 | link integrity | every relative Markdown link in a tracked \`.md\` resolves to a tracked path | $(mark "$R2") |"
             echo "| 3 | JSON validity | \`data/raw/\` parses; \`min <= p50 <= p95 <= p99 <= max\`, \`n >= 1\` | $(mark "$R3") |"
             echo "| 4 | probe syntax | every \`probes/*.py\` compiles — none is executed | $(mark "$R4") |"

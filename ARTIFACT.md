@@ -40,6 +40,7 @@ document found has since been **fixed**, §8 says so rather than deleting the fi
 | Path | Contract | Mutability |
 |---|---|---|
 | `data/raw/` | **The evidence** — file count and total size in §1.3, generated from the tree. Every published figure must resolve here or to a named campaign report. Byte-identical to what the probe wrote — not reformatted, not re-keyed, not corrected after refutation. | **Frozen.** Never edit. A correction is a new file plus a note in the campaign report. §4 makes any later alteration detectable. |
+| `data/MANIFEST.sha256` | One SHA-256 per evidence file, in `sha256sum` format. Checkable without this repository's scripts: `sha256sum -c data/MANIFEST.sha256`, **from the repository root** — its paths are root-relative, so run from inside `data/` it reports every file missing. | Regenerated only when `data/raw/` legitimately changes; CI job 1 fails otherwise. |
 | `data/README.md` | Data dictionary: one entry per raw file, its host fingerprint, and the rules for quoting a number out of the directory. | Prose; may be corrected. |
 | `data/derived/` | Re-analysis computed *from* `data/raw/`. Currently `inference.json` (137 KiB), the companion to `docs/STATISTICS.md`. | Regenerable. Not evidence. |
 | `probes/` | **The Python instruments**, the code as it ran, plus `.orig` reference copies; counts in §1.3. | Frozen as a record. Patches are declared in `probes/README.md`. |
@@ -54,7 +55,7 @@ document found has since been **fixed**, §8 says so rather than deleting the fi
 | `docs/article/` | **Out of scope for this artefact.** The author's own publication, under verification. Defects in it are flagged, never edited. | Out of scope. |
 | `env/` | `requirements.txt` and the MongoDB replica-set compose file. **Half the system under test is absent** — see §3.3. | Reconstruction. |
 | `README.md`, `RESULTS.md`, `METHODOLOGY.md`, `LIMITATIONS.md`, `REPRODUCING.md`, `DISCLAIMER.md`, `CONTRIBUTING.md`, `ARTIFACT.md` | The English documents. `RESULTS.md` §3 is the normative register, M1–M8 and M10–M23. | Prose. |
-| `.github/` | **Normative, not prose.** `workflows/verify-evidence.yml` and the `check_*.py` scripts it runs (counts in §1.3), the two manifests `evidence.sha256` and `probe-citations.sha256`, issue and pull-request templates, and the working records `IMPROVEMENT-PLAN.md`, `WORK-ORDER-d12-html.fr.md`. | CI is normative; the working records are prose. |
+| `.github/` | **Normative, not prose.** `workflows/verify-evidence.yml` and the `check_*.py` scripts it runs (counts in §1.3), the source-line-citation manifest `probe-citations.sha256`, issue and pull-request templates, and the working records `IMPROVEMENT-PLAN.md`, `WORK-ORDER-d12-html.fr.md`. | CI is normative; the working records are prose. |
 | `LICENSE`, `LICENSE-docs`, `CITATION.cff`, `.gitignore` | Apache-2.0 for code, CC BY 4.0 for documents and data; citation metadata; ignore rules. | Fixed. |
 | `CITATION.cff` | Citation metadata. Incomplete — no `version`, no `commit`, no `identifiers`, no DOI. | See §7. |
 
@@ -98,7 +99,7 @@ Every number in the table below is regenerated from the tree by
 | their total size in bytes | **220 736** |
 | of those, carrying a `run_at_utc` | 26 |
 | carrying none | 12 |
-| `.github/evidence.sha256` entries | 38 |
+| `data/MANIFEST.sha256` entries | 38 |
 | `probes/*.py` | **17** (plus 2 `.orig` reference copies) |
 | `.github/scripts/check_*.py` | 9 |
 | `git tag -l` | (none) |
@@ -129,7 +130,8 @@ Two consequences were drawn from that, and **both are now discharged**:
 1. ~~**Nothing above is published.**~~ All eight paths were committed in `ff84757` and are at
    `origin/main`. `README.md`'s links to `docs/STATISTICS.md` resolve in a clean clone. The
    prerequisite this section set for §2 has been met.
-2. **The independent cross-check stands, and has been re-run.** `.github/evidence.sha256`, a
+2. **The independent cross-check stands, and has been re-run.** `data/MANIFEST.sha256` (then at
+   `.github/evidence.sha256`), a
    manifest produced by a different session from the one that wrote §4, agreed line by line with
    the digests computed here: 36 of 36 then, and **38 of 38 now** — `sha256sum -c` reports 38 OK,
    0 failures. Two independent runs of `sha256sum` over `data/raw/` produce the same result, which
@@ -176,7 +178,7 @@ repository (commit count and HEAD in §1.3) with **no tag**, **no release** and 
 block points at a mutable URL that resolves to whatever `HEAD` happens to be.
 
 Two clauses of the original assessment have since been **discharged and are struck here rather
-than deleted**: ~~no committed checksum manifest~~ — `.github/evidence.sha256` was committed in
+than deleted**: ~~no committed checksum manifest~~ — the manifest was committed in
 `ff84757`, is at `origin/main`, holds one entry per evidence file and is re-verified by CI on every
 push; and ~~`grep -rniE 'zenodo|doi|orcid' .` returns nothing outside `docs/article/`~~ — that grep
 now matches in `README.md`, `CONTRIBUTING.md`, `METHODOLOGY.md`, `RESULTS.md` and this file, all of
@@ -416,8 +418,8 @@ evidence file changes its digest and is detectable against this table.
 
 ```bash
 cd /path/to/shredding-cost-hcd-mongodb
-sha256sum data/raw/*.json | tee data/MANIFEST.sha256   # mint
-sha256sum -c data/MANIFEST.sha256                       # verify
+sha256sum data/raw/*.json > data/MANIFEST.sha256   # mint, from the repository root
+sha256sum -c data/MANIFEST.sha256                  # verify, also from the root
 ```
 
 File count and total size are in the generated table in §1.3, not typed here — the figure that was
@@ -509,7 +511,7 @@ Prerequisite: `cd` to the repository root. Nothing here requires a network.
 
 | # | Claim | Command | Passes when |
 |---|---|---|---|
-| **V0** | The evidence is unaltered since this document was written | `sha256sum -c data/MANIFEST.sha256` | every line reports `OK` (mint the manifest from §4 first) |
+| **V0** | The evidence is unaltered since this document was written | `sha256sum -c data/MANIFEST.sha256`, **run from the repository root** — the manifest's paths are root-relative, so from inside `data/` every line reports "No such file or directory", which looks like corruption and is not | 38 lines, every one `OK`. Until 18 September 2026 this row named a file that did not exist; the manifest has been moved to that path |
 | **V1** | All evidence is well-formed | `python3 -c "import json,glob;[json.load(open(f)) for f in glob.glob('data/raw/*.json')];print(len(glob.glob('data/raw/*.json')))"` | prints `38`, no exception |
 | **V2** | The published three-arm merge is the published code's output | `python3 probes/probe_comparative.py --compare data/raw/cmp_mongo.json data/raw/cmp_hcd.json data/raw/cmp_hcdcql.json --out /tmp/v2.json` then diff against `data/raw/comparison_v2.json` | identical apart from `run_at_utc` |
 | **V3** | `comparison.json` carries content no probe emits | same, with `cmp_mongo.json cmp_hcd.json` only | identical apart from `run_at_utc` **and** the top-level `VERDICT` key, which the recomputation does not produce — §8.1 |
@@ -644,13 +646,14 @@ Roughly a day's work. **No new measurement is required.**
 
 1. ~~**Commit what is on disk but untracked**~~ — **done** in `ff84757`. Every path this step
    named is tracked and at `origin/main`, and `README.md`'s links resolve in a clean clone.
-2. ~~**Publish the manifest.**~~ — **done**. `.github/evidence.sha256` is committed, holds one
-   digest per evidence file, and `.github/scripts/check_evidence_manifest.py` runs as CI job 1, so
-   a later alteration fails CI at the commit that introduces it. The one part of this step not
-   taken is the canonical location: the manifest lives under `.github/` rather than at
-   `data/MANIFEST.sha256`, where a reader following `REPRODUCING.md` would look for it. Either move
-   it or add `sha256sum -c .github/evidence.sha256` as step 1 of `REPRODUCING.md`; the protection
-   exists, the signposting does not.
+2. ~~**Publish the manifest.**~~ — **done, and now signposted**. `data/MANIFEST.sha256` is
+   committed, holds one digest per evidence file, and `.github/scripts/check_evidence_manifest.py`
+   runs as CI job 1, so a later alteration fails CI at the commit that introduces it. It lived at
+   `.github/evidence.sha256` until 18 September 2026, which protected the evidence but hid the
+   protection: a reader following `REPRODUCING.md` looks beside the data, not inside a CI
+   directory. It was moved with `git mv`, so `git log --follow` carries its history, and
+   `REPRODUCING.md` §1 now opens with `sha256sum -c data/MANIFEST.sha256`. **V0 in §5 asserted that
+   command against a file that did not exist**; it does now.
 3. **Correct the two false integrity claims first** (§8.2). A deposit freezes whatever is in the
    tree, including its errors.
 4. **Tag, signed.**

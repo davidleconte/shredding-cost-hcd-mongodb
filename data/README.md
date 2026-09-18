@@ -1,6 +1,6 @@
 # `data/raw/` — data dictionary
 
-Thirty-six JSON files. Every one of them is byte-identical to the output the probe wrote
+Thirty-eight JSON files. Every one of them is byte-identical to the output the probe wrote
 when it ran. They are not reformatted, not re-keyed, not pruned of the runs that went
 against the author, and not corrected after the fact. Where a later measurement refuted an
 earlier one, the earlier file stays exactly as it was and the refutation lives in a separate
@@ -17,6 +17,20 @@ uniform, and the exact shape each file carries is listed under **Host fingerprin
 
 **Do not modify anything in `data/raw/`.** If a file needs a correction, the correction is a
 new file and a note in the campaign report.
+
+**Checking that nothing here has been modified.** `data/MANIFEST.sha256` carries one SHA-256
+per file, in the ordinary `sha256sum` format, so it can be checked without any script from
+this repository:
+
+```bash
+sha256sum -c data/MANIFEST.sha256      # from the repository root
+```
+
+Its paths are relative to the repository root, so it must be run from there — run from inside
+`data/` it reports every file as *No such file or directory*, which looks like corruption and
+is not. CI re-verifies it on every push (job 1), so an alteration fails at the commit that
+introduces it. The manifest lived at `.github/evidence.sha256` until 18 September 2026; it was
+moved here, beside the evidence it describes, because that is where a reader looks.
 
 ---
 
@@ -549,6 +563,33 @@ M1–M17 — never saw them.
   `countDocuments` refuses above 1 000 documents, and that the only correct aggregate
   available is to pull every document to the client. This is an unfavourable structural
   finding, published with the two empty distributions that prove the operations failed.
+
+### `findings_agg7bis_hcd.json` and `findings_agg7bis_mongodb.json`
+- **Probe:** `probes/probe_agg_7bis.py --engine hcd` and `--engine mongodb` (campaign 7bis,
+  the re-run of the aggregation axis).
+- **Read first:** `result.D9_estimate_by_phase` on the HCD side, and the `raw_ms` arrays
+  everywhere.
+- **These two files are the only ones in the corpus that keep their observations.** Every
+  timed distribution carries `raw_ms`, the full series in execution order, plus a `raw_note`
+  saying why. The rest of `data/raw/` retains summaries only, and `docs/STATISTICS.md`
+  records that as the dossier's central statistical defect. Because these two do not, they
+  carry the first bootstrap intervals and the first rank test in the repository — on both
+  arms, which no earlier comparison could support.
+- **Against the dossier, in the files:** `D9_estimate_by_phase` records
+  `estimatedDocumentCount()` as `0` before flush, **171 267** after `nodetool flush` and
+  **172 132** after major compaction, against a true 200 000. That refutes challenge D9,
+  which this repository had published: the estimator is wrong in steady state, not only at
+  cold start, so M22 was understated here rather than overstated. The MongoDB file records
+  `200000` exactly for the same call on the same corpus.
+- **Also against the dossier:** the ingest section measures both arms at a batch of 100, the
+  Data API's own per-call ceiling — HCD 206.961 s against MongoDB 29.85 s, **6.9×**, which
+  withdraws the 46.3× campaign 7 reported by comparing that ceiling with MongoDB's native
+  10 000-document batch.
+- **`verdict_rules_preregistered`** holds the five rules R1–R5, fixed before execution, that
+  would have refuted the campaign. They are in the evidence file, not only in the report.
+- **Reserve the author owes:** the HCD scan series opens at 147 138.527 ms against a median of
+  132 896.7 ms for the other fourteen — a warm-up the protocol had declared absent without
+  measuring it. Both readings are published in `docs/campagne7bis.fr.md`.
 
 ### `findings_agg_cqlref.json`
 - **Probe:** `probes/agg_cql_arm.py`.

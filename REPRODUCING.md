@@ -28,6 +28,19 @@ structural grounds, **[M]** measured on one build under stated conditions.
 
 ## 1. Prerequisites
 
+**Step zero, before anything is installed: check that the evidence you are about to compare
+against has not been altered.**
+
+```bash
+sha256sum -c data/MANIFEST.sha256      # from the repository root
+```
+
+Thirty-eight lines, every one `OK`. The manifest's paths are relative to the repository root,
+so run it from there — from inside `data/` it reports every file as *No such file or
+directory*, which looks like corruption and is not. This is the one check in this document
+that needs neither Python, nor a container, nor a network, and it is the one that makes every
+other number here quotable.
+
 | | What the campaign used | Where it is recorded |
 |---|---|---|
 | Host | QEMU virtual machine, 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz, 220 GiB RAM | `data/raw/cmp_mongo.json` → `conditions.host` |

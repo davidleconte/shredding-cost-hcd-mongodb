@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Verify that every file under data/raw/ still hashes to its committed sha256.
 
-The manifest lives at .github/evidence.sha256 and is written in the ordinary
+The manifest lives at data/MANIFEST.sha256 — beside the evidence it describes, where a
+reader following REPRODUCING.md looks for it — and is written in the ordinary
 `sha256sum` format, so a reader can check it without this script:
 
-    sha256sum -c .github/evidence.sha256
+    sha256sum -c data/MANIFEST.sha256      # from the repository root
+
+Its paths are relative to the repository root, so it must be run from there. Run
+from inside data/ it reports every file as "No such file or directory", which
+looks like corruption and is not. It moved from .github/evidence.sha256 on
+18 September 2026; git log --follow carries the history across.
 
 What this proves: no file under data/raw/ has been edited, truncated, added or
 removed since the manifest was committed. What it does NOT prove: that the
@@ -23,7 +29,7 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 EVIDENCE_DIR = REPO / "data" / "raw"
-MANIFEST = REPO / ".github" / "evidence.sha256"
+MANIFEST = REPO / "data" / "MANIFEST.sha256"
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -89,7 +95,7 @@ def main() -> int:
     total = len(actual)
     if changed or removed or added:
         print(
-            f"\nFAIL: evidence under data/raw/ diverges from .github/evidence.sha256 "
+            f"\nFAIL: evidence under data/raw/ diverges from data/MANIFEST.sha256 "
             f"({len(changed)} changed, {len(removed)} removed, {len(added)} unlisted).\n"
             "data/raw/ is append-only by policy. If a file was legitimately ADDED, "
             "regenerate with:  python .github/scripts/check_evidence_manifest.py --write\n"
@@ -99,7 +105,7 @@ def main() -> int:
         )
         return 1
 
-    print(f"OK: {total} evidence files match .github/evidence.sha256")
+    print(f"OK: {total} evidence files match data/MANIFEST.sha256")
     return 0
 
 

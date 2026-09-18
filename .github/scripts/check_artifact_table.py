@@ -104,7 +104,7 @@ def facts() -> dict[str, str]:
     total = sum(f.stat().st_size for f in files)
     stamped = sum(1 for f in files if find_stamp(json.loads(f.read_text(encoding="utf-8"))))
     probes = sorted((REPO / "probes").glob("*.py"))
-    manifest = REPO / ".github" / "evidence.sha256"
+    manifest = REPO / "data" / "MANIFEST.sha256"
     entries = [l for l in manifest.read_text(encoding="utf-8").splitlines()
                if l.strip() and not l.startswith("#")]
     scripts = sorted((REPO / ".github" / "scripts").glob("check_*.py"))
@@ -136,7 +136,7 @@ def facts_block() -> str:
             + f"| their total size in bytes | **{f['raw_bytes']}** |\n"
             + f"| of those, carrying a `run_at_utc` | {f['raw_stamped']} |\n"
             + f"| carrying none | {f['raw_unstamped']} |\n"
-            + f"| `.github/evidence.sha256` entries | {f['manifest_entries']} |\n"
+            + f"| `data/MANIFEST.sha256` entries | {f['manifest_entries']} |\n"
             + f"| `probes/*.py` | **{f['probes']}** (plus {f['probe_orig']} `.orig` reference copies) |\n"
             + f"| `.github/scripts/check_*.py` | {f['check_scripts']} |\n"
             + f"| `git tag -l` | {f['tags']} |\n"
