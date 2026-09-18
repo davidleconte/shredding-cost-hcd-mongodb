@@ -4,6 +4,7 @@
 # citation before re-blessing it.
 
 9caf1c7cda0e57fc7a7cecf53b287c216d11140c7d38056557dbec94238e6a43  probes/disk_regime_driver.py:25  THE PROOF OBLIGATION
+e42783eff87d00288726c874b4f5536bf38e3ba4ee20b44459a88357b38dc7ef  probes/hcd_cql_arm.py:68  update_ps = s.prepare(f"UPDATE {table} SET {set_clause} WHER
 f02b86be8f473e3ce492c16552a534333632e5b9f6dff5c8097d35a8b0ee6ac8  probes/mongot_floor.py:69  spread = dist["max_ms"] - dist["min_ms"]
 790996856580cf891d2a8233c2597296393b414cc7f0332229abe8f5294621f7  probes/probe_aggregation.py:109  return list(coll.aggregate([{"$group":{"_id":"$cat","sum":{"
 4a4b7be286e28a77a35680a408ebc99c59e21be0671d31d1940ac6e2403849fd  probes/probe_aggregation.py:156  A = dist(timed(lambda: coll.count_documents({}, upper_bound=
@@ -15,6 +16,7 @@ c7bc365620b5d68965ab9557c63b9d11863d4691795e51eadf0376fdff68575f  probes/probe_a
 1c598aca6fa71c859f4e17d2f23f84d9ef4819cfc7f7145ba25a47a33665c857  probes/probe_comparative.py:41  record will say `cross_engine_comparison_permitted: false` i
 d53737aa848acf9ad0180f408409b8752dbe97493fb2bda95a7304e8d9268e38  probes/probe_field_vs_byte.py:320  "verdict_rule": ("series-2 endpoint ratio <= 1.15 → bytes do
 8edec3d05cf972e44391a0c1e6756193f0aea6bf8b5d3d2e5c83cf219b53fb55  probes/probe_field_vs_byte.py:323  "verdict_per_pass": verdicts,
+74553b09f94a23f47700a4cd1e30a8ff8bcf5781b22677de21cc29c2ba0d456d  probes/probe_tier_vs_storage.py:225  f"UPDATE {table} SET {set_clause} WHERE key = ? IF tx_id = ?
 e7c190c1efa5780b3c776fcd587ad47017a1d95346c5c331e217965adf6d85a4  probes/probe_tier_vs_storage.py:320  record = {
 d7654d0268b995876c8d914e11d039b6549420dfe7e4fb150e0086bd4b090fff  probes/probe_tier_vs_storage.py:323  "question": ("Does the ~0.77 ms per indexed KiB live in the 
 839e04475af2fba5145bb4f4d8db6baf7ac38b37f5963c29ea492faa061a2a6f  probes/probe_tier_vs_storage.py:81  AGREEMENT_TOLERANCE = 0.25      # methods disagreeing by mor

@@ -117,6 +117,7 @@ inspection, disagreements between a label and an operational definition.
 | **I3** ⭑ | "The tier's share" is one name over three estimators of three different quantities — bypass difference (29 %), coordinator-trace residual (19 %), slope difference in another regime (9 %). | **VOIDS** any single percentage | conclusion | audit I3; `METHODOLOGY.md` §5 |
 | **C7** | M12's arm B rewrites already-shredded values and so never exercises the shredding code; the "tier" term aggregates parsing, shredding and serialisation without separating them. | **BOUNDS** — direction only | internal | challenges C7 |
 | **C1** ⭑ | The 44×/79× compare *stacks* (Data API + Paxos against a native driver), not storage engines. | **BOUNDS**; residue after M14 | — | challenges C1, **partly REFUTED** by M14 (40×/72× engine-to-engine) |
+| **C1-bis** ⭑⭑ — added 18 Sept 2026 | C1 above bounds the *stack* ratio and the repository answered it by adding a CQL-direct arm and calling the result **engine-to-engine**. That label was wrong and is withdrawn. `probes/hcd_cql_arm.py:68` and `probes/probe_tier_vs_storage.py:225` both issue `UPDATE … WHERE key = ? IF tx_id = ?`, and **no probe in this repository ever issues a non-conditional HCD update**. Stripping the Data API tier removed the tier; it did not remove the Paxos round, which is inherent to every HCD arm measured. So 40×/72× is tier-stripped, not engine-to-engine, and the consensus term is **not identified anywhere in the dossier**. | **BOUNDS** M14 further than C1 did: the storage-layout attribution is confounded with concurrency control in every HCD arm, and no arm exists that would separate them | verified by grep over `probes/*.py`; the measurement that would close it — a non-conditional HCD update arm — was never run |
 | **C15** | Two different MongoDB deployments in one campaign, and the read axis was never corrected for the tier the way the mutation axis was. | **BOUNDS** the ~19.6× read gap | external | challenges C15; `LIMITATIONS.md` I8 |
 | **C11** | `attempts = 1` was published as "synchronous, zero lag"; it means "found on the first query", and that query arrives ~45 ms after the write. | **VOIDS** "zero" | conclusion | challenges C11 |
 | **C12** | The 21.7 × undeclared-field result was read as engine speed; the construct it actually measures is dispensation from index design. | **VOIDS** the engine-speed reading | — | challenges C12 |
@@ -160,7 +161,7 @@ inspection, disagreements between a label and an operational definition.
    the shredding code, making its storage figure an optimistic floor. `probes/hcd_cql_arm.py` does
    the same thing — the derived values and `doc_json` are read once and hoisted out of the timed
    loop, and every warm-up and repetition rewrites those same constants — and it carries M14, the
-   40×/72× engine-to-engine ratio and the 9 % tier share that refuted C1. The direction of the
+   40×/72× tier-stripped ratio and the 9 % tier share that refuted C1. The direction of the
    resulting bias runs **against HCD**: if the CQL arm's storage term is an optimistic floor, the
    subtraction 0.7775 − 0.7037 is an *upper* bound on the tier term, so 9 % is a ceiling rather
    than a point, and 40×/72× are lower bounds. Stating this costs the dossier nothing and is

@@ -6,7 +6,7 @@
 # stock GitHub runner with no database of any kind. It therefore re-runs nothing
 # and re-measures nothing.
 #
-# A green check asserts exactly nine things:
+# A green check asserts exactly ten things:
 #
 #   1. evidence-integrity  every file under data/raw/ still hashes to the value
 #                          committed in data/MANIFEST.sha256
@@ -187,6 +187,20 @@ jobs:
           "9 · ARTIFACT.md — its evidence table and headline counts still match the tree"
           python .github/scripts/check_artifact_table.py
 
+  article-refs:
+    name: 10 · diptych internal consistency (sections, figures, notes, shared tables)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Resolve every cross-reference in the two article parts
+        run: >-
+          bash .github/scripts/run_check.sh
+          "10 · Diptych consistency — section and figure references resolve, note anchors pair, shared tables agree"
+          python .github/scripts/check_article_refs.py docs/article/article-part1-what-a-mutation-costs.html docs/article/article-part2-when-the-index-is-current.html
+
   derived-numbers:
     name: 5 · derived numbers (inference.json vs data/raw)
     runs-on: ubuntu-latest
@@ -243,6 +257,7 @@ jobs:
       - figure-traceability
       - probe-citations
       - artifact-facts
+      - article-refs
     steps:
       - name: Write the verification table and fail if any check failed
         env:
@@ -255,6 +270,7 @@ jobs:
           R7: ${{ needs.figure-traceability.result }}
           R8: ${{ needs.probe-citations.result }}
           R9: ${{ needs.artifact-facts.result }}
+          R10: ${{ needs.article-refs.result }}
         shell: bash
         run: |
           set -uo pipefail
@@ -274,6 +290,7 @@ jobs:
             echo "| 7 | figure traceability | every figure with >= 3 decimals in the seven English documents occurs in \`data/raw/\` or \`data/derived/inference.json\` | $(mark "$R7") |"
             echo "| 8 | source-line citations | every \`file.py:NNN\` in the Markdown still names the line it was blessed against | $(mark "$R8") |"
             echo "| 9 | ARTIFACT.md self-description | its evidence table and headline counts regenerate identically from the tree | $(mark "$R9") |"
+            echo "| 10 | diptych consistency | every section and figure reference in the two article parts resolves, note anchors pair, shared tables agree | $(mark "$R10") |"
             echo
             echo "**What this run did NOT do.** It started no HCD ring and no MongoDB"
             echo "replica set, so it re-measured nothing. A green result means the"
@@ -285,11 +302,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           failed=0
-          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7" "$R8" "$R9"; do
+          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7" "$R8" "$R9" "$R10"; do
             [ "$result" = "success" ] || failed=1
           done
           if [ "$failed" -ne 0 ]; then
-            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7 R8=$R8 R9=$R9" >&2
+            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7 R8=$R8 R9=$R9 R10=$R10" >&2
             exit 1
           fi
-          echo "All nine verification checks succeeded."
+          echo "All ten verification checks succeeded."

@@ -601,7 +601,7 @@ Recorded here so that no future badge claim overreaches it.
    file itself. One more, `mongot_floor.py`, carries a classification heuristic that the dossier's
    own meta-challenge D5 already flags as the author's judgement rather than a test. **Eight carry
    none**, and they include every instrument that
-   produced a post-campaign-4 headline: `hcd_cql_arm.py` (M14, the 40×/72× engine-to-engine
+   produced a post-campaign-4 headline: `hcd_cql_arm.py` (M14, the 40×/72× tier-stripped
    result), `rmw_postflush.py` (M15, the ×1.52 that demoted the flagship coefficient),
    `probe_read_search.py` (M16, one of the two HCD wins), `mongot_freshness.py` (M17, the other),
    `turn_latency.py` (M19), `method2_trace.py`, `probe_aggregation.py`, `agg_cql_arm.py`,

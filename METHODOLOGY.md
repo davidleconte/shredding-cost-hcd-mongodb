@@ -76,7 +76,8 @@ In practice this decomposed into four standing rules.
    - The author's challenge C1 (that the 44× ratio was inflated by the Data API
      tier, and the honest engine-to-engine figure was ~31×) was **refuted by his
      own follow-up measurement**: removing the tier moved the slope only from
-     0.7775 to 0.7037 ms/KiB, so the engine-to-engine ratio is 40×, not ~31×
+     0.7775 to 0.7037 ms/KiB, so the tier-stripped ratio is 40×, not ~31× — tier-stripped and not
+     engine-to-engine, since the CQL-direct arm keeps the Paxos-guarded conditional
      (`data/raw/comparison_v2.json`, M14).
    - The author's own headline freshness figure, ~1015 ms of `mongot` lag, was
      **overstated by ×1.53 on the medians** (p50 1015.201 → 664.3 ms) by a
