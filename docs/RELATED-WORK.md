@@ -504,7 +504,7 @@ Three reserves, and the first is severe:
 1. **The companion claim M20 is not captured evidence, in whole.** `RESULTS.md` M20 states that the
    `COMMAND_UNKNOWN` result "is a captured artefact — `findings_agg_hcd.json` (`structural` field)".
    Verified while writing this document: that field holds a **fixed string literal**, written
-   unconditionally at `probes/probe_aggregation.py:190` regardless of server behaviour, and **no
+   unconditionally at `probes/probe_aggregation.py:196` regardless of server behaviour, and **no
    probe under `probes/` ever issues `aggregate`, `$group` or `distinct` against HCD** — the only
    `aggregate` calls in the tree are pymongo `$search`/`$group` calls against MongoDB. The probe's
    own docstring calls the finding "recon, not a measurement". M20 should therefore be read as

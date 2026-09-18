@@ -224,7 +224,7 @@ below are therefore mostly **SCOPES**: they do not damage results, they delimit 
 | **D1** ⭑⭑ | The axis itself may not matter where the article says it matters: a conversational RAG turn lasts 1–10 s, longer than the whole window. | **SCOPES** — resolved by M19 to a τ bracket | challenges D1, **CONFIRMED and quantified** |
 | **C9** | Axis selection: the first five campaigns measured only the axis where HCD is expected to lose. Campaign 6 was written to close it; the selection remained the author's throughout. | **SCOPES**; also a conclusion threat to the scoreboard (§9, X5) | challenges C9 |
 | **D11** | HCD's other surfaces — Data API tables, an external analytic engine on the same ring — were never tried. M20 is a finding about the Data API **as exposed by default**. | **SCOPES** M20/M23 | campaign-7 challenges D11 |
-| **D9** | `estimatedDocumentCount() = 0` was read minutes after a 185.3 s load with no flush. What the estimator returns in steady state was never measured. | **SCOPES** M22 to the pre-flush window — the application hazard is unchanged | campaign-7 challenges D9 |
+| **D9** — ⛔ **refuted 18 Sept 2026** | D9 held that `estimatedDocumentCount() = 0` was read minutes after a 185.3 s load with no flush, and that ~~what the estimator returns in steady state was never measured~~. **Campaign 7bis measured it**: 171 267 after `nodetool flush` and 172 132 after major compaction, against a true 200 000 — an error of ~14 % that survives both, where MongoDB's estimator returns 200 000 exactly on the same corpus. | ~~SCOPES M22 to the pre-flush window~~ → **the scoping is withdrawn**: the defect is steady-state, so M22 was understated here, not overstated | campaign-7 challenges D9; `docs/campagne7bis.fr.md` |
 | **L3** | No multi-host and no WAN topology. | **SCOPES** | `LIMITATIONS.md` §5 |
 | **L4** | **No concurrency.** Every probe is a single sequential client. | **SCOPES** — and see X1, since the repository title names concurrency | `LIMITATIONS.md` §5; `RESULTS.md` §6 |
 | **L5** | Closed-loop probes, not a fixed offered rate, except the freshness probe (50 writes/s, slip 0.055–0.078 s). | **BOUNDS** every tail figure | `LIMITATIONS.md` §5; `STATISTICS.md` §4 |
@@ -250,7 +250,7 @@ figures and the method are there.
 | **D5** | M18 is *n* = 60, one pass, and its "refresh interval versus fixed delay" verdict is a threshold in the author's own code (`near_zero and spread > 0.5 * max`), not a test. | **BOUNDS** | challenges D5 |
 | **D6** | The HCD aggregation arm is *n* = 3, so the exact permutation *p* floor is 1 / C(18,3) = 1.23 × 10⁻³ — **set by *n*, not by the effect**, which is astronomical. Four more executions would have taken it below 10⁻⁵ (1 / C(22,7) = 5.9 × 10⁻⁶); three more reach only 1.8 × 10⁻⁵ (1 / C(21,6)), at 134 s each. | **BOUNDS** the strength of proof, not the direction | campaign-7 challenges D6; `STATISTICS.md` §3.4 |
 | **D7** ⭑ | The first draft of that challenge decomposed the 134 s using M16's point-read p50 — a different operation, a different collection, a different campaign — and produced a 30 s residue that was an artefact of the wrong constant. The correct decomposition needs no import: 133 984.229 ms ÷ 10 000 pages = **13.398 ms per page**, no residue. | self-correcting; **upgrades** M23's decomposition [U] → [M] | campaign-7 challenges D7 |
-| **D12** ⭑⭑ (statistical half) | The campaign charged the CQL path with a partition-design cost on the strength of a ×1.28 median ratio whose supports **overlap** — honest ratio interval **[0.966×, 1.421×]**, containing 1.0, so the data cannot even exclude that the unaligned scan is faster. | **VOIDS** the design-cost clause; the "abandon the document model" half is structural and survives | campaign-7 challenges D12 |
+| **D12** ⭑⭑ (statistical half) — ⛔ **annulled 18 Sept 2026** | D12 charged the campaign with asserting a partition-design cost on a ×1.28 median ratio whose supports **overlap** — interval **[0.966×, 1.421×]**, containing 1.0 — and called C3b "the unaligned scan". **There is no unaligned arm.** `agg_cql_arm.py` creates one table, `PRIMARY KEY (cat, id)`; C3a and C3b are two query shapes against it, as `AGG-CQLsweep-vs-CQLgroupby` and the raw `C3b_is` field both say. On a `PRIMARY KEY (id)` table the same `GROUP BY cat` is refused outright (`code=2200`), so C3b presupposes the pre-partitioning it was read as refuting. | ~~VOIDS the design-cost clause~~ → **the clause is REINSTATED**; what survives of D12 is that the ×1.28 **between the two query shapes** is not established | campaign-7 challenges D12, post-scriptum |
 | **I5** ⭑ | ADR action 1 was ticked `[x]` on the strength of M10 while M15 showed no disk-bound read had been measured — an inference from data to claim that the later data did not support. | **VOIDS** the closure; **status: corrected**, reopened to `[~]` at ADR revision 11 | audit I5 |
 | **L5** | Closed loop: the sampling rate is a decreasing function of latency, so slow periods contribute proportionally fewer observations. The published p95/p99 are tails of a **service-time** distribution sampled at negligible utilisation, not of a response-time distribution under load. | **VOIDS** every tail figure *as a load tail* | `STATISTICS.md` §4.1 |
 | **L8** | Percentiles only, no means for latency. **This is a strength, listed here so that the class is complete** — it is the policy that protects the conclusions, enforced in probe source. | — | `METHODOLOGY.md` §6 |
@@ -330,10 +330,10 @@ recorded here so that the conclusion-validity class is not read as I7 alone.
 | D6 | | Conclusion | — | BOUNDS | §6 | challenges-campagne7.fr.md |
 | D7 | ⭑ | Conclusion | Construct | self-correcting; upgrades | §6 | challenges-campagne7.fr.md |
 | D8 | ⭑ | Construct | External | reclassification [M]→[D] | §3 | challenges-campagne7.fr.md |
-| D9 | | External | Construct | SCOPES | §5 | challenges-campagne7.fr.md |
+| D9 | | External | Construct | ~~SCOPES~~ → **REFUTED** by campagne 7bis; M22 was understated | §5 | challenges-campagne7.fr.md; campagne7bis.fr.md |
 | D10 | | Internal | — | **resolved against the challenger** | §8 | challenges-campagne7.fr.md |
 | D11 | | External | — | SCOPES | §5 | challenges-campagne7.fr.md |
-| D12 | ⭑⭑ | Conclusion | Construct, External | VOIDS the design-cost clause | §6, §5 | challenges-campagne7.fr.md |
+| D12 | ⭑⭑ | Conclusion | Construct, External | ~~VOIDS the design-cost clause~~ → the design-cost half is **ANNULLED** and the clause reinstated; the statistical half **BOUNDS** the ×1.28 between two query shapes, and the scale half still **SCOPES** the arm (row above) | §6, §5 | challenges-campagne7.fr.md |
 | D13 | ⭑ | Construct | Internal | VOIDS the 46× reading | §3 | challenges-campagne7.fr.md |
 | D14 | | Construct | External | SCOPES | §3 | challenges-campagne7.fr.md |
 | L1 | | External | Internal | SCOPES | §5 | LIMITATIONS.md §5 |
@@ -670,11 +670,16 @@ every τ; MongoDB 30/30 at τ = 0, 15/30 at 500 ms, 0/30 from τ = 1000 ms. That
 HCD's freshness advantage may be stated — a correctness property inside a bracket, not a multiplier
 — and D1's resolution already says exactly that.
 
-The same class of threat, applied to the CQL reference arm, produced D12: the campaign charged the
-CQL path with a partition-design cost on a ×1.28 median ratio whose supports overlap, honest interval
-[0.966×, 1.421×], which does not even exclude the unaligned scan being faster. A design penalty
-asserted without separating it from noise is the fault the dossier reproaches in other people's
-benchmarks, and it committed it once.
+The same class of threat, applied to the CQL reference arm, produced D12 — and D12 then committed a
+different fault of its own. It charged the campaign with asserting a partition-design cost on a ×1.28
+median ratio whose supports overlap, interval [0.966×, 1.421×], "which does not even exclude the
+unaligned scan being faster". There is no unaligned scan: both arms query one table,
+`PRIMARY KEY (cat, id)`, and differ only in query shape; on a table not partitioned by the group key
+the `GROUP BY` arm is refused by the engine. So the clause is reinstated, and what the dossier
+actually committed here is not a design penalty asserted without separating it from noise — it is
+**the right gesture on the wrong object**, a correct computation over a mislabelled comparison. That
+fault is worth more than the one it replaced, because arithmetic survives review and a mislabelled
+object does not.
 
 Nothing here reverses a direction. MongoDB's mutation win is the most robust quantitative result in
 the repository — 19 of 20 cells disjoint against the Data API arm, 18 of 20 against the CQL-direct

@@ -2622,6 +2622,7 @@
    "axis": "aggregation, HCD/CQL internal",
    "claim": "The per-partition sweep (2 011 ms) is HCD's best CQL path, ahead of the cross-partition GROUP BY (2 568 ms)",
    "claim_ref": "M23",
+   "notes": "GUARD, added 2026-09-18. Both arms read the SAME source_file and the same run: agg_cql_arm.py builds exactly one table, agg_cql(cat, id, amt) PRIMARY KEY (cat, id), and times two QUERY SHAPES against it. Neither arm is an unaligned or misaligned schema, and this record therefore prices a query shape, not a schema design. Challenge D12 read it as pricing the partitioning choice and withdrew the CQL arm's LABEL clause on that basis; the withdrawal is annulled. The structural reason, which is argued and evidenced in docs/challenges-campagne7.fr.md (D12 post-scriptum) and is NOT a datum of this derived layer, is that the slower arm's statement is not even expressible against a table whose PRIMARY KEY does not carry cat. This record's own verdict is unchanged and is what survives of D12: not established by these data.",
    "slower_arm": {
     "label": "native CQL cross-partition GROUP BY",
     "n": 15,

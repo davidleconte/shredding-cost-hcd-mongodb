@@ -16,15 +16,23 @@
 > challenger*: D10 asked which index state the MongoDB
 > `$group` ran under — the probe source answers it (`cat_idx` was present) and the data shows the
 > index was irrelevant, since `$sum: "$amt"` cannot be served by an index on `cat` alone.
-> Three challenges are new and were missed by the first pass. **D12** is the heaviest: the native-CQL
-> reference arm was never itself challenged, and challenging it turns on the campaign. The campaign
-> charges the CQL path with a design cost — "pre-designing a table partitioned by the group key" —
-> that its own data does not support. The misaligned arm (C3b, a cross-partition `GROUP BY`) is only
-> ×1.28 slower than the aligned one, and **that ×1.28 is itself not established**: the two supports
-> overlap across an 83.8 ms window and the honest ratio interval is **[0.966, 1.421]**, which contains
-> 1.0 — its lower bound below unity, so the data cannot even exclude that the cross-partition scan is
-> *faster*. What survives, and it is the important half, is that reaching the CQL path means
-> abandoning the document model at all: that is structural, and no p-value touches it;
+> Three challenges are new and were missed by the first pass. **D12 was the heaviest, and it has since
+> been shown to rest on a false premise (18 September 2026); its withdrawal of the clause is annulled.**
+> As written, D12 held that the campaign charges the CQL path with a design cost — "pre-designing a
+> table partitioned by the group key" — that its own data do not support, calling C3b "the misaligned
+> arm", only ×1.28 slower than the aligned one, with supports overlapping across an 83.8 ms window and
+> an honest ratio interval of **[0.966, 1.421]** containing 1.0. **The numbers are right and the object
+> is wrong.** `probes/agg_cql_arm.py` creates exactly one table, `agg_cql(cat, id, amt) PRIMARY KEY
+> (cat, id)`, and both arms run against it: C3a sweeps ten `WHERE cat=?` queries, C3b issues one
+> `GROUP BY cat`. They differ by query shape, not by schema — as the repository's own statistics
+> registry names them, `AGG-CQLsweep-vs-CQLgroupby`. Measured on this ring: on `PRIMARY KEY (id)` that
+> same `GROUP BY cat` is **refused** (`code=2200`, and `ALLOW FILTERING` does not help), so C3b exists
+> only *because* the table is pre-partitioned by the group key. **What survives of D12** is that the
+> ×1.28 between the two query shapes is not established, that `agg_cql` retains no per-observation
+> series, and that the **scale reserve** stands untouched — 200 000 rows on ten partitions says
+> nothing about 10⁸ rows or 10⁵ partitions, and the threat register still carries it as live.
+> **What falls, and only this**, is the withdrawal, and the clause is reinstated. What was always the important half stands untouched: reaching the CQL path
+> means abandoning the document model at all — structural, and no p-value touches it;
 > **D13**, a 46× ingest asymmetry reported by the campaign and never interrogated, which confounds
 > a documented batch ceiling with per-document shredding cost; **D14**, "aggregation" was
 > operationalised as exactly one query shape, which is a construct-validity limit nobody raised.
@@ -198,7 +206,24 @@ problème, et il faut le dire à l'endroit où il le lira, pas seulement en fin 
 
 ## Trois challenges que la première passe a manqués
 
-### D12 — Le bras CQL n'a jamais été challengé — et la campagne impute au chemin CQL un coût de conception que ses propres données n'établissent pas. ⭑⭑
+### D12 — Le bras CQL n'a jamais été challengé — et la campagne impute au chemin CQL un coût de conception que ses propres données n'établissent pas. ⭑⭑ ⛔ PRÉMISSE FAUSSE — ANNULATION PARTIELLE
+
+> **Ce défi repose sur une prémisse fausse, et son retrait de la clause est annulé (2026-09-18).**
+> D12 affirme que le bras C3b mesure « le cas où la table n'est pas alignée sur la requête ». Il n'y a
+> qu'**une seule table** dans le bras CQL — `probes/agg_cql_arm.py` ne contient qu'un `CREATE TABLE`,
+> `agg_cql(cat, id, amt) PRIMARY KEY (cat, id)`, et le fichier de résultats l'enregistre au singulier
+> (`"table": "cmp.agg_cql(cat,id,amt) PK(cat,id)"`). **C3a et C3b tournent contre cette même table
+> pré-conçue** : ce qui les sépare est la *forme de requête*, pas l'alignement du schéma. Le registre
+> statistique du dépôt les nomme d'ailleurs correctement — `AGG-CQLsweep-vs-CQLgroupby`. Les mots
+> « non aligné » du tableau ci-dessous et « misaligned arm » du résumé anglais sont une invention de
+> ce défi, sans contrepartie dans la couche de preuves.
+> **Ce qui subsiste de D12, et c'est la majeure partie** : (i) le ×1,28 **entre les deux formes de
+> requête** n'est pas établi ; (ii) `agg_cql` ne conserve pas ses observations une à une ; (iii) la
+> **réserve d'échelle** — 200 000 lignes sur dix partitions ne dit rien de 10⁸ lignes ou 10⁵
+> partitions — reste entière et reste une menace vive au registre. **Ce qui tombe, et cela seul** : le
+> retrait de la clause « pré-concevoir une table partitionnée par la clé de groupe », qui est
+> réinstaurée. Voir le post-scriptum en fin de section. Le raisonnement ci-dessous est conservé tel
+> qu'il a été écrit, pour que la réfutation reste lisible.
 
 Le bras de référence CQL est étiqueté pommes-contre-oranges dans son propre fichier de résultat, et la
 campagne en tire que l'atteindre « exige d'abandonner le modèle document **et de pré-concevoir une
@@ -212,11 +237,17 @@ pas un cas représentatif.
 
 Le bras C3b mesure précisément le cas où la table n'est *pas* alignée sur la requête : un
 `GROUP BY cat` inter-partitions, balayage complet côté coordinateur, l'anti-patron reconnu.
+**⚠ La première moitié de cette phrase est FAUSSE ; corrigée le 18 septembre 2026, voir le
+post-scriptum en fin de section. C3b ne mesure pas « le cas où la table n'est pas alignée » : il
+tourne contre la même table `PK(cat, id)` que C3a. La seconde moitié est exacte et le reste — c'est
+bien un balayage complet côté coordinateur, et c'est bien l'anti-patron reconnu ; le fichier de
+résultats le dit lui-même au champ `C3b_is`. L'anti-patron porte sur la portée de la requête, pas
+sur la disposition de la table.**
 
 | | n | min | p50 | max |
 |---|---|---|---|---|
 | C3a — balayage par partition, table **alignée** | 15 | 1 924,195 ms | **2 011,399 ms** | 2 471,012 ms |
-| C3b — `GROUP BY` inter-partitions, **non aligné** | 15 | 2 387,172 ms | **2 568,372 ms** | 2 734,854 ms |
+| C3b — `GROUP BY` inter-partitions, ~~**non aligné**~~ ⚠ **même table que C3a** | 15 | 2 387,172 ms | **2 568,372 ms** | 2 734,854 ms |
 
 Le rapport des médianes est **×1,28** — un écart de 28 %, pas un ordre de grandeur. Première
 conséquence : à cette échelle et à cette cardinalité, « le moteur agrège en ~2 s » survit au choix de
@@ -258,6 +289,41 @@ dans l'autre sens : un effet réel ailleurs, non détecté ici, et présenté co
 balayage inter-partitions décroche de la balayage par partition. Coût : une campagne courte, sur un
 anneau libre. Elle n'a pas été faite, et tant qu'elle ne l'est pas, ni la campagne ni ce challenge ne
 peuvent parler du coût de partitionnement au-delà de `n = 200 000, p = 10`.
+
+> **Post-scriptum du 18 septembre 2026 — ce défi s'est trompé d'objet.**
+>
+> Les deux bras comparés ici ne diffèrent pas par le schéma. `agg_cql_arm.py` crée une table et une
+> seule, `PRIMARY KEY (cat, id)`, et les deux mesures tournent contre elle : C3a par dix requêtes
+> `WHERE cat=?`, C3b par un `GROUP BY cat` unique. Le champ `C3b_is` du fichier de résultats le dit
+> déjà — *« cross-partition range scan (coordinator full-scan anti-pattern) »* — une propriété de la
+> **portée de la requête**, pas de la disposition de la table.
+>
+> **Et la mesure retourne le défi.** Sur cet anneau, HCD 2.0.6, le 18 septembre 2026 : sur une table
+> `PRIMARY KEY (cat, id)`, `SELECT cat, SUM(amt) … GROUP BY cat` est accepté ; sur une table
+> `PRIMARY KEY (id)`, la même requête est **refusée** — `InvalidRequest code=2200 "Group by is
+> currently only supported on the columns of the PRIMARY KEY, got cat"` — et `ALLOW FILTERING` n'y
+> change rien. **C3b n'est exprimable que parce que la table est pré-partitionnée par la clé de
+> groupe.** Le bras que D12 prenait pour la réfutation de l'exigence en est la démonstration.
+>
+> **Conséquence.** Le ×1,28 et son intervalle [0,966 ; 1,421] sont justes, mais ils comparent deux
+> *chemins de requête* sur un schéma pré-conçu. Ils ne disent rien du coût de pré-conception. Le
+> verdict « non soutenue par la mesure censée l'établir » est donc retiré : aucune mesure n'était
+> censée l'établir — la clause vient de la DDL elle-même et de l'argumentaire « queryabilité sans
+> conception d'index » vérifié en campagne 6, pas d'un contraste de latence. **La clause
+> « pré-concevoir une table partitionnée par la clé de groupe » est réinstaurée.**
+>
+> **Ce qui survit de D12, et qui n'est pas entamé par cette annulation.** Deux choses. La première est
+> statistique : le ×1,28 **entre les deux formes de requête** n'est pas établi, supports recouvrants,
+> intervalle [0,966 ; 1,421] contenant 1,0 — verdict inchangé, et c'est celui que porte déjà la ligne
+> `AGG-CQLsweep-vs-CQLgroupby` du registre. La seconde est la **réserve d'échelle** énoncée plus haut
+> dans cette même section : deux cent mille lignes sur dix partitions est un balayage minuscule, et
+> rien ici ne dit ce qui arrive à 10⁸ lignes ou 10⁵ partitions. Cette réserve-là ne dépend pas de
+> l'alignement et reste entière — `docs/THREATS-TO-VALIDITY.md` la porte toujours comme menace vive.
+>
+> **La nature de la faute.** La commande était juste, le calcul était juste, l'objet était faux : une
+> comparaison correcte entre deux formes de requête, relue comme si elle chiffrait deux conceptions
+> de schéma. C'est la faute la plus difficile à voir en relecture, parce que rien dans le calcul ne
+> cloche.
 
 ### D13 — Une asymétrie d'ingestion de 46×, rapportée et jamais interrogée. ⭑
 
@@ -336,12 +402,17 @@ est donc lui-même corrigé par `campagne7bis.fr.md`.
 
 Une est **résolue contre le challenger** : l'index de MongoDB était bien présent, et sans effet.
 
-Trois sont **neuves**, et deux d'entre elles se retournent contre le dossier. **D12 est la plus
-lourde** : la charge de pré-conception que la campagne impute au chemin CQL n'est pas seulement
-surdimensionnée, elle est **non soutenue par la mesure censée l'établir** — l'écart entre table
-alignée et non alignée est de ×1,28, et ce ×1,28 n'est pas distinguable du bruit, intervalle
-[0,966 ; 1,421]. La campagne a facturé au CQL un coût de conception que ses propres chiffres ne
-montrent pas ; ce qui subsiste, et qui suffit, c'est qu'il faut abandonner le modèle document.
+Trois sont **neuves**, et une seule se retourne encore contre le dossier. **D12 se retourne contre
+lui-même** : il annonçait que la charge de pré-conception imputée au chemin CQL était « non soutenue
+par la mesure censée l'établir », en s'appuyant sur un « écart entre table alignée et non alignée »
+de ×1,28 non distinguable du bruit. **Il n'y a pas de table non alignée.** Les deux bras tournent
+contre la même `agg_cql PK(cat, id)` ; ce qui les sépare est la forme de requête. Et sur une table
+non alignée, le `GROUP BY` de C3b est refusé par le moteur — l'exigence de pré-conception est donc
+démontrée par le bras même qui devait la réfuter. **Le retrait de la clause est annulé et la clause
+est réinstaurée.** Ce qui subsiste de D12 en revanche — et c'est la majeure partie — : le ×1,28
+entre les deux *formes de requête* n'est pas établi, `agg_cql` ne conserve pas ses observations, et
+la réserve d'échelle reste entière. Ce qui subsistait déjà et suffisait : il faut abandonner le
+modèle document.
 **D13** — dont la campagne 7bis a depuis mesuré la version appariée : **6,9×** à lots de 100 des deux
 côtés, contre 46,3× publié — montre que l'écart d'ingestion de 46× confond un plafond de lot documenté avec le coût de
 shredding. **D14** borne M23 à une seule forme de requête.

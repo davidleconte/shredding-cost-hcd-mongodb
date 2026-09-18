@@ -661,14 +661,28 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
     (`probes/probe_aggregation.py`), but the index is irrelevant to it: `$sum: "$amt"` cannot be
     served by an index on `cat` alone, and the index-served filtered count takes 12.659 ms against
     the `$group`'s 222.711 ms — 17.6×, the signature of a collection scan (D10).
-  - **Three challenges are new, and two turn on the dossier.** **D12** is the heaviest finding in
-    this document: the campaign charges the native-CQL path with a design cost — "pre-designing a
-    table partitioned by the group key" — that **its own data does not support**. The misaligned arm
-    (C3b) is only ×1.28 slower than the aligned one, and that ×1.28 is itself not established: the
-    supports overlap across an 83.8 ms window and the ratio interval is **[0.966, 1.421]**, its lower
-    bound below unity, so the data cannot even exclude that the cross-partition scan is *faster*.
-    What survives, and it suffices, is that reaching the CQL path means abandoning the document model
-    at all — structural, and no interval touches it. **D13** shows the 46.3× ingest asymmetry the
+  - **Three challenges are new. One turned on the dossier; the heaviest turned on itself.** **D12**
+    held that the campaign charges the native-CQL path with a design cost — "pre-designing a table
+    partitioned by the group key" — that its own data do not support, calling C3b "the misaligned
+    arm", ×1.28 slower than the aligned one, with overlapping supports and a ratio interval of
+    **[0.966, 1.421]** whose lower bound sits below unity. **The arithmetic is right and the object is
+    wrong, so the withdrawal is annulled and the clause is reinstated (18 September 2026).**
+    `probes/agg_cql_arm.py` creates exactly one table, `agg_cql(cat, id, amt) PRIMARY KEY (cat, id)`,
+    and both arms query it: C3a sweeps ten `WHERE cat=?`, C3b issues one `GROUP BY cat`. The
+    difference is query shape, not schema — which is how this repository's own statistics registry
+    names the pair, `AGG-CQLsweep-vs-CQLgroupby`, and how the raw record's `C3b_is` field describes
+    it, "cross-partition range scan (coordinator full-scan anti-pattern)": a property of the query's
+    reach, not of the table's layout. Measured on the ring on 18 September 2026, the same `GROUP BY
+    cat` against a `PRIMARY KEY (id)` table is **refused** — `InvalidRequest code=2200 "Group by is
+    currently only supported on the columns of the PRIMARY KEY"`, `ALLOW FILTERING` included — so
+    C3b is expressible only because the table is pre-partitioned by the group key. **The arm D12 read
+    as refuting the requirement demonstrates it.** What survives of D12, and it is most of it: the ×1.28 **between
+    the two query shapes** is not established; `agg_cql` retains no per-observation series; and the
+    **scale reserve** is untouched by the annulment — 200 000 rows on ten partitions bounds nothing at
+    10⁸ rows or 10⁵ partitions, and the threat register still carries that half as live. This is the
+    dossier committing, against itself, the fault it catalogues as *the right gesture on the wrong
+    object*. What was always the load-bearing half is untouched: reaching the CQL path means
+    abandoning the document model at all — structural, and no interval touches it. **D13** shows the 46.3× ingest asymmetry the
     campaign reports without comment confounds a documented batch ceiling (100 documents per
     `insertMany`, hence 2 000 calls against MongoDB's 20) with per-document shredding cost, because
     only one batch size was tried per engine. **Campaign 7bis measured it**: at a batch of 100 on

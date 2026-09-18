@@ -480,7 +480,7 @@ MongoDB server-side `$group`; native CQL per-partition sweep; native CQL cross-p
 HCD Data API client scan-and-aggregate.
 
 **Falsification criteria.**
-- **[PRE]** `probes/probe_aggregation.py:63` — `sums_match()`, an exactness check of every arm's
+- **[PRE]** `probes/probe_aggregation.py:69` — `sums_match()`, an exactness check of every arm's
   result against a deterministic pre-computed ground truth, per category sum and per category count.
   A fast arm returning a wrong answer fails. This is a genuine pre-registered **correctness**
   criterion and it is the only one in campaign 7.
@@ -501,19 +501,27 @@ API client scan 133 984.229 ms at n = 3 (M23). Sources: `data/raw/findings_agg_h
 **Reserves.** (a) The 602× must never be quoted as "HCD is 602× slower": the same engine, same host,
 same corpus aggregates in ~2 s through native CQL, so the gap is an API surface — **and** reaching
 the CQL path means abandoning the document model and pre-designing a table partitioned by the group
-key, which is the index-design work the Data API's pitch is to avoid. Both halves are required.
+key, which is the index-design work the Data API's pitch is to avoid. Both halves are required. The
+second half was withdrawn by challenge D12 and **reinstated** when D12 was found to rest on a false
+premise: on a table not partitioned by the group key, its `GROUP BY` arm is refused by the engine.
 (b) The HCD arm is **n = 3** (MongoDB's `$group` arm is n = 15): the repetition asymmetry is by
 construction and the p95/p99 of the n = 3 arm carry no information. (c) M22's zero is itself proof
-that this campaign ran in a **cache regime**, not a proven disk regime, and it is a cold-start
-property presented in the register as a property tout court (challenge D9). (d) The nineteen-command
+that this campaign ran in a **cache regime**, not a proven disk regime. Challenge D9 further held it
+to be a cold-start property presented in the register as a property tout court; **campaign 7bis
+refuted D9 on 18 September 2026** — the estimator returns 171 267 after flush and 172 132 after major
+compaction against a true 200 000, so the defect is steady-state and the narrowing is withdrawn. The
+cache-regime reserve itself is **discharged** by the same campaign, which re-measured axis C after
+flush and major compaction at 130 127.0 ms, 2.1 % *faster* than in cache. (d) The nineteen-command
 allow-list and the "no count-limit environment variable" statement are **report-transcribed**, in no
 raw file. (e) `RESULTS.md` M20 describes the `COMMAND_UNKNOWN` result as a captured artefact in
 `findings_agg_hcd.json`'s `structural` field; that field is a **fixed string literal** written at
-`probes/probe_aggregation.py:190` and emitted unconditionally, and no probe in this repository ever
+`probes/probe_aggregation.py:196` and emitted unconditionally, and no probe in this repository ever
 issues `aggregate`, `$group` or `distinct` against HCD. The finding is credible and the artefact
 does not evidence it. (f) Campaign 7 stood outside the adversarial audit and the challenge rounds
-until `docs/challenges-campagne7.fr.md` (D6–D14) was written; that pass reverses no conclusion and
-strengthens two.
+until `docs/challenges-campagne7.fr.md` (D6–D14) was written. That pass reversed no conclusion **at
+the time**; campaign 7bis then reversed three (D9's narrowing, the 46.3× ingest ratio, and the 602×'s
+generality beyond ten groups), and **D12 was annulled** when its "misaligned arm" was found to be a
+second query shape against the same pre-partitioned table — so the clause in reserve (a) stands.
 
 ---
 
@@ -600,7 +608,7 @@ the pre-registration claim, is **six of sixteen**.
 | `probe_tier_vs_storage.py:81` | `AGREEMENT_TOLERANCE = 0.25`, "methods disagreeing by more than this invalidate both" | **Yes, adversely** — 34.0 % and 27.7 % divergence at 64 and 125 KiB |
 | `vector_freshness_rf3.py:10–22, 129–145` | Hypothesis stated in the docstring; WINDOW OBSERVED / NOT DETECTABLE / MIXED branches | Yes — returned NOT DETECTABLE, explicitly *"not a refutation"* |
 | `probe_comparative.py:41, 248` | `cross_engine_comparison_permitted` gate on same host, same series shape, same repetitions | Yes — returned true; a permission gate, not a verdict rule |
-| `probe_aggregation.py:63` | `sums_match()` exactness against pre-computed ground truth | Yes — every arm verified exact |
+| `probe_aggregation.py:69` | `sums_match()` exactness against pre-computed ground truth | Yes — every arm verified exact |
 | `disk_regime_driver.py:25–33, 223` | Four proof obligations; `disk_bound = all(checks)`; the driver refuses to report success otherwise | Yes — and it **refused a run**: a constant-byte ballast compressed ~120:1 and failed the on-disk-size proof, which is why the incompressible-payload fix exists |
 | `mongot_floor.py:69–74` | `near_zero and spread > 0.5·max` → REFRESH INTERVAL, else FIXED PIPELINE DELAY | Yes — but the dossier's own D5 records that this is the author's judgement, not a test, and D3 records that the emitted verdict's prose ("floor near 0") contradicts the same record's `min_ms` of 89.1 |
 

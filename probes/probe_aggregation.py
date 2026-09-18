@@ -18,6 +18,12 @@ So this is a CAPABILITY GAP, not a latency race. What is fairly measurable:
                     CQL* table partitioned by the group key (NOT the shredded
                     document collection). Shows what Cassandra's engine can do if
                     you abandon the document model and pre-design the schema.
+                    NOTE: agg_cql_arm.py builds exactly ONE such table and times
+                    two query shapes against it (C3a per-partition sweep, C3b
+                    cross-partition GROUP BY). Neither is an unaligned schema, and
+                    their ratio concerns a query shape rather than the schema
+                    design — and does not establish even that, the supports
+                    overlapping. See the warning in that probe's docstring.
 
 Percentiles only (no mean), per the campaign convention. Ground truth is computed
 in Python so every C-arm result is checked for CORRECTNESS, not just speed.

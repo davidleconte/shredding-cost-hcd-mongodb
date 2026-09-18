@@ -1,0 +1,27 @@
+# Fingerprints of every <script>.py:NNN line cited in the Markdown.
+# Regenerate with: .github/scripts/check_probe_citations.py --write
+# A change here means a cited line moved or was edited — re-read the
+# citation before re-blessing it.
+
+9caf1c7cda0e57fc7a7cecf53b287c216d11140c7d38056557dbec94238e6a43  probes/disk_regime_driver.py:25  THE PROOF OBLIGATION
+f02b86be8f473e3ce492c16552a534333632e5b9f6dff5c8097d35a8b0ee6ac8  probes/mongot_floor.py:69  spread = dist["max_ms"] - dist["min_ms"]
+790996856580cf891d2a8233c2597296393b414cc7f0332229abe8f5294621f7  probes/probe_aggregation.py:109  return list(coll.aggregate([{"$group":{"_id":"$cat","sum":{"
+4a4b7be286e28a77a35680a408ebc99c59e21be0671d31d1940ac6e2403849fd  probes/probe_aggregation.py:156  A = dist(timed(lambda: coll.count_documents({}, upper_bound=
+8680da5db008c7da21f1ee531899bdf4d9c3d8ac5c18da2272004bbc724e50f0  probes/probe_aggregation.py:196  "structural":"HCD Data API has no server-side aggregation pi
+c7bc365620b5d68965ab9557c63b9d11863d4691795e51eadf0376fdff68575f  probes/probe_aggregation.py:69  def sums_match(got, gt, tol=0.5):
+9763010ac0c691b6eb5d9fd95bb0b2a16acb7d8ad6998207ff3f34d2ecaed498  probes/probe_comparative.py:248  permitted = same_host and same_shape
+52e4115166e26cfe54d93178bc463cb1356fec82ec4f3ec6236cc95e34ee8d1b  probes/probe_comparative.py:255  k = f"{sz.label}|pass1"
+5781ae56501cbc16f26be902528d2efd0b588e7bb10ef4368b4c718318ad4cf7  probes/probe_comparative.py:264  "cross_engine_comparison_permitted": permitted,
+1c598aca6fa71c859f4e17d2f23f84d9ef4819cfc7f7145ba25a47a33665c857  probes/probe_comparative.py:41  record will say `cross_engine_comparison_permitted: false` i
+d53737aa848acf9ad0180f408409b8752dbe97493fb2bda95a7304e8d9268e38  probes/probe_field_vs_byte.py:320  "verdict_rule": ("series-2 endpoint ratio <= 1.15 → bytes do
+8edec3d05cf972e44391a0c1e6756193f0aea6bf8b5d3d2e5c83cf219b53fb55  probes/probe_field_vs_byte.py:323  "verdict_per_pass": verdicts,
+e7c190c1efa5780b3c776fcd587ad47017a1d95346c5c331e217965adf6d85a4  probes/probe_tier_vs_storage.py:320  record = {
+d7654d0268b995876c8d914e11d039b6549420dfe7e4fb150e0086bd4b090fff  probes/probe_tier_vs_storage.py:323  "question": ("Does the ~0.77 ms per indexed KiB live in the 
+839e04475af2fba5145bb4f4d8db6baf7ac38b37f5963c29ea492faa061a2a6f  probes/probe_tier_vs_storage.py:81  AGREEMENT_TOLERANCE = 0.25      # methods disagreeing by mor
+8bb0b7ee755d0affbd9bc360dfcf38afeebe5a288a90eadf17872e040f5d569b  probes/rmw_postflush.py:84  "reading": ("If this growth is materially above M10's 5.94, 
+5b92c31233ec46067b3a1249cf8c1356432476caed9ff1f1bf9713a9526d277b  probes/vector_freshness_rf3.py:10  Hypothesis under test: a vector-ANN query issued immediately
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  probes/vector_freshness_rf3.py:129  
+eed7c4e37f04228983a7b61317942e381524075a8d97edcefe1f4a3619ec0655  probes/verify_storage_claims.py:231  if len(present) >= 6:
+5bbc05ac0cc6f8868657aa1f1638f4674ab60a4ce3a151220d5b540fa37cb650  probes/verify_storage_claims.py:318  f.verdict = SUPPORTED if f.evidence["under_load"]["p99_ms"] 
+755f59add4cf5f81f0436e595f728b5f4c9b02e68b774dae5420d69f23d76fe2  probes/verify_storage_claims.py:380  if growth >= 1.6:
+5603542824d33aeeb8d85711b44f2b7508311990d57047fa5d743864c7f4a853  probes/verify_storage_claims.py:427  f.verdict = SUPPORTED if "LOCAL_QUORUM" in seen else INCONCL

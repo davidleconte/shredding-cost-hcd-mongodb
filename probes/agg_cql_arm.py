@@ -15,6 +15,23 @@ document model and design the schema for the aggregation up front.
         One statement, server-side, returns 10 rows — but a cross-partition
         range scan (coordinator full-scan). The classic Cassandra anti-pattern.
 
+  READ C3a AND C3b CORRECTLY, because a challenge in this repository did not.
+  There is ONE table here, created once above, PRIMARY KEY (cat, id). C3a and
+  C3b are two QUERY SHAPES against that same pre-partitioned table. Neither arm
+  is an "unaligned" or "misaligned" schema — this probe never builds a table
+  that is not partitioned by the group key, so the C3a/C3b ratio concerns a
+  query shape and says NOTHING about the cost of the schema design. Note that
+  it does not establish the query-shape cost either: the supports overlap and
+  the ratio interval contains 1.0 ("not established by these data").
+  It cannot: on a table whose PRIMARY KEY does not carry cat, C3b's statement is
+  rejected by the engine (InvalidRequest 2200, "Group by is currently only
+  supported on the columns of the PRIMARY KEY"), with or without ALLOW FILTERING
+  — measured on HCD 2.0.6, 18 September 2026. C3b is therefore only expressible
+  BECAUSE the table is pre-partitioned by the group key.
+  Challenge D12 read the C3a/C3b ratio as pricing the partitioning choice and
+  withdrew the LABEL's second clause on that basis; the withdrawal is annulled
+  and the clause stands. See docs/challenges-campagne7.fr.md, D12 post-scriptum.
+
 Reads at LOCAL_QUORUM to match the Data API path. Correctness checked vs the
 same deterministic ground truth as probe_aggregation.py.
 """

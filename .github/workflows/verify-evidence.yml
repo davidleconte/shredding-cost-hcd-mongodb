@@ -159,6 +159,20 @@ jobs:
           "4 · Probe syntax — probes/*.py compile (nothing is executed)"
           python .github/scripts/check_probe_syntax.py
 
+  probe-citations:
+    name: 8 · source-line citations (file.py:NNN still resolve)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Re-fingerprint every cited probe source line
+        run: >-
+          bash .github/scripts/run_check.sh
+          "8 · Source-line citations — every file.py:NNN still names the line it was blessed against"
+          python .github/scripts/check_probe_citations.py
+
   derived-numbers:
     name: 5 · derived numbers (inference.json vs data/raw)
     runs-on: ubuntu-latest
@@ -213,6 +227,7 @@ jobs:
       - derived-numbers
       - figure-integrity
       - figure-traceability
+      - probe-citations
     steps:
       - name: Write the verification table and fail if any check failed
         env:
@@ -223,6 +238,7 @@ jobs:
           R5: ${{ needs.derived-numbers.result }}
           R6: ${{ needs.figure-integrity.result }}
           R7: ${{ needs.figure-traceability.result }}
+          R8: ${{ needs.probe-citations.result }}
         shell: bash
         run: |
           set -uo pipefail
@@ -240,6 +256,7 @@ jobs:
             echo "| 5 | derived numbers | \`data/derived/inference.json\` re-derives from \`data/raw/\` | $(mark "$R5") |"
             echo "| 6 | figure integrity | \`docs/figures/regime-collapse.svg\` re-renders byte for byte from \`data/raw/\` | $(mark "$R6") |"
             echo "| 7 | figure traceability | every figure with >= 3 decimals in the seven English documents occurs in \`data/raw/\` or \`data/derived/inference.json\` | $(mark "$R7") |"
+            echo "| 8 | source-line citations | every \`file.py:NNN\` in the Markdown still names the line it was blessed against | $(mark "$R8") |"
             echo
             echo "**What this run did NOT do.** It started no HCD ring and no MongoDB"
             echo "replica set, so it re-measured nothing. A green result means the"
