@@ -52,7 +52,9 @@ Four rules follow, and they are not decoration:
 4. **The audit's own verdict, unedited:** the dossier is reliable as a qualitative account and as a
    verification of mechanism; it is **not** reliable as a source of publishable figures. The
    *directions* survive. The *magnitudes* — 44×, 0.77 ms/KiB, ×7.50, ~1 s, 40×, 22× — are each
-   tainted by a regime, a stack, a configuration or a measurement floor.
+   tainted by a regime, a stack, a configuration, a product **edition**, or a measurement floor. The
+   "~1 s" carries the heaviest tag of the six: it was measured against mongot `localDev`, a build its
+   own vendor does not ship for production (I9, C10, D2).
 
 Raw evidence is under `data/raw/` and is byte-identical to the run. Every number below names the
 file it came from.
@@ -397,14 +399,23 @@ record; this file quotes percentiles only, per the dossier's rule.) The interval
 in `atlas-local`: no configuration file, no exposed flag — it is an internal default of the mongot
 binary.
 
-**What it does not touch.** The direction. HCD remains synchronous, and MongoDB's **floor** (~89 ms)
+**And the corrected figure is still not MongoDB's.** A provenance check on 18 September 2026 pinned the
+build: mongot **1.75.1**, edition **`localDev`** (`data/raw/findings_mongot_provenance.json`, and see I9
+and D2 above). So neither 1015.201 ms nor the corrected 664.3 ms is a property of MongoDB Atlas Search;
+both characterise the local-development edition. The same check also confirmed that the interval is
+exposed nowhere in the image — launch script, README, environment — so "roughly 1.1 s" remains an
+**inferred** interval from an observed distribution, not a default that was read off. C10's resolution
+therefore corrected the magnitude and **could not** establish the mechanism by direct reading.
+
+**What it does not touch.** The direction. HCD remains synchronous, and mongot's **floor** (~89 ms)
 already exceeds HCD's HTTP floor.
 
 ### C11 — "HCD synchronous, zero lag" is really "lag under 45 ms", below the HTTP floor
 
 `attempts = 1` means "found on the first query" — but that query arrives ~45 ms after the write (the
 HTTP round trip). **An HCD index lag anywhere between 0 and 45 ms would be undetectable.** The honest
-statement is "HCD lag < 45 ms (below the measurement floor) against ~1 s for MongoDB" — a gap of at
+statement is "HCD lag < 45 ms (below the measurement floor) against ~1 s for mongot 1.75.1 `localDev`"
+— not "for MongoDB", which the provenance check forbids (I9, D2, C10) — a gap of at
 least 22×, direction robust, **but zero is not proven**. This is the same limit M7 recorded on the
 vector axis, where 120/120 cycles found the just-written vector top-1 on the first `LOCAL_ONE` search
 and the verdict was recorded as NOT DETECTABLE rather than as a confirmation.

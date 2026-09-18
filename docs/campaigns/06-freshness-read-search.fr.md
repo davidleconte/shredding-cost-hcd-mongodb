@@ -75,7 +75,7 @@ Le déploiement `mongot` a réussi (image officielle `mongodb/mongodb-atlas-loca
 | Recherche, champ déclaré/wildcard (C6-A) | MongoDB | ~24× |
 | Recherche, champ non déclaré (C6-A) | HCD | ~22× |
 | Fraîcheur, index ordinaire (C6-C) | nul | — |
-| **Fraîcheur de RECHERCHE (C6 addendum)** | **HCD** | **synchrone vs ~1 s de lag async** |
+| **Fraîcheur de RECHERCHE (C6 addendum)** | **HCD** | **synchrone vs ~1 s de lag async** — ⚠ mesuré contre mongot `localDev`, voir la correction en fin de document |
 
 **Net honnête et enfin complet : MongoDB domine la mutation et la lecture brute ; HCD domine la fraîcheur de recherche — l'axe pour lequel sa décomposition et son indexation sur le chemin d'écriture sont conçues, et l'axe que privilégient les charges RAG.** Aucun moteur ne gagne partout ; le choix dépend de l'axe, ce qui est précisément la thèse du diptyque.
 

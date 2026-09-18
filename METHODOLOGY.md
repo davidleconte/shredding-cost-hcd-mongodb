@@ -82,7 +82,10 @@ In practice this decomposed into four standing rules.
      **overstated by roughly 1.6×** by a self-synchronised probe of his own
      design, and was corrected downward by his own re-measurement to a p50 of
      664.3 ms (`data/raw/findings_mongot_freshness.json` then
-     `data/raw/findings_mongot_floor.json`, M17 then M18).
+     `data/raw/findings_mongot_floor.json`, M17 then M18). A later provenance
+     check cut against the author a second time: **both** figures were produced
+     by mongot `localDev`, so neither is a MongoDB Atlas Search number at all
+     (`data/raw/findings_mongot_provenance.json`).
    - The one axis clearly favourable to HCD — synchronous search freshness — was
      then shown to be **moot for the use case the article invokes to justify it**
      (conversational RAG), because MongoDB's miss rate reaches 0 % once the
@@ -445,7 +448,8 @@ benchmark number in its body.
 3. **Carry the contest with the number.** Where the adversarial audit or the
    challenges dispute a figure, the dispute belongs in the same sentence, not in
    a footnote — the 44× beside the 40× engine figure; the ~1015 ms beside the
-   p50 664.3 ms correction; the ×7.50 beside the ×1.52.
+   p50 664.3 ms correction **and both beside `localDev`**, since neither is a
+   MongoDB Atlas Search figure; the ×7.50 beside the ×1.52.
 4. **Report the MongoDB pair, or neither.** `probe_comparative.py` states the
    rule: *"mongo-default is MongoDB as a team would deploy it … mongo-wildcard is
    MongoDB doing HCD's job … Report both or report neither."* Quoting only the
