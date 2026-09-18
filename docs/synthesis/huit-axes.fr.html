@@ -91,7 +91,7 @@ tient hors de l'enveloppe mesurée</strong>, et c'est la colonne qui décide de 
 
 <div class="env">
 <strong>L'enveloppe de mesure, à lire avant le tableau.</strong> Un hôte partagé, 200 000 à 1 000 000 de documents,
-un client unique séquentiel en boucle fermée, régime cache sauf une campagne, un seul datacentre.
+un client unique séquentiel en boucle fermée, un seul datacentre, et le régime cache partout sauf sur deux campagnes : la campagne disque, et la reprise 7bis de l'axe agrégation, mesurée après flush et compaction majeure.
 <span class="warn">Cette enveloppe est celle où le moteur décomposant est le plus faible et son comparateur le plus fort.</span>
 Rien de ce qui fait l'argument d'un moteur distribué — partitionnement à l'échelle, écritures concurrentes
 soutenues, réplication multi-site — n'a été exercé une seule fois. Les résultats ci-dessous sont
