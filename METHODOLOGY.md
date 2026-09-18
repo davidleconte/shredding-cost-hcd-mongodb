@@ -13,7 +13,10 @@ Readers looking for what the numbers may not be used for should read
 
 **System under test.** IBM DataStax HCD 2.0.6 (`nodetool version` =
 `5.0.7.0-ea50e91ba01f`) with Data API v1.0.33, and MongoDB 8.0.32 (replica set) /
-`mongodb-atlas-local` 8.3.11 (the `mongot` deployments), all on one host,
+`mongodb-atlas-local` 8.3.11 (the `mongot` deployments — `mongot` **1.75.1**, edition
+**`localDev`**, image digest `sha256:e118f5c1…986d8f1`; the edition string is read verbatim
+from `/etc/mongodb-atlas-local/mongot-edition` inside the image and is recorded in
+`data/raw/findings_mongot_provenance.json`), all on one host,
 `alphadebunker`: Intel Xeon Gold 6148 @ 2.40 GHz, 80 vCPU, 220.2 GiB RAM,
 Linux 6.8.0-136-generic, inside a QEMU VM whose physical storage class could not
 be established from the guest (`data/raw/comparison.json`,

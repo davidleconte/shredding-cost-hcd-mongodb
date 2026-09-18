@@ -43,6 +43,7 @@ epistemic legend but does not currently appear in the documents in `docs/`.)
 | `disk_regime_driver.py` | Measures nothing by design. It forces a disk-bound state and refuses to report success unless it can evidence four obligations: on-disk data exceeds the memtable budget, SSTables exist, at least one compaction completed, caches were invalidated. Measurement is then a separate harness run against that state. | The disk-regime precondition of M10, M11, M12 | `disk_state.json` (campaign 3), `disk_state_c4.json` (campaign 4) | **vendor-supplied, patched** (3 patches) |
 | `probe_field_vs_byte.py` | Separates the two terms campaign 1 grew together. Series 1 holds field count fixed at 16 and varies bytes per field (512 → 8000); series 2 holds indexed volume fixed at 64 KiB and varies field count (9 → 128). An internal control (16 × 4096 B) appears in both series. | M11 | `findings_fieldbyte.json` | **vendor-supplied, unmodified** |
 | `probe_tier_vs_storage.py` | Method 1 (bypass): the same logical mutation run (a) through the Data API and (b) as the identical CQL statement pair against the same row, with shredded values read back rather than recomputed. The difference is the stateless-tier term. | M12 (method 1) | `findings_tier.json` | **vendor-supplied, patched** (1 patch) |
+| `probe_tier_vs_storage.py.orig` | Nothing — never executed. The unmodified original, kept so the campaign-4 prepared-statement patch can be diffed byte for byte. | — | — | **vendor-supplied, unmodified** (reference copy) |
 | `method2_trace.py` | Method 2 (trace): the second, independent estimate of the same tier term — client-observed Data API latency minus the coordinator-side duration of the CQL statements it issued, read from `system_traces.sessions`. | M12 (method 2) | `findings_tier_method2.json` | **written by the measurer** |
 | `probe_comparative.py` | The identical sixteen-field mutation series against HCD's Data API and against MongoDB, with MongoDB run **twice** (no ballast index, and a `$**` wildcard index matching HCD's automatic indexing). Refuses to emit a cross-engine ratio unless both engines ran on the same host, in the same session, with the same series shape and repetition counts. | M13 | `cmp_hcd.json`, `cmp_mongo.json`, `comparison.json`, `comparison_v2.json`, `smoke_hcd.json`, `smoke_mongo.json` | **vendor-supplied, unmodified** |
 | `hcd_cql_arm.py` | The same single-field mutation driven straight through the CQL driver — the same `SELECT` + conditional `UPDATE` the Data API issues (M2) — with the stateless tier removed, so the MongoDB comparison becomes engine-vs-engine rather than stack-vs-stack. | M14 | `cmp_hcdcql.json` (merged into `comparison_v2.json`) | **written by the measurer** (the file says so in its own docstring) |
@@ -91,13 +92,25 @@ verdict rule.
 |---|---|---|
 | arm B statement binding | Simple statements with `%s` → **prepared statements** with `?` | The collection primary key is a `frozen<tuple<tinyint,text>>`. Binding it in a simple statement is rejected server-side (`Unexpected receiver type 'tuple<tinyint,text>'; only list and vector are expected`); a prepared statement carries the column type and binds the tuple correctly. This is how a real client binds a typed key. No threshold, size or repetition changed. |
 
-**Auditability caveat, stated plainly.** Only `verify_storage_claims.py` has an
-`.orig` in this directory. The patches to `verify_storage_claims_rf3.py`,
-`disk_regime_driver.py` and `probe_tier_vs_storage.py` are documented in-code as
-`Mechanical fix` comments and in the campaign reports, but **this repository does
-not ship an unmodified original for those three**, so their diffs cannot be
-machine-checked here. A hostile reader should treat those three as declared but
-not independently diffable.
+**Auditability caveat, stated plainly.** Two probes ship an unmodified original
+in this directory, so their patches can be machine-checked rather than taken on
+trust:
+
+```bash
+diff probes/verify_storage_claims.py.orig  probes/verify_storage_claims.py    # 14 changed lines, 2 patches
+diff probes/probe_tier_vs_storage.py.orig  probes/probe_tier_vs_storage.py    # 21 changed lines, 1 patch
+```
+
+Both diffs consist only of the declared changes and their in-code `Mechanical fix`
+rationale. Neither touches a document size, a threshold, a repetition count, a
+warm-up count or a verdict rule — which is the property a reader should actually
+check, and can.
+
+The patches to `verify_storage_claims_rf3.py` and `disk_regime_driver.py` are
+documented in-code as `Mechanical fix` comments and in the campaign reports, but
+**this repository does not ship an unmodified original for those two**, so their
+diffs cannot be machine-checked here. A hostile reader should treat those two as
+declared but not independently diffable.
 
 ---
 
@@ -220,7 +233,7 @@ So the classes are a ranking of how much a hostile reader has to take on trust:
 - **vendor-supplied, unmodified** — trust the harness's author, and check that it
   ran on the stated build. M11 and M13 sit here.
 - **vendor-supplied, patched** — the same, plus each declared patch. Four patches
-  are diffable (two of them against the `.orig` in this directory); the rest are
+  are diffable (three of them against the two `.orig` files in this directory); the rest are
   declared in-code and in the campaign reports, and are listed above so a reader
   can weigh them individually rather than accept them as a bundle.
 - **written by the measurer** — trust the measurer's design judgement. Five of the

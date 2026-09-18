@@ -64,7 +64,7 @@ Le déploiement `mongot` a réussi (image officielle `mongodb/mongodb-atlas-loca
 
 **Un document tout juste écrit est invisible à `$search` de MongoDB pendant ~1 seconde**, alors qu'il est immédiatement trouvable par `_id`. HCD n'a pas cette fenêtre : son index de recherche est synchrone sur le chemin d'écriture (attempts=1). C'est **exactement la « propriété de correction » du §4.1** : un système RAG qui écrit un fait et le cherche au tour suivant le trouve immédiatement sur HCD, et le manque pendant ~1 s sur MongoDB `$search` — « une mauvaise réponse, pas une réponse lente ».
 
-**Réserves déclarées.** (1) `mongot` a tourné en **replica set à un membre** (`atlas-local`), donc `w:majority` y est trivial — mais le lag async est une propriété par-déploiement de mongot, pas du nombre de réplicas, donc le ~1 s est représentatif. (2) HCD a ~45 ms d'aller-retour HTTP incompressible ; **son index n'a aucun lag** (attempts=1), le 45 ms est le plancher de mesure, pas un délai d'index. (3) HCD JVector (vecteur) contre MongoDB `$search` (texte) : deux chemins de recherche, mais la même architecture synchrone-vs-asynchrone est ce qui est mesuré. (4) le lag mongot dépend de la charge et de la configuration ; ~1 s est la valeur au repos sur ce déploiement.
+**Réserves déclarées.** (1) `mongot` a tourné en **replica set à un membre** (`atlas-local`), donc `w:majority` y est trivial — mais le lag async est une propriété par-déploiement de mongot, pas du nombre de réplicas, donc le ~1 s est représentatif. **⚠ Cette dernière proposition est FAUSSE ; corrigée le 18 septembre 2026, voir « Provenance de mongot » en fin de document.** (2) HCD a ~45 ms d'aller-retour HTTP incompressible ; **son index n'a aucun lag** (attempts=1), le 45 ms est le plancher de mesure, pas un délai d'index. (3) HCD JVector (vecteur) contre MongoDB `$search` (texte) : deux chemins de recherche, mais la même architecture synchrone-vs-asynchrone est ce qui est mesuré. (4) le lag mongot dépend de la charge et de la configuration ; ~1 s est la valeur au repos sur ce déploiement.
 
 ## Bilan final des deux campagnes comparatives, corrigé
 
@@ -78,3 +78,50 @@ Le déploiement `mongot` a réussi (image officielle `mongodb/mongodb-atlas-loca
 | **Fraîcheur de RECHERCHE (C6 addendum)** | **HCD** | **synchrone vs ~1 s de lag async** |
 
 **Net honnête et enfin complet : MongoDB domine la mutation et la lecture brute ; HCD domine la fraîcheur de recherche — l'axe pour lequel sa décomposition et son indexation sur le chemin d'écriture sont conçues, et l'axe que privilégient les charges RAG.** Aucun moteur ne gagne partout ; le choix dépend de l'axe, ce qui est précisément la thèse du diptyque.
+
+
+---
+
+# Provenance de `mongot` — correction datée (18 septembre 2026)
+
+La réserve (1) de l'addendum ci-dessus se terminait par « **donc le ~1 s est représentatif** ». **Cette
+proposition est fausse**, et la mesure qui l'invalide n'exigeait qu'une interrogation de l'image.
+
+Le raisonnement d'origine était : le lag asynchrone est une propriété par-déploiement de mongot et non du
+nombre de réplicas, donc un replica set à un membre ne fausse pas la magnitude. Ce raisonnement est
+correct **sur l'axe qu'il considère** — le nombre de réplicas — et passe à côté de l'axe qui compte :
+quelle *édition* de mongot tournait.
+
+L'image `mongodb/mongodb-atlas-local` s'auto-identifie, et de deux sources concordantes :
+
+| Fait | Valeur | Source |
+|---|---|---|
+| `mongot-version` | **1.75.1** | label d'image **et** `/opt/mongot/mongot --version` |
+| `mongot-edition` | **`localDev`** | label d'image **et** contenu littéral de `/etc/mongodb-atlas-local/mongot-edition` |
+| `mongod` | 8.3.11, community | label d'image |
+| digest | `sha256:e118f5c131c5004e4ccd0554d3f32b048b4af6a33325e80e424eaa1c8986d8f1` | `RepoDigests` |
+
+`localDev` est l'édition que MongoDB livre pour le **développement local**. Ce n'est pas l'étage de
+recherche qui sert Atlas. Le ~1 015 ms de M17, le plancher dé-synchronisé de M18 et la courbe de taux
+d'échec de M19 ne sont donc **pas** représentatifs : ils caractérisent `mongot` 1.75.1 `localDev` à côté
+d'un replica set mono-nœud, sur un hôte partagé déjà chargé. Aucun des trois ne peut être cité comme
+« le lag de MongoDB Atlas Search », ni comme une propriété du produit MongoDB.
+
+**Ce qui survit.** La *direction*, entièrement. mongot ingère en asynchrone depuis un change stream par
+construction ; le SAI/JVector de HCD est sur le chemin d'écriture. C'est une différence d'architecture,
+pas un artefact de build, et aucune édition de mongot ne la supprime. La conclusion « HCD est synchrone
+là où MongoDB ne l'est pas » tient ; c'est la **magnitude** qui ne transfère pas.
+
+**Ce qui n'est pas établi.** L'intervalle de commit n'est exposé ni dans le script de lancement
+`/opt/mongot/mongot`, ni dans `/opt/mongot/README.md`, ni en variable d'environnement de l'image : il est
+interne au jar. Le ~1 015 ms et l'intervalle de ~1,1 s restent donc des **observations empiriques de ce
+build**, et non la lecture d'un défaut documenté. La distinction compte, parce qu'un défaut documenté se
+cite et qu'une observation se rejoue.
+
+**Ce qui fermerait la réserve.** Rejouer M17, M18 et M19 contre un mongot d'édition production — Atlas,
+ou un déploiement dont `/etc/mongodb-atlas-local/mongot-edition` ne dit pas `localDev` — et comparer les
+distributions de lag. Impossible sur cet hôte.
+
+Preuve : [`data/raw/findings_mongot_provenance.json`](../../data/raw/findings_mongot_provenance.json).
+Voir aussi `LIMITATIONS.md`, findings I9 et D2, tous deux relevés d'« inférence » à « fait établi » par
+cette correction.

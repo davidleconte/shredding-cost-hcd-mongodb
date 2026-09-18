@@ -445,6 +445,28 @@ deployment — two different MongoDBs in one campaign, which is challenge C15.
   not of a stable system property. The file is kept unedited.
 - **Scope:** `deployment` records a single-node replica set, so `w:majority` is trivial. It is
   not the 3-member replica set used for the read and search halves.
+- **Edition, pinned after the fact:** see `findings_mongot_provenance.json` below. The `mongot`
+  that produced this number is edition **`localDev`**, not the build that serves Atlas, so the
+  magnitude does not transfer to MongoDB the product at all.
+
+### `findings_mongot_provenance.json`
+- **Probe:** none — this is a direct interrogation of the `mongodb/mongodb-atlas-local` image
+  (labels, plus two files read inside it), performed on 18 September 2026, after the freshness
+  campaigns had run. No container from those runs survived; the image did.
+- **Backs:** the scope of M17, M18 and M19. It adds no latency measurement; it names what was
+  measured.
+- **Read first:** `versions.mongot_edition` (**`localDev`**), `versions.mongot_version`
+  (**1.75.1**), `consequence.statement`, `commit_interval.value` (**null**).
+- **Why it exists.** Until the build was identified, the three freshness measurements carried an
+  unnamed reserve — "some `mongot`". This names it, and the naming makes the reserve **worse**,
+  not better: `localDev` is the edition MongoDB ships for local development.
+- **Two sources per fact, deliberately.** Version and edition are each corroborated twice — an
+  image label and an on-image artefact (`/opt/mongot/mongot --version`, and the literal contents
+  of `/etc/mongodb-atlas-local/mongot-edition`) — because a label alone can be stale.
+- **What it does NOT establish.** `commit_interval.value` is `null`. The interval is internal to
+  the `mongot` jar and appears in no launch script, README or environment variable, so the
+  ~1015 ms of M17 and the ~1.1 s interval of M18 remain empirical observations of this build
+  rather than a documented default that was read off. Recorded as `null` rather than guessed.
 
 ### `findings_hcd_vec_freshness.json`
 - **Probe:** HCD JVector vector-search freshness, same session as the `mongot` run.

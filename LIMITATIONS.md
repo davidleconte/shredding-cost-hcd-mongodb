@@ -224,6 +224,17 @@ strengthens the conclusion instead of weakening it (see C6).
 
 - The "~1 s of mongot lag" (M17, p50 1015.201 ms, `data/raw/findings_mongot_freshness.json`) is the
   **at-rest default of `atlas-local`** — a commit interval — not a property of MongoDB Search (C10).
+  **Upgraded from inference to pinned fact on 18 September 2026.** The image was interrogated directly:
+  `mongot` is version **1.75.1**, edition **`localDev`** — the string is read verbatim from
+  `/etc/mongodb-atlas-local/mongot-edition` inside the image and repeated in the image label
+  `mongot-edition=localDev` (`data/raw/findings_mongot_provenance.json`). `localDev` is the edition
+  MongoDB ships for local development; it is **not** the search tier that serves Atlas. So M17, M18 and
+  M19 may not be quoted as "MongoDB Atlas Search lag", as "MongoDB's search freshness", or as any
+  property of MongoDB the product. They characterise `mongot` 1.75.1 `localDev` beside a single-node
+  replica set on a loaded shared host. Note also what the interrogation did **not** find: the commit
+  interval is not exposed in the launch script, the README or any image environment variable, so the
+  ~1015 ms and the ~1.1 s interval remain **empirical observations of this build**, not a documented
+  default that was read off.
 - "HCD synchronous, zero lag" is **"under 45 ms, below the HTTP floor"** (p50 44.972 ms, poll
   attempts median 1, `data/raw/findings_hcd_vec_freshness.json`), not a proven zero (C11).
 
@@ -474,6 +485,13 @@ The article cites "MongoDB 8.x", meaning production Atlas, not `atlas-local`. Th
 interval is the default of a **single-node development container**. Production Atlas (multi-node,
 dedicated mongot, tuned) may be faster or slower — unknown. The measured figure characterises a
 deployment **nobody runs in production**.
+
+**Confirmed by direct evidence, 18 September 2026 — this challenge is no longer an inference.** The
+image self-identifies: `mongot-edition=localDev`, `mongot-version=1.75.1`
+(`data/raw/findings_mongot_provenance.json`). MongoDB itself labels this build as the local-development
+edition. D2 therefore stands as **confirmed**, not merely plausible, and it is the single strongest
+reservation on the whole HCD-favourable axis: the one axis the article claims most confidently for HCD
+was measured against a MongoDB build its own vendor does not ship for production use.
 
 ### D3 — The ~90 ms floor is a FIXED component that the first verdict passed over
 
