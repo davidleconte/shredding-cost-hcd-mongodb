@@ -101,11 +101,9 @@ Every number in the table below is regenerated from the tree by
 | `.github/evidence.sha256` entries | 38 |
 | `probes/*.py` | **17** (plus 2 `.orig` reference copies) |
 | `.github/scripts/check_*.py` | 9 |
-| `git rev-list --count HEAD` | **17**, HEAD `3350cbf` |
 | `git tag -l` | (none) |
 | tracked files | 116 |
 | untracked paths | `.github/GRADE-REPORT.md` |
-| commit window (UTC) | 2026-09-18 10:03:02 to 2026-09-18 17:08:26 |
 <!-- END ARTIFACT FACTS -->
 
 What does not derive mechanically: **eight campaign reports** — the seven in `docs/campaigns/`
@@ -138,9 +136,13 @@ Two consequences were drawn from that, and **both are now discharged**:
    remains the only genuinely independent confirmation in this repository that the evidence
    directory is in the state its documents describe.
 
-**As re-verified, at `3350cbf`.** The commit count, HEAD, tag list, tracked-file count, untracked
-paths and commit window are all in the generated table in §1.3. The material changes since
-`166225e`, each of which invalidated something this document had asserted:
+**As re-verified, at `3350cbf`.** Seventeen commits, still no tag, the window running from
+`2026-09-18 10:03:02` to `17:08:26 +0000`. Those three figures are prose rather than generated, and
+deliberately so: a generated block must not contain a fact that generating it changes, and the
+commit that writes such a block moves `HEAD`. Everything that *is* stable across its own commit —
+evidence count and size, stamp coverage, probe count, script count, tag list, tracked files,
+untracked paths — is in the generated table in §1.3. The material changes since `166225e`, each of
+which invalidated something this document had asserted:
 
 | Landed | What it changed here |
 |---|---|
@@ -479,11 +481,11 @@ Counting from the table, not from prose:
 - **1 further file carries a hand-typed, incomplete stamp**: `findings_vector_rf3.json`,
   `"2026-09-17T16:5x (p16 ring)"`.
 - **25 of 38 carry a machine-written stamp.** The twelve unstamped files are unchanged since the first assessment; the two files campaign 7bis added both carry machine-written stamps.
-- **`DISCLAIMER.md` line 18 is still wrong**: it says `run_at_utc` covers "every file under
-  `data/raw/`". It does not. `README.md` has since been corrected — the claim moved to line 106 and
-  now names a count rather than asserting universality — so half of the defect recorded in §8.2 is
-  closed and half stands. `data/README.md` states the true position and names all twelve
-  exceptions. See §8.2.
+- **Both front-matter claims have since been corrected.** `README.md` line 106 and
+  `DISCLAIMER.md` line 18 each named `run_at_utc` as universal; each now names a count — 26 of 38,
+  one of those hand-typed — and points at `data/README.md`, which lists all twelve exceptions.
+  `DISCLAIMER.md` additionally records what the correction exposes: for the twelve unstamped files
+  the date rests on the campaign reports rather than on the evidence. See §8.2.
 - **4 raw files have no producing script in the repository** (`probes/README.md` gaps 2–4):
   `control_read_A_run1.json`, `control_read_A_run2.json`, `findings_hcd_vec_freshness.json`,
   `tier_comparison.json`. **1 further file was produced by no script at all**:
@@ -738,16 +740,19 @@ code, and publish that revision if one exists.*
 
 ### 8.2 Two front-matter claims about the evidence are false
 
-**Status: half closed, half standing.**
+**Status: closed, both halves.**
 
-~~`README.md` line 61 (`run_at_utc` "stamped in every raw file")~~ — **fixed**. That claim is now at
-`README.md` line 106 and reads as a count, not a universal. `DISCLAIMER.md` line 18 still asserts
-`run_at_utc` for "every file under `data/raw/`", and is contradicted by the manifest: **12 of 38
-files carry none**, and a thirteenth carries a hand-typed `"2026-09-17T16:5x (p16 ring)"`.
-`data/README.md` states the true position and names all twelve. This is the cheapest claim in the
-repository to check and it sits in one of the first documents a reviewer reads. *Remedy for the
-standing half: "`run_at_utc` in 26 of 38 raw files, one of those hand-stamped; the twelve exceptions
-are listed in `data/README.md`."*
+~~`README.md` line 61 (`run_at_utc` "stamped in every raw file") and the corresponding line in
+`DISCLAIMER.md` are contradicted by the manifest.~~ Both were, and both are fixed. The claim in
+`README.md` is now at line 106 and the one in `DISCLAIMER.md` at line 18; each states **26 of the
+38** raw files, notes that one of those 26 is the hand-typed `"2026-09-17T16:5x (p16 ring)"` in
+`findings_vector_rf3.json`, and points at `data/README.md`, which names all twelve unstamped files.
+`DISCLAIMER.md` carries one thing the original remedy did not ask for and that the correction made
+visible: **for those twelve files the date rests on the campaign reports, not on the evidence**.
+That was true before and nobody had said it.
+
+This was the cheapest claim in the repository to check and it sat in the first two documents a
+reviewer reads, unchecked, through three published revisions.
 
 The second half of the original remedy — *"then put the count in CI so the two documents cannot
 diverge again"* — has been done for this document only: §1.3's counts are generated and checked by

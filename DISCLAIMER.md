@@ -15,7 +15,7 @@ One build of each engine, on one shared laboratory host, over two days in Septem
 | MongoDB — mutation, point read, filtered search | MongoDB 8.0.32, replica set `rs0`, three members, `w:majority` | `data/raw/cmp_mongo.json` |
 | MongoDB — search freshness | MongoDB 8.3.11, image `mongodb/mongodb-atlas-local`, single-node replica set | `data/raw/findings_mongot_freshness.json` |
 | Host | QEMU virtual machine `alphadebunker`, 80 vCPU Intel Xeon Gold 6148 @ 2.40 GHz, 220 GiB RAM, carrying unrelated workloads throughout | `data/raw/findings.json`, `data/raw/cmp_hcd.json` |
-| Dates | all runs stamped 17–18 September 2026 (`run_at_utc`) | every file under `data/raw/` |
+| Dates | 17–18 September 2026. **Not every run is stamped**: `run_at_utc` is present in 26 of the 38 raw files, and one of those 26 is hand-typed and incomplete — `findings_vector_rf3.json` records `"2026-09-17T16:5x (p16 ring)"`. For the twelve files carrying no stamp at all, the date rests on the campaign reports, not on the evidence | 26 of the 38 files under `data/raw/`; the twelve exceptions are named in [data/README.md](data/README.md) |
 
 The two MongoDB deployments are not the same deployment. The adversarial audit records that as
 finding I8: the comparison is never fully matched (`docs/audit-adversarial.fr.md`).

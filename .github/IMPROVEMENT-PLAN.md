@@ -39,7 +39,7 @@ stock labels that actively mis-signal — `wontfix` contradicts a repository who
 policy is that contradictions are the point. Every invariant the dossier's credibility
 rests on is defended by the author's memory alone, and at least one has already slipped
 in a way a hostile reader finds in one grep: README.md line 63 and DISCLAIMER.md line 18
-both assert that `run_at_utc` is stamped in every raw file, and it is present in 24 of
+**[FAIT le 18 septembre 2026 — les deux documents nomment désormais un compte ; voir `DISCLAIMER.md` ligne 18 et `README.md` ligne 106.]** both assert that `run_at_utc` is stamped in every raw file, and it is present in 24 of
 36. Meanwhile a citation to this work points at a rewritable branch tip on a platform
 that is explicitly not an archive, which means the one sentence the whole dossier trades
 on — "I did not edit this later" — is currently unfalsifiable. If the repository is

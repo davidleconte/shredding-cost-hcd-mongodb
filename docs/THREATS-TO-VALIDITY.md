@@ -475,15 +475,21 @@ and D6–D14 leave M20 unscratched — but its status in this repository is **tr
 captured**, exactly like the nineteen-command allow-list that the same row already labels as
 transcribed. The row should say so for both halves.
 
-**X4 — Two front-matter documents assert a universal timestamp the data contradict.** *Internal,
-evidence chain.* `README.md` "At a glance" states `run_at_utc` is "stamped in every raw file", and
-`DISCLAIMER.md` repeats it. In fact **12 of the 36 files carry no `run_at_utc` at all** —
+**X4 — Two front-matter documents asserted a universal timestamp the data contradict.**
+⛔ **Both corrected, 18 September 2026.** *Internal, evidence chain.* `README.md` "At a glance"
+stated that `run_at_utc` is "stamped in every raw file", and `DISCLAIMER.md` repeated it. Each now
+states a count — 26 of the 38 raw files, one of those hand-typed — and points at `data/README.md`.
+`DISCLAIMER.md` additionally records what the correction exposed and nobody had said: for the twelve
+unstamped files the date rests on the campaign reports, not on the evidence. The finding is kept
+here as written because the threat it names is real and recurred — the corrected counts themselves
+went stale once, from 36 files to 38, between the fix and its re-verification. In fact **12 of the
+38 files carry no `run_at_utc` at all** —
 `cmp_hcdcql.json`, `control_read_A_run1.json`, `control_read_A_run2.json`,
 `findings_hcd_vec_freshness.json`, `findings_tier_method2.json`, `findings_turn_hcd.json`,
 `findings_turn_mongodb.json`, `probe4_rf3_supplementary.json`, `rmw_postflush.json`,
 `tier_comparison.json`, `vector_freshness_idle.json`, `vector_freshness_loaded.json` — and a
 thirteenth, `findings_vector_rf3.json`, carries the hand-typed string `"2026-09-17T16:5x (p16
-ring)"`. `data/README.md` states this correctly; the two documents a reader opens first do not.
+ring)"`. `data/README.md` states this correctly; the two documents a reader opens first now do too.
 Note which files are in that list: `rmw_postflush.json` is M15, and the two turn-latency files are
 M19 — headline evidence.
 

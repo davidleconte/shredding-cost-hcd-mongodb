@@ -118,14 +118,15 @@ def facts() -> dict[str, str]:
         "probe_orig": str(len(list((REPO / "probes").glob("*.orig")))),
         "manifest_entries": str(len(entries)),
         "check_scripts": str(len(scripts)),
-        "commits": git("rev-list", "--count", "HEAD"),
-        "head": git("rev-parse", "--short", "HEAD"),
         "tags": git("tag", "-l") or "(none)",
         "tracked_files": str(len(git("ls-files").splitlines())),
         "untracked": ", ".join(f"`{u}`" for u in untracked) or "none",
-        "first_commit": git("log", "--reverse", "--format=%ad", "--date=format:%Y-%m-%d %H:%M:%S").splitlines()[0],
-        "last_commit": git("log", "-1", "--format=%ad", "--date=format:%Y-%m-%d %H:%M:%S"),
     }
+    # Deliberately absent: commit count, HEAD and the commit window. A generated block
+    # must not contain a fact that generating it changes — the commit that writes this
+    # block moves HEAD, so a block naming HEAD is stale the instant it is committed and
+    # the check can never pass. Those three live in §1.4 as prose about a named past
+    # state, which is what they actually are.
 
 
 def facts_block() -> str:
@@ -138,11 +139,9 @@ def facts_block() -> str:
             + f"| `.github/evidence.sha256` entries | {f['manifest_entries']} |\n"
             + f"| `probes/*.py` | **{f['probes']}** (plus {f['probe_orig']} `.orig` reference copies) |\n"
             + f"| `.github/scripts/check_*.py` | {f['check_scripts']} |\n"
-            + f"| `git rev-list --count HEAD` | **{f['commits']}**, HEAD `{f['head']}` |\n"
             + f"| `git tag -l` | {f['tags']} |\n"
             + f"| tracked files | {f['tracked_files']} |\n"
-            + f"| untracked paths | {f['untracked']} |\n"
-            + f"| commit window (UTC) | {f['first_commit']} to {f['last_commit']} |\n")
+            + f"| untracked paths | {f['untracked']} |\n")
 
 
 def splice(text: str, begin: str, end: str, body: str) -> str:
