@@ -13,8 +13,15 @@
 > measured. One is *resolved against the challenger*: D10 asked which index state the MongoDB
 > `$group` ran under — the probe source answers it (`cat_idx` was present) and the data shows the
 > index was irrelevant, since `$sum: "$amt"` cannot be served by an index on `cat` alone.
-> Three challenges are new and were missed by the first pass: **D12**, the native-CQL reference arm
-> was never itself challenged — and challenging it partly *refutes* how the campaign labelled it;
+> Three challenges are new and were missed by the first pass. **D12** is the heaviest: the native-CQL
+> reference arm was never itself challenged, and challenging it turns on the campaign. The campaign
+> charges the CQL path with a design cost — "pre-designing a table partitioned by the group key" —
+> that its own data does not support. The misaligned arm (C3b, a cross-partition `GROUP BY`) is only
+> ×1.28 slower than the aligned one, and **that ×1.28 is itself not established**: the two supports
+> overlap across an 83.8 ms window and the honest ratio interval is **[0.966, 1.421]**, which contains
+> 1.0 — its lower bound below unity, so the data cannot even exclude that the cross-partition scan is
+> *faster*. What survives, and it is the important half, is that reaching the CQL path means
+> abandoning the document model at all: that is structural, and no p-value touches it;
 > **D13**, a 46× ingest asymmetry reported by the campaign and never interrogated, which confounds
 > a documented batch ceiling with per-document shredding cost; **D14**, "aggregation" was
 > operationalised as exactly one query shape, which is a construct-validity limit nobody raised.
@@ -173,38 +180,66 @@ problème, et il faut le dire à l'endroit où il le lira, pas seulement en fin 
 
 ## Trois challenges que la première passe a manqués
 
-### D12 — Le bras CQL n'a jamais été challengé — et le challenger se trompe à moitié. ⭑
+### D12 — Le bras CQL n'a jamais été challengé — et la campagne impute au chemin CQL un coût de conception que ses propres données n'établissent pas. ⭑⭑
 
-Le bras de référence CQL est étiqueté pommes-contre-oranges dans son propre fichier de résultat, et
-la campagne en tire que l'atteindre « exige d'abandonner le modèle document **et de pré-concevoir
-une table partitionnée par la clé de groupe** ». Personne n'a attaqué l'étiquette elle-même.
+Le bras de référence CQL est étiqueté pommes-contre-oranges dans son propre fichier de résultat, et la
+campagne en tire que l'atteindre « exige d'abandonner le modèle document **et de pré-concevoir une
+table partitionnée par la clé de groupe** ». Personne n'a attaqué l'étiquette elle-même.
 
 L'attaque évidente : la table a été créée `cmp.agg_cql(cat, id, amt) PRIMARY KEY(cat, id)` —
 pré-partitionnée par exactement la clé que la requête regroupe. C'est le **meilleur cas possible**,
 pas un cas représentatif.
 
-**Et les données réfutent en partie cette attaque.** Le bras C3b mesure précisément le cas où la
-table n'est *pas* alignée sur la requête — un `GROUP BY cat` inter-partitions, balayage complet côté
-coordinateur, l'anti-patron reconnu :
+**Et les données réfutent cette attaque — puis réfutent la campagne, plus durement.**
 
-| | p50 | vs le cas idéal |
-|---|---|---|
-| C3a — balayage par partition, table alignée | 2 011,399 ms | référence |
-| C3b — `GROUP BY` inter-partitions, non aligné | 2 568,372 ms | **×1,28 seulement** |
+Le bras C3b mesure précisément le cas où la table n'est *pas* alignée sur la requête : un
+`GROUP BY cat` inter-partitions, balayage complet côté coordinateur, l'anti-patron reconnu.
 
-Un écart de 28 %, pas un ordre de grandeur. **À cette échelle et à cette cardinalité, l'affirmation
-« le moteur agrège en ~2 s » survit au choix de partitionnement.** La seconde moitié de la phrase de
-la campagne — « et de pré-concevoir une table partitionnée par la clé de groupe » — **est
-surdimensionnée par ses propres chiffres.**
+| | n | min | p50 | max |
+|---|---|---|---|---|
+| C3a — balayage par partition, table **alignée** | 15 | 1 924,195 ms | **2 011,399 ms** | 2 471,012 ms |
+| C3b — `GROUP BY` inter-partitions, **non aligné** | 15 | 2 387,172 ms | **2 568,372 ms** | 2 734,854 ms |
 
-Ce qui reste vrai de l'étiquette : il faut bel et bien **abandonner le modèle document**. Ça, aucun
-chiffre ne l'entame, et c'est l'essentiel de l'argument.
+Le rapport des médianes est **×1,28** — un écart de 28 %, pas un ordre de grandeur. Première
+conséquence : à cette échelle et à cette cardinalité, « le moteur agrège en ~2 s » survit au choix de
+partitionnement.
 
-Ce qui reste vrai de l'attaque : 200 000 lignes sur dix partitions est un balayage minuscule. Un
-balayage complet côté coordinateur dégrade mal avec le volume et finit par expirer. Le C3b mesuré ne
-dit rien de ce qui arrive à 10⁸ lignes. **Donc l'anti-patron est réel et la magnitude mesurée ne le
-montre pas** — ce qui est exactement le reproche que le dossier s'adresse ailleurs (I4) à propos du
-taux par kio.
+**Seconde conséquence, et c'est elle qui durcit le challenge : ce ×1,28 n'est lui-même pas établi.**
+Les deux supports se **recouvrent** sur une fenêtre de 83,8 ms — C3b descend à 2 387,172 ms quand C3a
+monte à 2 471,012 ms. L'intervalle honnête du rapport est **[0,966× ; 1,421×]**, et il **contient
+1,0**. Sa borne basse étant inférieure à l'unité, les données ne permettent même pas d'exclure que le
+balayage inter-partitions soit **plus rapide** que le balayage par partition. Aucun test ne peut
+trancher : `agg_cql` ne conserve pas les observations une à une, comme presque tout le dossier
+(voir `docs/STATISTICS.md`, entrée `AGG-CQLsweep-vs-CQLgroupby`).
+
+**Le verdict est donc plus sévère qu'un surdimensionnement.** La seconde moitié de la phrase de la
+campagne — « et de pré-concevoir une table partitionnée par la clé de groupe » — n'est pas seulement
+trop forte : elle est **non soutenue par la mesure qui était censée l'établir**. La campagne a créé
+une table dans le meilleur cas, mesuré le pire cas, constaté 28 % d'écart non significatif, et a
+malgré tout facturé au chemin CQL un coût de conception que ses propres chiffres ne montrent pas.
+C'est exactement la faute que le dossier reproche ailleurs aux benchmarks d'autrui : **affirmer une
+pénalité de conception sans l'avoir séparée du bruit.**
+
+**Ce qui survit de l'étiquette, et c'est l'essentiel.** Il faut bel et bien **abandonner le modèle
+document** : écrire du CQL, définir un schéma, gérer une table dont la forme est figée à la création.
+C'est structurel, pas statistique — aucune p-valeur ne l'entame, et c'est de loin la moitié la plus
+importante de la phrase. La campagne avait raison sur le fond et a surchargé l'argument d'une clause
+qu'elle ne pouvait pas soutenir.
+
+**Ce qui survit de l'attaque : l'échelle, et le dossier est muet dessus.** Deux cent mille lignes sur
+dix partitions est un balayage minuscule, qui tient en mémoire côté coordinateur. Un balayage complet
+inter-partitions dégrade non linéairement avec le volume et avec le nombre de partitions, et finit par
+expirer — c'est pour cela que c'est un anti-patron reconnu. Le C3b mesuré ne dit **rien** de ce qui
+arrive à 10⁸ lignes ou à 10⁵ partitions. Donc : **l'anti-patron est réel dans la littérature, et cette
+mesure ne le démontre pas.** C'est le reproche que le dossier s'adresse à lui-même en I4 à propos du
+taux par kio — un chiffre vrai dans un régime, cité comme s'il valait partout — appliqué cette fois
+dans l'autre sens : un effet réel ailleurs, non détecté ici, et présenté comme s'il avait été mesuré.
+
+**La mesure qui fermerait D12.** Faire varier le nombre de partitions et le nombre de lignes sur
+`agg_cql` — par exemple 10, 10³ et 10⁵ partitions à 2 × 10⁵ et 2 × 10⁷ lignes — et observer où le
+balayage inter-partitions décroche de la balayage par partition. Coût : une campagne courte, sur un
+anneau libre. Elle n'a pas été faite, et tant qu'elle ne l'est pas, ni la campagne ni ce challenge ne
+peuvent parler du coût de partitionnement au-delà de `n = 200 000, p = 10`.
 
 ### D13 — Une asymétrie d'ingestion de 46×, rapportée et jamais interrogée. ⭑
 
@@ -280,10 +315,14 @@ Une ressort **bornée** : le zéro de l'estimation est une propriété du démar
 
 Une est **résolue contre le challenger** : l'index de MongoDB était bien présent, et sans effet.
 
-Trois sont **neuves**, et deux d'entre elles se retournent en partie contre le dossier : la charge
-de pré-conception que la campagne impute au chemin CQL est surdimensionnée par ses propres chiffres
-(D12), et l'écart d'ingestion de 46× confond un plafond de lot documenté avec le coût de shredding
-(D13). La troisième borne M23 à une seule forme de requête (D14).
+Trois sont **neuves**, et deux d'entre elles se retournent contre le dossier. **D12 est la plus
+lourde** : la charge de pré-conception que la campagne impute au chemin CQL n'est pas seulement
+surdimensionnée, elle est **non soutenue par la mesure censée l'établir** — l'écart entre table
+alignée et non alignée est de ×1,28, et ce ×1,28 n'est pas distinguable du bruit, intervalle
+[0,966 ; 1,421]. La campagne a facturé au CQL un coût de conception que ses propres chiffres ne
+montrent pas ; ce qui subsiste, et qui suffit, c'est qu'il faut abandonner le modèle document.
+**D13** montre que l'écart d'ingestion de 46× confond un plafond de lot documenté avec le coût de
+shredding. **D14** borne M23 à une seule forme de requête.
 
 **Le déplacement qui compte pour le diptyque** : sur cet axe, le fait à retenir n'est pas un
 multiplicateur mais une **absence de fonction**. La Data API n'agrège pas, ne compte pas au-delà d'un
