@@ -8,9 +8,12 @@
 > and the claim upgrades from [U] to [M]. D8 reclassifies the 1 000-document count ceiling from
 > measured discovery to documented behaviour — while noting that the measurement *contradicts* the
 > documentation's phrasing: the probe set `upper_bound = 400 000` and the server ignored it, so the
-> user control the documentation implies does not exist on this build. One challenge *narrows*:
-> D9 bounds `estimatedDocumentCount() = 0` to the pre-flush cold start, which was the only state
-> measured. One is *resolved against the challenger*: D10 asked which index state the MongoDB
+> user control the documentation implies does not exist on this build. One challenge *narrowed* and
+> has since been **refuted by its own closing measurement**: D9 bounded `estimatedDocumentCount() = 0`
+> to the pre-flush cold start and called for a flush-and-reread. Campaign 7bis ran it — the estimator
+> returns 171 267 after flush and 172 132 after major compaction against a true 200 000, so the
+> narrowing was wrong and is withdrawn (see `campagne7bis.fr.md`). One is *resolved against the
+> challenger*: D10 asked which index state the MongoDB
 > `$group` ran under — the probe source answers it (`cat_idx` was present) and the data shows the
 > index was irrelevant, since `$sum: "$amt"` cannot be served by an index on `cat` alone.
 > Three challenges are new and were missed by the first pass. **D12** is the heaviest: the native-CQL
@@ -107,7 +110,15 @@ compte pas. Mais cela **déplace la critique**, et c'est le meilleur geste de ce
 problème n'est pas le plafond, qui est déclaré, c'est le **substitut recommandé par l'éditeur**, qui
 a répondu zéro (M22).
 
-### D9 — M22 est une propriété du démarrage à froid, présentée comme une propriété tout court.
+### D9 — M22 est une propriété du démarrage à froid, présentée comme une propriété tout court. ⛔ RÉFUTÉ
+
+> **Ce défi a été réfuté par la campagne 7bis, et c'est lui qui avait tort.** La mesure qu'il
+> réclamait ci-dessous a été faite le 2026-09-18 : `nodetool flush` puis relecture donne
+> **171 267**, et après compaction majeure **172 132**, contre 200 000 réels — l'estimation reste
+> fausse de ~14 % en régime permanent, là où MongoDB rend 200 000 exactement sur le même corpus.
+> La borne proposée ici (« une fenêtre de temps, pas un état durable ») est **retirée** : c'est un
+> état durable. M22 était sous-évaluée par ce document. Détail dans `campagne7bis.fr.md`.
+> Le raisonnement ci-dessous est conservé tel qu'il a été écrit, pour que la réfutation soit lisible.
 
 `estimatedDocumentCount() = 0` a été lu quelques minutes après un chargement de 185,3 s, sans qu'aucun
 flush n'ait eu lieu — le zéro lui-même le prouve, et le rapport en tire justement que toute la
@@ -121,6 +132,12 @@ Le danger applicatif décrit reste entier et reste le point — un applicatif qu
 sur une collection fraîchement chargée conclut qu'elle est vide — mais il concerne une **fenêtre de
 temps**, pas un état durable. La mesure qui fermerait D9 est triviale : `nodetool flush`, puis relire.
 Elle n'a pas été faite.
+
+> **Post-scriptum du 2026-09-18.** Elle a été faite, et elle renverse ce paragraphe. Le danger ne se
+> limite pas à une fenêtre de temps : après flush *et* après compaction majeure, l'estimation vaut
+> 171 267 puis 172 132 pour 200 000 documents. Un applicatif qui teste `if count < seuil` en régime
+> permanent se trompe aussi. La phrase « pas approximatif, faux » du rapport n'avait pas à être
+> restreinte à la condition mesurée : elle vaut dans les trois conditions mesurées depuis.
 
 ## Les objections de portée
 
@@ -312,7 +329,10 @@ reliquat (13,398 ms × 10 000 pages) et une origine documentée, et le plafond d
 comportement déclaré par l'éditeur — dont la mesure montre au passage qu'il n'est pas relevable par
 le client, contrairement à ce que la formulation de la documentation suggère.
 
-Une ressort **bornée** : le zéro de l'estimation est une propriété du démarrage à froid.
+Une ressortait **bornée**, et la campagne 7bis l'a **réfutée** : le zéro de l'estimation n'est pas
+une propriété du seul démarrage à froid. Après flush, l'estimation vaut 171 267 ; après compaction
+majeure, 172 132 ; pour 200 000 documents réels. D9 avait adouci M22 à tort, et le verdict ci-dessous
+est donc lui-même corrigé par `campagne7bis.fr.md`.
 
 Une est **résolue contre le challenger** : l'index de MongoDB était bien présent, et sans effet.
 
@@ -322,7 +342,8 @@ surdimensionnée, elle est **non soutenue par la mesure censée l'établir** —
 alignée et non alignée est de ×1,28, et ce ×1,28 n'est pas distinguable du bruit, intervalle
 [0,966 ; 1,421]. La campagne a facturé au CQL un coût de conception que ses propres chiffres ne
 montrent pas ; ce qui subsiste, et qui suffit, c'est qu'il faut abandonner le modèle document.
-**D13** montre que l'écart d'ingestion de 46× confond un plafond de lot documenté avec le coût de
+**D13** — dont la campagne 7bis a depuis mesuré la version appariée : **6,9×** à lots de 100 des deux
+côtés, contre 46,3× publié — montre que l'écart d'ingestion de 46× confond un plafond de lot documenté avec le coût de
 shredding. **D14** borne M23 à une seule forme de requête.
 
 **Le déplacement qui compte pour le diptyque** : sur cet axe, le fait à retenir n'est pas un

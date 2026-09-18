@@ -1,0 +1,219 @@
+{
+  "probe": "probe_agg_7bis.py",
+  "campaign": "7bis \u2014 aggregation replayed, corrected",
+  "run_at_utc": "2026-09-18T14:01:30.742167+00:00",
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80,
+    "loadavg_1_5_15": [
+      18.99,
+      16.9,
+      17.95
+    ],
+    "load_note": "the host carries an unrelated demo estate throughout; declared, never subtracted"
+  },
+  "provenance": "WRITTEN BY THE MEASURER \u2014 weakest evidence class (audit I2), declared before the run",
+  "closes": [
+    "raw series retained",
+    "D6 n=15",
+    "D9 estimate by phase",
+    "D10 index state recorded",
+    "D13 matched batch size",
+    "D14 three query shapes"
+  ],
+  "not_met": [
+    "fixed offered rate (Part II section 4, requirement 1) \u2014 closed loop, declared",
+    "concurrency",
+    "multi-host",
+    "storage class"
+  ],
+  "verdict_rules_preregistered": {
+    "R1": "HCD scan p50 outside +/-20% of 133984.229 ms => n=3 original not representative",
+    "R2": "post-flush estimate correct => M22 is a cold-start property only",
+    "R3": "$group no slower without the index => D10 resolution holds",
+    "R4": "MongoDB batch-100 ingest lead collapses => 46.3x withdrawn",
+    "R5": "gap narrows at high cardinality => M23 bounded to its query shape"
+  },
+  "result": {
+    "engine": "hcd-dataapi",
+    "n_loaded": 200000,
+    "indexes": "automatic nine SAI; cat/ukey covered by query_text_values, amt by query_dbl_values",
+    "index_state_note": "D10: automatic and not selectable; recorded rather than assumed.",
+    "ingest": {
+      "batch_100_dataapi_ceiling": {
+        "seconds": 206.961,
+        "batch_size": 100,
+        "calls": 2000,
+        "ms_per_call": 103.481,
+        "docs_per_s": 966.4,
+        "note": "100 is the documented maximum insertions per transaction; not a choice."
+      }
+    },
+    "D9_estimate_by_phase": [
+      {
+        "phase": "pre_flush_cold",
+        "count_all": null,
+        "count_all_error": "TooManyDocumentsToCountException: Document count exceeds 1000, the maximum allowed by the server",
+        "estimated": 0,
+        "estimated_correct": false
+      },
+      {
+        "phase": "post_flush",
+        "count_all": null,
+        "count_all_error": "TooManyDocumentsToCountException: Document count exceeds 1000, the maximum allowed by the server",
+        "estimated": 171267,
+        "estimated_correct": false
+      },
+      {
+        "phase": "post_compaction",
+        "count_all": null,
+        "count_all_error": "TooManyDocumentsToCountException: Document count exceeds 1000, the maximum allowed by the server",
+        "estimated": 172132,
+        "estimated_correct": false
+      }
+    ],
+    "A_estimated_ms_pre_flush": {
+      "n": 15,
+      "min_ms": 5.392,
+      "p50_ms": 7.781,
+      "p95_ms": 19.79,
+      "p99_ms": 20.46,
+      "max_ms": 20.627,
+      "stdev_ms": 4.382,
+      "raw_ms": [
+        20.627,
+        19.431,
+        11.064,
+        8.361,
+        9.121,
+        5.885,
+        9.482,
+        7.663,
+        7.332,
+        8.186,
+        7.707,
+        6.331,
+        7.781,
+        7.075,
+        5.392
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "C2_scan_and_aggregate_ms": {
+      "n": 15,
+      "min_ms": 131753.531,
+      "p50_ms": 132985.311,
+      "p95_ms": 138141.902,
+      "p99_ms": 145339.202,
+      "max_ms": 147138.527,
+      "stdev_ms": 3618.681,
+      "raw_ms": [
+        147138.527,
+        133877.895,
+        131814.863,
+        132321.77,
+        133619.986,
+        132379.213,
+        133350.256,
+        132162.205,
+        131753.531,
+        133718.552,
+        132808.169,
+        134271.589,
+        132604.286,
+        132985.311,
+        134286.206
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "C2_docs_scanned": 200000,
+    "C2_shapes": {
+      "low_cardinality_10_groups": {
+        "correct": true,
+        "rows": 10
+      },
+      "high_cardinality_100k_groups": {
+        "correct": true,
+        "rows": 100000
+      },
+      "filtered_then_grouped": {
+        "correct": true,
+        "rows": 10
+      }
+    },
+    "C2_design_note": "One scan pass serves all three shapes: the Data API has no aggregation surface, so the scan pulls the whole corpus regardless of grouping and the grouping itself is client-side arithmetic. Measuring three separate scans would have measured the same transport three times.",
+    "A_estimated_ms_post_flush": {
+      "n": 15,
+      "min_ms": 5.783,
+      "p50_ms": 6.808,
+      "p95_ms": 18.833,
+      "p99_ms": 20.602,
+      "max_ms": 21.044,
+      "stdev_ms": 4.374,
+      "raw_ms": [
+        21.044,
+        17.886,
+        8.063,
+        6.71,
+        7.562,
+        6.726,
+        6.821,
+        6.98,
+        6.052,
+        5.783,
+        8.011,
+        6.668,
+        6.449,
+        6.269,
+        6.808
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "A_estimated_ms_post_compaction": {
+      "n": 15,
+      "min_ms": 6.026,
+      "p50_ms": 7.05,
+      "p95_ms": 16.025,
+      "p99_ms": 18.169,
+      "max_ms": 18.705,
+      "stdev_ms": 3.496,
+      "raw_ms": [
+        18.705,
+        14.876,
+        7.231,
+        6.481,
+        7.115,
+        6.286,
+        6.529,
+        6.724,
+        7.432,
+        7.411,
+        7.05,
+        6.506,
+        6.026,
+        6.194,
+        7.421
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "C2_scan_post_compaction_ms": {
+      "n": 5,
+      "min_ms": 129039.914,
+      "p50_ms": 130126.972,
+      "p95_ms": 131036.529,
+      "p99_ms": 131109.912,
+      "max_ms": 131128.257,
+      "stdev_ms": 762.638,
+      "raw_ms": [
+        130669.613,
+        131128.257,
+        129465.353,
+        130126.972,
+        129039.914
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "regime_note": "Campaign 7 ran entirely cache-resident, which M22's zero proved. Axis C is measured here both before any flush and after flush + major compaction, so the regime is no longer an unexamined condition."
+  }
+}

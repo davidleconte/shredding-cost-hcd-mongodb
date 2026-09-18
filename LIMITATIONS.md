@@ -649,9 +649,14 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
     moves the mechanism from [M] to [D] — while the measurement **contradicts** the documentation's
     phrasing, since the probe set `upper_bound = 400 000` and the server ignored it, so the user
     control the wording implies does not exist on this build (D8).
-  - **One was narrowed.** `estimatedDocumentCount() = 0` is a pre-flush cold-start property; steady
-    state after flush and compaction was never measured, and "not approximate, wrong" must be bound
-    to the condition measured (D9).
+  - **One was narrowed, and campaign 7bis then refuted the narrowing.** D9 held that
+    `estimatedDocumentCount() = 0` is a pre-flush cold-start property, that steady state after flush
+    and compaction was never measured, and that "not approximate, wrong" must be bound to the
+    condition measured. The measurement D9 itself called for has since been made: after
+    `nodetool flush` the estimate is **171 267**, after major compaction **172 132**, against a true
+    200 000 — an error of ~14 % that survives both, on a corpus where MongoDB's estimator returns
+    200 000 exactly. **The narrowing is withdrawn**: the defect is steady-state, not cold-start, and
+    M22 was understated here rather than overstated (see [`docs/campagne7bis.fr.md`](docs/campagne7bis.fr.md)).
   - **One resolved against the challenger.** The MongoDB `$group` ran with `cat_idx` present
     (`probes/probe_aggregation.py`), but the index is irrelevant to it: `$sum: "$amt"` cannot be
     served by an index on `cat` alone, and the index-served filtered count takes 12.659 ms against
@@ -666,14 +671,25 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
     at all — structural, and no interval touches it. **D13** shows the 46.3× ingest asymmetry the
     campaign reports without comment confounds a documented batch ceiling (100 documents per
     `insertMany`, hence 2 000 calls against MongoDB's 20) with per-document shredding cost, because
-    only one batch size was tried per engine. **D14** bounds M23 to a single query shape: ten groups,
-    one `SUM`, no filter — plausibly the shape most favourable to MongoDB that could have been chosen.
+    only one batch size was tried per engine. **Campaign 7bis measured it**: at a batch of 100 on
+    both arms the ratio is **6.9×**, not 46.3×, and the 46.3× is withdrawn. **D14** bounds M23 to a
+    single query shape: ten groups, one `SUM`, no filter — plausibly the shape most favourable to
+    MongoDB that could have been chosen. **Campaign 7bis measured that too, and D14 was right**: at
+    100 000 groups the same comparison gives **151×** instead of 602×, because MongoDB's cost scales
+    with group cardinality while HCD's — dominated by transporting the corpus — does not.
 
-  **What this still does not give M20–M23.** The reserves their own report attaches still stand and
-  are not lifted by having been challenged: the HCD scan arm's n = 3 (whose exact permutation
-  p-value is floored at 1.23 × 10⁻³ by the sample size, not by the effect — see
-  [`docs/STATISTICS.md`](docs/STATISTICS.md)), the cache regime that M22's zero itself proves, and
-  the apples-to-oranges label the CQL arm carries in its own result file.
+  **What this still does not give M20–M23.** Two of the three reserves their own report attaches have
+  since been discharged by campaign 7bis, and one still stands. **Discharged:** the HCD scan arm's
+  n = 3 — re-run at n = 15 the median is 132 985.311 ms, −0.7 % from the published 133 984.229 ms, and
+  the aggregation comparison now carries bootstrap intervals over retained raw series on both arms
+  instead of a permutation p-value floored at 1.23 × 10⁻³ by sample size; and the cache regime that
+  M22's zero proved — axis C was re-measured after flush and major compaction, where the scan costs
+  130 127.0 ms, **2.1 % less** than in cache, confirming that the cost is transport and not storage
+  reads. **Still standing:** the apples-to-oranges label the CQL arm carries in its own result file.
+  Campaign 7bis also added a reserve of its own that the author must wear — the protocol declared
+  that a 134-second scan has no meaningful warm-up phase, and the series refutes it: the first of the
+  fifteen scans is +10.7 % above the median of the other fourteen, and carries almost all of the
+  series' variance (σ 3 618.7 ms with it, 835.1 ms without). Both readings are published.
 - **Reproduction is not possible in the strict sense.** The ring's state mutated across campaigns
   (`system.paxos` from 0 to ~13 GiB per node; the 20 `supply_chain_hcd` indexes dropped and recreated
   six times), and the machine was never idle. What can be reproduced is the *method*: the probes are

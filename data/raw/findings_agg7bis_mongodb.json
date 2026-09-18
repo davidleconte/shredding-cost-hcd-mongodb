@@ -1,0 +1,347 @@
+{
+  "probe": "probe_agg_7bis.py",
+  "campaign": "7bis \u2014 aggregation replayed, corrected",
+  "run_at_utc": "2026-09-18T13:09:59.643933+00:00",
+  "host": {
+    "hostname": "alphadebunker",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz",
+    "cpu_count": 80,
+    "loadavg_1_5_15": [
+      20.24,
+      16.48,
+      15.11
+    ],
+    "load_note": "the host carries an unrelated demo estate throughout; declared, never subtracted"
+  },
+  "provenance": "WRITTEN BY THE MEASURER \u2014 weakest evidence class (audit I2), declared before the run",
+  "closes": [
+    "raw series retained",
+    "D6 n=15",
+    "D9 estimate by phase",
+    "D10 index state recorded",
+    "D13 matched batch size",
+    "D14 three query shapes"
+  ],
+  "not_met": [
+    "fixed offered rate (Part II section 4, requirement 1) \u2014 closed loop, declared",
+    "concurrency",
+    "multi-host",
+    "storage class"
+  ],
+  "verdict_rules_preregistered": {
+    "R1": "HCD scan p50 outside +/-20% of 133984.229 ms => n=3 original not representative",
+    "R2": "post-flush estimate correct => M22 is a cold-start property only",
+    "R3": "$group no slower without the index => D10 resolution holds",
+    "R4": "MongoDB batch-100 ingest lead collapses => 46.3x withdrawn",
+    "R5": "gap narrows at high cardinality => M23 bounded to its query shape"
+  },
+  "result": {
+    "engine": "mongodb",
+    "server_version": "8.0.32",
+    "n_loaded": 200000,
+    "ingest": {
+      "batch_100_matched_to_dataapi_ceiling": {
+        "seconds": 29.85,
+        "batch_size": 100,
+        "calls": 2000,
+        "ms_per_call": 14.925,
+        "docs_per_s": 6700.2
+      },
+      "batch_10000_native": {
+        "seconds": 4.066,
+        "batch_size": 10000,
+        "calls": 20,
+        "ms_per_call": 203.3,
+        "docs_per_s": 49188.4
+      }
+    },
+    "counts": {
+      "count_all": 200000,
+      "estimated": 200000,
+      "filtered_cat_c3": 20000
+    },
+    "A_count_all_ms": {
+      "n": 15,
+      "min_ms": 107.078,
+      "p50_ms": 114.39,
+      "p95_ms": 122.312,
+      "p99_ms": 122.558,
+      "max_ms": 122.619,
+      "stdev_ms": 5.092,
+      "raw_ms": [
+        119.546,
+        114.473,
+        115.397,
+        122.181,
+        114.428,
+        112.552,
+        115.296,
+        107.078,
+        107.877,
+        112.307,
+        107.792,
+        107.173,
+        107.43,
+        122.619,
+        114.39
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "A_estimated_ms": {
+      "n": 15,
+      "min_ms": 0.441,
+      "p50_ms": 0.602,
+      "p95_ms": 1.114,
+      "p99_ms": 1.701,
+      "max_ms": 1.848,
+      "stdev_ms": 0.33,
+      "raw_ms": [
+        1.848,
+        0.738,
+        0.707,
+        0.583,
+        0.8,
+        0.479,
+        0.521,
+        0.456,
+        0.487,
+        0.537,
+        0.609,
+        0.602,
+        0.441,
+        0.667,
+        0.621
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "C_groupby": {
+      "no_index_beyond_id": {
+        "indexes_present": [
+          "_id_"
+        ],
+        "low_cardinality_10_groups": {
+          "ms": {
+            "n": 15,
+            "min_ms": 218.875,
+            "p50_ms": 227.539,
+            "p95_ms": 267.44,
+            "p99_ms": 328.124,
+            "max_ms": 343.295,
+            "stdev_ms": 29.416,
+            "raw_ms": [
+              230.748,
+              227.539,
+              221.105,
+              219.618,
+              225.476,
+              227.665,
+              230.92,
+              343.295,
+              218.875,
+              229.589,
+              228.126,
+              234.931,
+              226.995,
+              225.949,
+              224.491
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 10,
+          "correct_against_ground_truth": true
+        },
+        "high_cardinality_100k_groups": {
+          "ms": {
+            "n": 15,
+            "min_ms": 862.017,
+            "p50_ms": 878.206,
+            "p95_ms": 910.931,
+            "p99_ms": 915.06,
+            "max_ms": 916.092,
+            "stdev_ms": 16.736,
+            "raw_ms": [
+              867.092,
+              898.027,
+              871.512,
+              868.25,
+              899.762,
+              908.719,
+              893.545,
+              883.199,
+              869.846,
+              916.092,
+              862.017,
+              862.093,
+              878.206,
+              887.876,
+              871.567
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 100000,
+          "correct_against_ground_truth": true
+        },
+        "filtered_then_grouped": {
+          "ms": {
+            "n": 15,
+            "min_ms": 213.693,
+            "p50_ms": 218.395,
+            "p95_ms": 253.141,
+            "p99_ms": 290.348,
+            "max_ms": 299.65,
+            "stdev_ms": 20.74,
+            "raw_ms": [
+              233.209,
+              213.693,
+              299.65,
+              216.777,
+              230.438,
+              218.395,
+              214.05,
+              215.677,
+              218.805,
+              216.031,
+              219.372,
+              221.052,
+              230.649,
+              217.689,
+              215.646
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 10,
+          "correct_against_ground_truth": true
+        }
+      },
+      "cat_and_ukey_and_flag_indexed": {
+        "indexes_present": [
+          "_id_",
+          "cat_idx",
+          "flag_idx",
+          "ukey_idx"
+        ],
+        "low_cardinality_10_groups": {
+          "ms": {
+            "n": 15,
+            "min_ms": 224.957,
+            "p50_ms": 234.977,
+            "p95_ms": 270.855,
+            "p99_ms": 277.369,
+            "max_ms": 278.998,
+            "stdev_ms": 14.455,
+            "raw_ms": [
+              238.433,
+              230.829,
+              232.293,
+              226.44,
+              231.369,
+              230.736,
+              267.366,
+              248.005,
+              234.977,
+              237.483,
+              234.671,
+              235.604,
+              236.318,
+              224.957,
+              278.998
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 10,
+          "correct_against_ground_truth": true
+        },
+        "high_cardinality_100k_groups": {
+          "ms": {
+            "n": 15,
+            "min_ms": 860.51,
+            "p50_ms": 901.552,
+            "p95_ms": 965.778,
+            "p99_ms": 1021.26,
+            "max_ms": 1035.131,
+            "stdev_ms": 38.986,
+            "raw_ms": [
+              922.064,
+              936.056,
+              894.542,
+              883.855,
+              875.158,
+              914.379,
+              901.552,
+              860.51,
+              1035.131,
+              917.814,
+              896.021,
+              901.589,
+              927.599,
+              890.403,
+              885.023
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 100000,
+          "correct_against_ground_truth": true
+        },
+        "filtered_then_grouped": {
+          "ms": {
+            "n": 15,
+            "min_ms": 177.917,
+            "p50_ms": 186.284,
+            "p95_ms": 250.977,
+            "p99_ms": 350.744,
+            "max_ms": 375.685,
+            "stdev_ms": 47.971,
+            "raw_ms": [
+              186.284,
+              186.384,
+              179.131,
+              181.384,
+              191.017,
+              191.011,
+              197.53,
+              189.854,
+              375.685,
+              177.917,
+              178.709,
+              178.359,
+              182.912,
+              178.599,
+              187.23
+            ],
+            "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+          },
+          "rows": 10,
+          "correct_against_ground_truth": true
+        }
+      }
+    },
+    "B_filtered_count_ms": {
+      "n": 15,
+      "min_ms": 11.484,
+      "p50_ms": 12.664,
+      "p95_ms": 19.157,
+      "p99_ms": 26.003,
+      "max_ms": 27.714,
+      "stdev_ms": 3.889,
+      "raw_ms": [
+        27.714,
+        13.174,
+        13.785,
+        12.727,
+        11.867,
+        13.463,
+        12.779,
+        15.49,
+        12.664,
+        11.838,
+        12.032,
+        12.206,
+        11.823,
+        11.751,
+        11.484
+      ],
+      "raw_note": "every timed observation, in execution order. Retained so that a third party can compute an interval or run a test, which 23 of 25 files in this dossier made impossible."
+    },
+    "index_state_note": "D10: campaign 7 did not record which index state its $group ran under. Both states are measured here and both are named in the record."
+  }
+}
