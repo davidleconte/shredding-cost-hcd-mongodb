@@ -524,7 +524,7 @@ fits**"*, and this dimension was scored — at the joint-heaviest weight in the 
 premise that the pass selection was undeclared where the number lives. **That premise is false at
 the most prominent occurrence there is.** `README.md:118` — the Principal-results row §7 item 7
 measures at 841 characters — already declares it in bold, under this report's own ⛔ register: *"the
-slopes are fitted on **pass 1 only**, undeclared until now ([ARTIFACT.md §8.5](ARTIFACT.md)), and
+slopes are fitted on **pass 1 only**, undeclared until now ([ARTIFACT.md §8.5](../ARTIFACT.md)), and
 MongoDB's denominator is near-flat (r² 0.78 / 0.88 against HCD's 0.997)"*. The pass selection, the
 weak denominator, the r² values and the pointer to the self-assessment are therefore all at the
 point of the headline number. `METHODOLOGY.md` §6 carries the low-r² finding for these same ratios

@@ -14,6 +14,7 @@ c7bc365620b5d68965ab9557c63b9d11863d4691795e51eadf0376fdff68575f  probes/probe_a
 52e4115166e26cfe54d93178bc463cb1356fec82ec4f3ec6236cc95e34ee8d1b  probes/probe_comparative.py:255  k = f"{sz.label}|pass1"
 5781ae56501cbc16f26be902528d2efd0b588e7bb10ef4368b4c718318ad4cf7  probes/probe_comparative.py:264  "cross_engine_comparison_permitted": permitted,
 1c598aca6fa71c859f4e17d2f23f84d9ef4819cfc7f7145ba25a47a33665c857  probes/probe_comparative.py:41  record will say `cross_engine_comparison_permitted: false` i
+f8176012d483be3efd7e0982939c0cf6344824030c664090a911436e4c61693c  probes/probe_comparative.py:94  def distribution(ms: list[float]) -> dict[str, Any]:
 d53737aa848acf9ad0180f408409b8752dbe97493fb2bda95a7304e8d9268e38  probes/probe_field_vs_byte.py:320  "verdict_rule": ("series-2 endpoint ratio <= 1.15 → bytes do
 8edec3d05cf972e44391a0c1e6756193f0aea6bf8b5d3d2e5c83cf219b53fb55  probes/probe_field_vs_byte.py:323  "verdict_per_pass": verdicts,
 74553b09f94a23f47700a4cd1e30a8ff8bcf5781b22677de21cc29c2ba0d456d  probes/probe_tier_vs_storage.py:225  f"UPDATE {table} SET {set_clause} WHERE key = ? IF tx_id = ?
