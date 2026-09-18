@@ -63,7 +63,7 @@ document found has since been **fixed**, §8 says so rather than deleting the fi
 
 `data/raw/` is **unedited**. It is **not complete**, and the distinction is load-bearing:
 
-- **Sixteen of the seventeen probes persisted no per-observation latency.** The shared `dist()` /
+- **Sixteen of the eighteen probes persisted no per-observation latency.** The shared `dist()` /
   `distribution()` helper in every latency probe written before campaign 7bis consumes the sample
   list and returns `{n, min_ms, p50_ms, p95_ms, p99_ms, max_ms, stdev_ms}`. Those samples are
   gone. For any latency figure produced by those sixteen, no reader — including the author — can
@@ -73,7 +73,9 @@ document found has since been **fixed**, §8 says so rather than deleting the fi
   true when it was written and **campaign 7bis made it false the same day**: `probe_agg_7bis.py`
   defines a `dist()` that returns the same seven keys **plus `raw_ms`**, "every timed observation,
   in execution order", with a `raw_note` saying why. It is the only probe in the tree containing
-  `raw_ms`.
+  `raw_ms` — but not the only one that persists observations: `vector_freshness_rf3.py` writes a
+  per-cycle `cycles[]` array, which is why the count here is sixteen of eighteen and not seventeen.
+  (`mongot_freshness.py` also has a `cycles` key; it holds an integer count, not a series.)
 - **Four files are the exception, two of them new.** `vector_freshness_idle.json` and
   `vector_freshness_loaded.json` retain all 60 per-cycle `insert_to_vec_visible_ms` observations
   under `cycles[]`, and `docs/STATISTICS.md` uses them. `findings_agg7bis_hcd.json` (five `raw_ms`

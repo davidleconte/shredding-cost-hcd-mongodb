@@ -4,9 +4,83 @@
 v1.0.33) measured against MongoDB 8.0.32, and — for search freshness only — `mongodb-atlas-local`
 8.3.11 with mongot 1.75.1 `localDev`.*
 
-> **Note on the title.** Earlier versions of this title, and `CITATION.cff`, say *concurrency*.
-> Concurrency was never measured: every probe in every campaign is a single sequential client
-> ([RESULTS.md §6](RESULTS.md), [docs/RELATED-WORK.md §9](docs/RELATED-WORK.md)).
+---
+
+## The result, in one table
+
+Eight axes set the two engines against each other. Every margin, every reserve and every raw-file
+reference is in [Principal results](#principal-results); read the reserve column there before
+quoting any row here.
+
+| | Axis | Outcome |
+|---|---|---|
+| 🟩 | Mutating one field | comparator — direction certain |
+| 🟩 | Fetching one document by identifier | comparator — direction certain |
+| 🟩 | Filtering on a declared or wildcard index | comparator — direction certain |
+| 🟩 | Aggregating by group | comparator — **a capability the interface lacks**, not a race; the ratio is a property of the query shape |
+| 🟩 | Counting exactly | comparator — the operation is **refused** above a documented threshold |
+| ⬜ | Freshness of an ordinary secondary index | neither — both synchronous |
+| 🟨 | Filtering on a field nobody declared | **no winner** — median favours the decomposing engine 22×, supports overlap |
+| 🟦 | Freshness of the search index | decomposing engine — **total inside the refresh window, void outside** |
+
+🟩 comparator · 🟦 decomposing engine · 🟨 the data do not settle it · ⬜ neither. The colour repeats
+the third column and carries nothing on its own. Two further measurements set an engine against
+itself and are not axes, which is why this register counts measurements where the article counts
+comparisons — [Principal results](#principal-results) reconciles the two.
+
+### If you read one paragraph
+
+Two numbers decide the one axis the engines do not share, and only one of them is about a database:
+**the refresh interval of your deployment**, and **the delay your application leaves between writing
+and searching**. Where the second is shorter than the first, the decomposing engine returns the
+document and the comparator does not — 30 misses out of 30 against 0 at zero delay, exactly tested
+(M19). Where it is longer, that advantage is worth nothing and the comparator is cheaper on
+everything else measured here. Both numbers are properties of *your* system. This repository
+supplies one instance of each and the probe to take your own.
+
+## If you are choosing right now
+
+Three steps, in order of what they cost you. None requires reading the rest of this repository, and
+the first two settle most cases.
+
+**Step 1 — classify the entity, before a schema exists.** The cost of mutating one field scales with
+the *indexed content the mutation never touches*, so the question a design review must ask is **how
+many indexed kilobytes sit on this entity's mutation path, and how often is it mutated?** Four
+answers, four policies — [ADR-001](docs/adr/) develops each:
+
+| The entity is… | Then |
+|---|---|
+| written once, read many, rarely mutated | default indexing; you pay maintenance once, at insert |
+| mutated often, little indexed content on that path | default indexing is defensible — but measure rather than assume |
+| mutated often, wide: status machines, counters, hot aggregates | index selectively, and split the mutable subset out if it is small relative to the whole |
+| stable in shape, reached by key and range: ledgers, event trails | a declared schema, not a schemaless collection |
+
+**Step 2 — check the five properties against what you are about to build.** A consensus round on
+every mutation, on every probe in this dossier and never isolated from the tier (M2, M5, threat
+C1-bis). An 8 000-byte ceiling on any indexed string, which forced the chunking in M3 and makes
+selective indexing compulsory for long text. Nine automatic indexes per collection against a hundred
+per node — about eleven collections before the guardrail refuses
+([ADR-001](docs/adr/ADR-001-modelling-policy.md)). No server-side aggregation (M20). No exact count
+above a documented threshold, and an estimator wrong by fourteen per cent after flush *and* after
+compaction (M21, M22, campaign 7bis). If any of these collides with a requirement, you have learnt
+it here rather than in a proof of concept.
+
+**Step 3 — take your own two numbers, if step 1 did not settle it.** `probes/turn_latency.py` sweeps
+the delay between a write and a search and reports the miss rate at each; `probes/mongot_floor.py`
+measures a deployment's refresh interval without phase-locking onto it. Run them against what you
+actually operate. They answer the paragraph above with your figures instead of one instance of
+someone else's, and that is the only version of the answer that binds.
+
+## Start here
+
+| If you are… | Read, in this order | Time |
+|---|---|---|
+| **an architect choosing between the two** | the table above → [LIMITATIONS.md](LIMITATIONS.md) → [the one-screen synthesis](docs/synthesis/huit-axes.fr.html) | 10 min |
+| **an engineer who will reproduce it** | [REPRODUCING.md](REPRODUCING.md) → [`probes/`](probes/) → [`data/raw/`](data/raw/) | 1 h to read |
+| **about to quote a number** | [How to quote a number](#how-to-quote-a-number-from-this-repository) → the reserve column of [Principal results](#principal-results) | 5 min |
+| **from MongoDB, here to find the flaw** | [The dossier against itself](#the-dossier-against-itself) → [docs/THREATS-TO-VALIDITY.md](docs/THREATS-TO-VALIDITY.md) → [docs/challenges-campagne7.fr.md](docs/challenges-campagne7.fr.md) | 30 min, and the flaws are indexed for you |
+| **assessing the method** | [docs/RESEARCH-DESIGN.md](docs/RESEARCH-DESIGN.md) → [docs/STATISTICS.md](docs/STATISTICS.md) → [METHODOLOGY.md](METHODOLOGY.md) | 45 min |
+| **here for the argument, not the data** | [Part I](docs/article/article-part1-what-a-mutation-costs.html) — what a mutation costs · [Part II](docs/article/article-part2-when-the-index-is-current.html) — when the index is current | 40 min |
 
 ---
 
@@ -33,11 +107,12 @@ freshness axis is a miss-rate result, exactly tested, and bounded to write-to-se
 about one second ([docs/STATISTICS.md §3.3](docs/STATISTICS.md), §3.17). **Principal limitation.**
 "Write cost" is operationalised as client-observed latency and never as bytes, so the flagship
 per-byte coefficient is not a property of the system: it takes the values **×7.50**, **×5.94** and
-**×1.52** in three regimes on the same machine. And **sixteen of the seventeen probes** discarded their
-per-observation series, so for the thirty-four evidence files they wrote no confidence interval can
-ever be computed by anyone, including the author. Campaign 7bis is the exception and the measure of
-what was lost: its probe keeps every observation, so the aggregation axis carries real bootstrap
-intervals and a rank test — the only axis in the dossier that does. What
+**×1.52** in three regimes on the same machine. And **sixteen of the eighteen probes** discarded their
+per-observation series, so for the thirty-five evidence files they wrote no confidence interval can
+ever be computed by anyone, including the author. Two probes kept theirs: `vector_freshness_rf3.py`
+as a side effect of its shape, and campaign 7bis's, deliberately. 7bis is the measure of what was
+lost elsewhere — its probe keeps every observation, so the aggregation axis carries real bootstrap
+intervals and a rank test, the only *cross-engine* axis in the dossier that does. What
 this dossier establishes is **mechanism and direction**. It does not establish production magnitudes.
 
 ## Contribution
@@ -106,7 +181,7 @@ Full statements, falsification criteria, and which criteria are `[PRE]` rather t
 | **HCD** | HCD 2.0.6, `nodetool version` `5.0.7.0-ea50e91ba01f`, Data API v1.0.33; RF = 1 (campaign 1), `{dc1:3}` thereafter |
 | **MongoDB** | 8.0.32, three-member replica set, `w:majority` + `j:true`. Search freshness only: 8.3.11 `atlas-local`, mongot 1.75.1 `localDev` — a different deployment (audit I8) |
 | **Host** | One QEMU VM, 80 vCPU, 220 GiB RAM, **shared**, at load average 14–16 throughout. No root, so the page cache was never dropped |
-| **Dates** | 17–18 September 2026. `run_at_utc` is recorded in **26 of the 38** raw files; the twelve exceptions and one hand-typed stamp are listed in [data/README.md](data/README.md) |
+| **Dates** | 17–18 September 2026. `run_at_utc` is recorded in **27 of the 39** raw files; the twelve exceptions and one hand-typed stamp are listed in [data/README.md](data/README.md) |
 | **Statistics** | Percentiles only; **no means for latency**. n = 30 per point, two passes at most, **no confidence intervals on any axis but one, and none is recoverable for the rest**; campaign 7bis retained its observations and carries bootstrap intervals, see [docs/STATISTICS.md §2](docs/STATISTICS.md) and [docs/campagne7bis.fr.md](docs/campagne7bis.fr.md) |
 
 The full table with every arm and every raw-file reference is
@@ -181,9 +256,10 @@ the more conspicuous external ones, are what most narrow what may be said:
    two container sizes and two replication factors. The rate is not merely imprecise; it is ill-formed.
    The **mechanism** (M1, M2) is untouched by this, because neither is a latency measurement.
 2. **Statistical conclusion.** The per-observation series were discarded at write time by the probes'
-   shared summarising helper: of 25 latency-bearing files, **two** retain their observations. No
-   interval, no test, no re-percentiling, for any reader including the author, **permanently**. What
-   the surviving minima and maxima do decide is overlap — and 34 of 93 comparisons overlap.
+   shared summarising helper: of 27 latency-bearing files, **four** retain their observations. No
+   interval, no test, no re-percentiling, for any reader including the author, **permanently**, for
+   the other twenty-three. What the surviving minima and maxima do decide is overlap — and 34 of 93
+   comparisons overlap.
 3. **Internal.** The instruments written by the measurer, the measurements carrying no pre-declared
    decision rule, and the comparisons that fail separation of support are **largely the same rows** —
    and they are disproportionately the rows favourable to the author's employer's product. The threat
@@ -217,8 +293,8 @@ constrains *precision*, not *permission*.
 | [`docs/audit-adversarial.fr.md`](docs/audit-adversarial.fr.md) · [`docs/challenges.fr.md`](docs/challenges.fr.md) · [`docs/challenges-campagne7.fr.md`](docs/challenges-campagne7.fr.md) | The hostile record, in French; promoted to English in `LIMITATIONS.md`. **French is authoritative where the two diverge** |
 | [`docs/adr/ADR-001-modelling-policy.md`](docs/adr/ADR-001-modelling-policy.md) | The modelling policy and the evidence register for M1–M8, M10–M19. **M20–M23 were never entered in it**; they live in `RESULTS.md` §3 |
 | [`docs/synthesis/huit-axes.fr.html`](docs/synthesis/huit-axes.fr.html) | One-screen colour-coded synthesis of the eight axes for a reader who will not open the article: winner, margin, whether the direction is established, and whether the result holds beyond the measured envelope. `check_article_refs.py` compares its verdicts against the article's table and fails if they diverge |
-| [`docs/article/`](docs/article/) | The article under verification, in its current two-volet form: [Part I](docs/article/article-part1-what-a-mutation-costs.html) (what a mutation costs) and [Part II](docs/article/article-part2-when-the-index-is-current.html) (when the index is current). Both carry the corrections this repository forced, including the separation-of-support verdicts and the pass-one disclosure. The single-file `article-corrected.html` they replace is removed |
-| [`.github/workflows/`](.github/workflows/) | CI. A green check asserts internal consistency only — hashes, links, JSON validity, probe syntax, and the derived inference numbers. It re-measures nothing |
+| [`docs/article/`](docs/article/) | The article under verification, in its current two-volet form: [Part I](docs/article/article-part1-what-a-mutation-costs.html) (what a mutation costs) and [Part II](docs/article/article-part2-when-the-index-is-current.html) (when the index is current). ⚠︎ **They do not yet carry the corrections this repository forced**: three retractions — D12's annulment, D9's refutation and D7's decomposition — landed in the Markdown and not in the HTML, and `.github/WORK-ORDER-html.fr.md` orders the seven repairs. The single-file `article-corrected.html` they replace is removed |
+| [`.github/workflows/`](.github/workflows/) | CI, ten jobs. A green check asserts internal consistency only — evidence hashes, links, JSON validity and latency invariants, probe syntax, source-line citations, the derived inference numbers, one re-rendered figure, figure traceability, this repository's own self-description, and the diptych's internal cross-references. It re-measures nothing |
 
 ## How to quote a number from this repository
 
@@ -238,7 +314,7 @@ The full rule set is [docs/STATISTICS.md §6](docs/STATISTICS.md); these are the
 8. **Prefer the structural results** when the point is architectural: M1, M2, M20, M21 and M22 need
    no statistics and survive every method challenge. The latency ratios are the decorative ones.
 9. **Cite the raw filename.** A magnitude without its file cannot be checked — and since the
-   observations are gone, it cannot be re-derived either.
+   observations are gone for thirty-five of the thirty-nine files, it usually cannot be re-derived either.
 
 ## Reproduction, licence, citation, conflict of interest
 
