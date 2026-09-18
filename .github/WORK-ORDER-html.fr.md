@@ -1,5 +1,33 @@
 # Ordre de travail — mettre le diptyque et la synthèse à jour des rétractations
 
+> ## ✅ CLOS le 18 septembre 2026, commit `59b3b76`
+>
+> **Les sept gestes sont appliqués et vérifiés.** Ce document est conservé, et non supprimé, parce
+> qu'il est la trace de ce que le dépôt savait devoir corriger, de ce qu'il a corrigé, et de ce qu'il
+> a délibérément laissé intact. Un ordre de travail effacé après exécution ne prouve rien.
+>
+> **Vérifié à la livraison, au-delà des dix contrôles :**
+> ce qui devait disparaître a disparu — « penalty is withdrawn », « estimate returns in steady
+> state », la décomposition à 104 secondes, « engine-to-engine », « no confidence interval anywhere ».
+> Ce qui devait apparaître est là — 13,398 ms par page, 171 267 et 172 132, 584× et 151×,
+> `ALLOW FILTERING` pour la réserve R3, et cinq mentions de la campagne 7bis.
+> Ce qui devait rester intact l'est — `part1:1180` affirme toujours la clause de pré-conception, la
+> doctrine de la note 53 et « a table designed for the query » sont inchangées.
+>
+> **Une variante acceptée, et elle est meilleure que ce que ce document demandait.** Le geste 3
+> prescrivait de retirer « cold-start property ». La livraison la **conserve en citation puis la
+> réfute sur place**, aux lignes 605 et 1176 : *« An earlier revision called that a cold-start
+> property and noted the steady state unmeasured. It has since been measured, and the reading was too
+> generous. »* C'est la convention du dossier — le raisonnement périmé reste lisible — et elle a été
+> appliquée là où cet ordre de travail avait écrit « retirer ».
+>
+> **Ce qui reste ouvert et ne l'était pas ici :** rien ne vérifie automatiquement l'accord entre le
+> HTML et la couche Markdown. Les sept gestes sont la conséquence de cette absence. Le job 10 garde
+> la cohérence *interne* du diptyque, pas son accord avec les rétractations.
+
+---
+
+
 **Destinataire :** l'agent en charge de `docs/article/article-part1-what-a-mutation-costs.html`,
 `docs/article/article-part2-when-the-index-is-current.html` et `docs/synthesis/huit-axes.fr.html`.
 **Émis le 18 septembre 2026**, contre le commit `9c7c9ce`.
