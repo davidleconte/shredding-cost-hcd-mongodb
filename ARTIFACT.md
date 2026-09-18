@@ -23,9 +23,9 @@ repository's own prose it does so to **narrow** a claim, never to widen one — 
 §8, where it narrows one of the repository's own self-accusations because that self-accusation is
 factually overstated.
 
-**Assessment date:** 18 September 2026. **First written** against commit `166225e`; **re-verified
-and re-stated** against commit `3350cbf` the same day, after ten further commits landed.
-**Assessed tree:** working tree at commit `3350cbf` (HEAD) — see §1.4, which records both states.
+**Assessment date:** 18 September 2026. **First written** against commit `b61eef4`; **re-verified
+and re-stated** against commit `457568f` the same day, after ten further commits landed.
+**Assessed tree:** working tree at commit `457568f` (HEAD) — see §1.4, which records both states.
 The tree was being edited by other sessions throughout; every count in this document is now
 regenerated from the tree by `.github/scripts/check_artifact_table.py` and verified in CI, because
 the first writing of it went stale within hours and nothing caught that. Where a defect this
@@ -115,7 +115,7 @@ the same.
 
 ### 1.4 State of the tree at assessment
 
-**As first assessed, at `166225e`.** Seven commits, no tags, all of them falling between
+**As first assessed, at `b61eef4`.** Seven commits, no tags, all of them falling between
 `2026-09-18 10:03:02` and `11:06:43 +0000` — i.e. **after every measurement run**, the last of
 which is stamped `2026-09-18T09:33:35` in `findings_agg_cqlref.json`. (One raw file,
 `findings_mongot_provenance.json`, carries `2026-09-18T10:05:00`; it is a docker-image provenance
@@ -126,7 +126,7 @@ work in flight during the assessment: `ARTIFACT.md` (this file), `docs/STATISTIC
 
 Two consequences were drawn from that, and **both are now discharged**:
 
-1. ~~**Nothing above is published.**~~ All eight paths were committed in `ff84757` and are at
+1. ~~**Nothing above is published.**~~ All eight paths were committed in `fe615ba` and are at
    `origin/main`. `README.md`'s links to `docs/STATISTICS.md` resolve in a clean clone. The
    prerequisite this section set for §2 has been met.
 2. **The independent cross-check stands, and has been re-run.** `data/MANIFEST.sha256` (then at
@@ -137,20 +137,20 @@ Two consequences were drawn from that, and **both are now discharged**:
    remains the only genuinely independent confirmation in this repository that the evidence
    directory is in the state its documents describe.
 
-**As re-verified, at `3350cbf`.** Seventeen commits, still no tag, the window running from
+**As re-verified, at `457568f`.** Seventeen commits, still no tag, the window running from
 `2026-09-18 10:03:02` to `17:08:26 +0000`. Those three figures are prose rather than generated, and
 deliberately so: a generated block must not contain a fact that generating it changes, and the
 commit that writes such a block moves `HEAD`. Everything that *is* stable across its own commit —
 evidence count and size, stamp coverage, probe count, script count, tag list, tracked files,
-untracked paths — is in the generated table in §1.3. The material changes since `166225e`, each of
+untracked paths — is in the generated table in §1.3. The material changes since `b61eef4`, each of
 which invalidated something this document had asserted:
 
 | Landed | What it changed here |
 |---|---|
-| `ff84757` — the remediation paths committed | discharged both consequences above; §2.1's "no committed checksum manifest" and §2.2's "no committed workflow" became false |
+| `fe615ba` — the remediation paths committed | discharged both consequences above; §2.1's "no committed checksum manifest" and §2.2's "no committed workflow" became false |
 | CI workflow `verify-evidence.yml` | §2.2's "no CI" became false; there are now **nine** jobs, the last two added the same day |
-| `c849781` — campaign 7bis | `data/raw/` 36 → 38 files, `probes/` 16 → 17, an eighth campaign report, and — materially for §1.2 and §6 — **the first probe that keeps its raw observations** |
-| `3350cbf` — challenge D12 annulled | added `check_probe_citations.py` and its manifest; shifted line numbers inside `probe_aggregation.py`, which this document cites |
+| `c30372b` — campaign 7bis | `data/raw/` 36 → 38 files, `probes/` 16 → 17, an eighth campaign report, and — materially for §1.2 and §6 — **the first probe that keeps its raw observations** |
+| `457568f` — challenge D12 annulled | added `check_probe_citations.py` and its manifest; shifted line numbers inside `probe_aggregation.py`, which this document cites |
 
 The last row is the reason §1.3's counts are now generated rather than typed: this document's own
 §5 cites `probe_aggregation.py` by line number, and a six-line docstring inserted elsewhere in the
@@ -178,7 +178,7 @@ block points at a mutable URL that resolves to whatever `HEAD` happens to be.
 
 Two clauses of the original assessment have since been **discharged and are struck here rather
 than deleted**: ~~no committed checksum manifest~~ — the manifest was committed in
-`ff84757`, is at `origin/main`, holds one entry per evidence file and is re-verified by CI on every
+`fe615ba`, is at `origin/main`, holds one entry per evidence file and is re-verified by CI on every
 push; and ~~`grep -rniE 'zenodo|doi|orcid' .` returns nothing outside `docs/article/`~~ — that grep
 now matches in `README.md`, `CONTRIBUTING.md`, `METHODOLOGY.md`, `RESULTS.md` and this file, all of
 them *discussing* the missing DOI rather than carrying one. **The badge is still not claimable**:
@@ -188,7 +188,7 @@ Three consequences, stated without hedging:
 
 1. **A force-push or a deletion ends the artefact.** GitHub is a working copy, not an archive.
 2. **A citation cannot be pinned.** "M13 = 44×" cannot be bound to a state of the repository, and
-   the prose *does* change substantively: commit `bdbc5c0` rewrote figures and claims across eight
+   the prose *does* change substantively: commit `98ce434` rewrote figures and claims across eight
    files including `README.md` and `RESULTS.md`.
 3. ~~**"Byte-identical to the run" is unverifiable by a reader.**~~ **Closed.** The manifest is
    published and CI re-verifies it, so a reader can check the evidence directory against a
@@ -227,7 +227,7 @@ The failure is on the ACM *complete* criterion, and the artefact's own register 
 - **No published entry point.** There is still no `Makefile`: an evaluator's first action — "run
   the artefact" — has no single defined start. ~~and no CI … Checking scripts exist on disk under
   `.github/scripts/` and are untracked; until they are committed and wired to a workflow, this
-  defect stands.~~ **That half is discharged.** The scripts were committed in `ff84757` and wired
+  defect stands.~~ **That half is discharged.** The scripts were committed in `fe615ba` and wired
   to `.github/workflows/verify-evidence.yml`, which now runs nine jobs on every push (§1.3 counts
   them). What an evaluator can do without a `Makefile` is run any one of them directly; what they
   still cannot do is run "the artefact", because half the system under test is absent — the
@@ -644,7 +644,7 @@ that basis.
 
 Roughly a day's work. **No new measurement is required.**
 
-1. ~~**Commit what is on disk but untracked**~~ — **done** in `ff84757`. Every path this step
+1. ~~**Commit what is on disk but untracked**~~ — **done** in `fe615ba`. Every path this step
    named is tracked and at `origin/main`, and `README.md`'s links resolve in a clean clone.
 2. ~~**Publish the manifest.**~~ — **done, and now signposted**. `data/MANIFEST.sha256` is
    committed, holds one digest per evidence file, and `.github/scripts/check_evidence_manifest.py`
@@ -703,7 +703,7 @@ Roughly a day's work. **No new measurement is required.**
    sentence that the GitHub URL is the working copy and the DOI is the citable artefact.
 8. **Add a `CHANGELOG.md`** mapping each version to what changed in the prose. `data/raw/` is
    immutable by policy, so the changelog is a prose-drift record — which is precisely what a
-   citing reader needs, given that commit `bdbc5c0` rewrote figures and claims across eight files.
+   citing reader needs, given that commit `98ce434` rewrote figures and claims across eight files.
 
 ### 7.3 After the deposit
 
@@ -847,10 +847,10 @@ comparative claim about either engine. *Remedy: restate gap 8 to name what is ac
 
 Every factual claim above was established by executing a command against the working tree on
 18 September 2026, not by reading prose. The commands are in §5. The document was written against
-commit `166225e` and **re-verified command by command against `3350cbf`** the same day; every count
+commit `b61eef4` and **re-verified command by command against `457568f`** the same day; every count
 that moved is now regenerated by `.github/scripts/check_artifact_table.py` and re-derived in CI, so
 the next time the tree moves under this document the failure is loud rather than silent. Where a
-finding was true at `166225e` and has since been fixed, it is struck and marked, not removed. The manifest in §4 was generated
+finding was true at `b61eef4` and has since been fixed, it is struck and marked, not removed. The manifest in §4 was generated
 by `sha256sum`, not transcribed. The four badge definitions quoted in §2 are verbatim, each
 including its final sentence, and were checked word for word against the v1.1 wording reproduced at
 <https://sigir.org/general-information/acm-sigir-artifact-badging/>; `acm.org` returns HTTP 403 to

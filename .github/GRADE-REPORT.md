@@ -4,7 +4,7 @@
 comparing IBM DataStax HCD 2.0.6 (Data API v1.0.33) against MongoDB 8.x on document-database
 storage layout. Seven campaigns, twenty-three measurements (M1–M23; no M9 was ever assigned).
 
-**Graded at:** commit `ff84757`, working tree of 2026-09-18, 8 commits, 0 tags, 0 releases.
+**Graded at:** commit `fe615ba`, working tree of 2026-09-18, 8 commits, 0 tags, 0 releases.
 
 **Method:** six independent rubrics were run against the repository. This document reconciles them.
 Every claim below that is not attributed to a rubric was re-verified directly against the tree by
@@ -174,7 +174,7 @@ Four contradictions, all verified, all with the repository's own audit already p
 | # | Defect | Verified how | Already flagged in |
 |---|---|---|---|
 | i | `DISCLAIMER.md:18` sources the date claim to `run_at_utc` in **"every file under `data/raw/`"** | `grep -l run_at_utc data/raw/*.json \| wc -l` → **24**; `ls data/raw/*.json \| wc -l` → **36**. `README.md:106` already says "24 of the 36" | `ARTIFACT.md` §8.2, `THREATS` X4, `.github/IMPROVEMENT-PLAN.md` |
-| ii | `RESULTS.md` — the normative M1–M23 register — asserts **six times** (lines 59, 60, 155, 156, 157, 158) that campaign 7 carries *"no adversarial verdict … no figure in it has been challenged"* | `docs/challenges-campagne7.fr.md` carries D6–D14 against exactly those measurements and has been committed since `09459b9`, two commits before HEAD | `THREATS` X8: *"That sentence was true when written and is now false"* |
+| ii | `RESULTS.md` — the normative M1–M23 register — asserts **six times** (lines 59, 60, 155, 156, 157, 158) that campaign 7 carries *"no adversarial verdict … no figure in it has been challenged"* | `docs/challenges-campagne7.fr.md` carries D6–D14 against exactly those measurements and has been committed since `a0b6a3a`, two commits before HEAD | `THREATS` X8: *"That sentence was true when written and is now false"* |
 | iii | `METHODOLOGY.md:29–35` still asserts the cardinal rule *"Each probe carried its decision rule in its own source before it ran"* | `docs/RESEARCH-DESIGN.md:573,590` calls it **"false as a generalisation"** — the true figure is **six of sixteen**. `grep -c RESEARCH-DESIGN METHODOLOGY.md` → **0**: the retraction has no route to the document that makes the claim | RESEARCH-DESIGN §5.2 |
 | iv | `docs/RESEARCH-DESIGN.md:756` closes *"This repository currently contains no scholarly references at all"* | `docs/RELATED-WORK.md` has 16 verified entries and is linked from the same README | — (undetected) |
 
@@ -285,8 +285,8 @@ the two mechanical patches touching no threshold, the eight probes failing `--he
 That is rare and it is real.
 
 But the chair scored the dimension at 88 while its own justification records that `ARTIFACT.md` is
-stale by a commit (it asserts `rev-list --count HEAD` = **7** and HEAD = `166225e`; the tree is
-**8** and HEAD is `ff84757`), that its §2.1 badge reasoning rests on a now-false "nothing above is
+stale by a commit (it asserts `rev-list --count HEAD` = **7** and HEAD = `b61eef4`; the tree is
+**8** and HEAD is `fe615ba`), that its §2.1 badge reasoning rests on a now-false "nothing above is
 published" premise, and that row V0 of its own runnable-claim table invokes
 `data/MANIFEST.sha256`, a file that does not exist. A self-assessment that is factually wrong about
 the tree it assesses is not an 88. **I score that dimension 80.**
@@ -767,7 +767,7 @@ container, and they are the reason this repository is worth its 1.3 MB.
    `data_dir_bytes` was captured in three files as a regime proof, but write amplification per
    `$set` is unmeasured; the `CITATION.cff` keyword claiming it was retracted for that reason.
 7. **Cite this repository at a fixed state.** 0 tags, 0 releases, no DOI, `main` unprotected. The
-   citation block resolves to a branch tip that has already moved substantively (`bdbc5c0` rewrote
+   citation block resolves to a branch tip that has already moved substantively (`98ce434` rewrote
    figures across eight files), and can be force-pushed without trace.
 8. **Believe `DISCLAIMER.md` on dates, `METHODOLOGY.md` §1 on pre-registration, `RESULTS.md` on
    campaign 7 being unchallenged, or `RESEARCH-DESIGN.md`'s closing line on references.** All four
@@ -811,7 +811,7 @@ that class of failure impossible rather than merely documented, and it is three 
 ---
 
 *Reconciled from six independent rubrics. All factual claims re-verified against the working tree at
-commit `ff84757` on 2026-09-18 — with three exceptions, all since corrected. The §5 dimensional
+commit `fe615ba` on 2026-09-18 — with three exceptions, all since corrected. The §5 dimensional
 composite was published as 70.9, a figure reproducible from no reading of its own weight column, and
 now reads 70.63 over a stated divisor of 110 (see the correction notes under the §5 table). And §7's Δ column totalled +17.5, putting its
 no-new-measurement ladder at about 88 — above the 84–87 band §6 declares for that same programme of

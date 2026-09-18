@@ -2,11 +2,11 @@
 
 **Destinataire :** l'agent en charge de `docs/article/article-part1-what-a-mutation-costs.html`,
 `docs/article/article-part2-when-the-index-is-current.html` et `docs/synthesis/huit-axes.fr.html`.
-**Émis le 18 septembre 2026**, contre le commit `f8ac6a3`.
+**Émis le 18 septembre 2026**, contre le commit `9c7c9ce`.
 **État de la couche Markdown :** à jour et poussée. Ce document ne concerne que les trois HTML.
 
 `grep -c 7bis docs/article/*.html docs/synthesis/*.html` rend **0** sur les trois fichiers. La couche
-Markdown a été corrigée quatre fois aujourd'hui et le HTML n'a pas bougé depuis `2e9e0b0`. Le diptyque
+Markdown a été corrigée quatre fois aujourd'hui et le HTML n'a pas bougé depuis `16b07ee`. Le diptyque
 est donc en retard de plusieurs rétractations, **et il se contredit lui-même** en au moins un endroit.
 
 ---
