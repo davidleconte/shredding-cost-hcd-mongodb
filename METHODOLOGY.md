@@ -419,7 +419,7 @@ It did not. This table is reproduced from `docs/audit-adversarial.fr.md`, where 
 is the opening finding, and it belongs in the methodology rather than in an
 appendix:
 
-| Requirement (article §10) | Met? |
+| Requirement (article Part II §4) | Met? |
 |---|---|
 | 1. Load driven at a **fixed offered rate**, not in a closed loop | **NO** — every mutation, read and comparison probe is a **sequential closed loop** (measure one operation, then the next). Only the freshness probe used an offered rate. |
 | 2. Distributions, not means | yes (percentiles) — with the freshness-probe exception declared in §6 |

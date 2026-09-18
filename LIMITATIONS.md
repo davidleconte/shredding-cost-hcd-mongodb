@@ -20,7 +20,7 @@ Four rules follow, and they are not decoration:
    (memtable or SSTable), of a stack (Data API or bare CQL), of a configuration (`atlas-local`
    defaults), or of a measurement floor (a ~45 ms HTTP round trip). Strip the regime and the number
    becomes false rather than approximate.
-2. **The dossier fails the test it imposes on other people's benchmarks.** The article's section 10
+2. **The dossier fails the test it imposes on other people's benchmarks.** The article's Part II section 4
    lists six conditions a defensible comparison must meet. This dossier satisfies about two and a
    half of them:
 
@@ -615,7 +615,7 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
   regime.
 - **Closed-loop probes, not a fixed offered rate.** One operation, then the next. Only the freshness
   probe used an offered rate (50 writes/s for 120 s, slippage 0.055–0.078 s). This breaks requirement
-  1 of the article's own section 10, and it means nothing here characterises saturation or a
+  1 of the article's own Part II section 4, and it means nothing here characterises saturation or a
   latency-throughput curve.
 - **The storage class was never established.** The data directory is `/dev/sda1` (ext4) on a **QEMU
   virtual SCSI disk**. `rotational=1` is the QEMU default, not evidence of physical media; neither
