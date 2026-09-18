@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 674" width="620" height="674" role="img" aria-labelledby="figTitle figDesc">
+<title id="figTitle">One measurement, three regimes: the growth coefficient collapses from ×7.50 towards ×1.52, a fragmented worst case</title>
+<desc id="figDesc">Horizontal bar chart of the p50 growth factor of a single-field update, 1 KB to 128 KB document, measured three times on IBM DataStax HCD 2.0.6: Memtable-resident, RF = 1 — campaign 1, x7.50; Disk-resident dataset, RF = 3 — campaign 3, x5.94; SSTable read path, flush before each update — M15, x1.52. The three runs are not directly comparable; regime, topology and hardware differ between campaign 1 and campaign 3. Campaign 3 put the dataset on disk and never the probed read, which re-reads the row it just wrote: the first two runs are therefore both memtable reads (challenge C2, confirmed by M15). Only the third run forces the cycle's SELECT onto the SSTable read path, and even there the operating system page cache was never dropped, so no genuinely disk-bound read-modify-write read exists in this dossier. That third run flushes before every update, leaving up to about 35 small SSTables for one SELECT to merge, a fragmentation a normal compaction would not produce, so its fixed floor of roughly 90 to 100 milliseconds is inflated and its growth factor is a worst case: the true disk-bound figure sits between that run and the two memtable runs.</desc>
+<rect x="0" y="0" width="620" height="674" fill="#ffffff"/>
+<text x="44" y="34" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#16191d" text-anchor="start">One measurement, three regimes</text>
+<text x="44" y="56" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b636d" text-anchor="start">IBM DataStax HCD 2.0.6, Data API v1.0.33. Growth in the latency of one scalar $set</text>
+<text x="44" y="72" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b636d" text-anchor="start">as a document grows 1 KB → 128 KB, the added content indexed and never mutated.</text>
+<line x1="104" y1="96" x2="104" y2="390" stroke="#9aa1a9" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="109" y="91" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="normal" fill="#9aa1a9" text-anchor="start">×1 = no growth</text>
+<text x="44" y="112" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#16191d" text-anchor="start">Memtable-resident, RF = 1 — campaign 1</text>
+<rect x="44" y="120" width="450.00" height="30" fill="#1f4e79"/>
+<text x="503" y="141" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#16191d" text-anchor="start">×7.50</text>
+<text x="44" y="166" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="normal" fill="#5b636d" text-anchor="start">data/raw/findings.json  ·  p50 12.104 → 90.783 ms  ·  n = 30</text>
+<text x="44" y="214" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#16191d" text-anchor="start">Disk-resident dataset, RF = 3 — campaign 3</text>
+<rect x="44" y="222" width="356.40" height="30" fill="#1f4e79"/>
+<text x="409.4" y="243" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#16191d" text-anchor="start">×5.94</text>
+<text x="44" y="268" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="normal" fill="#5b636d" text-anchor="start">data/raw/findings_disk_rf3.json  ·  p50 20.389 → 121.189 ms  ·  n not recorded</text>
+<text x="44" y="284" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="normal" fill="#16191d" text-anchor="start">The probed read stayed in the memtable — challenge C2, confirmed by M15</text>
+<text x="44" y="316" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#16191d" text-anchor="start">SSTable read path, flush before each update — M15</text>
+<rect x="44" y="324" width="91.20" height="30" fill="#1f4e79"/>
+<text x="144.2" y="345" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#16191d" text-anchor="start">×1.52</text>
+<text x="44" y="370" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" font-weight="normal" fill="#5b636d" text-anchor="start">data/raw/rmw_postflush.json  ·  p50 107.765 → 163.402 ms  ·  n = 30</text>
+<line x1="44" y1="390" x2="524" y2="390" stroke="#d4d8dd" stroke-width="1.5"/>
+<line x1="44" y1="390" x2="44" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="44" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×0</text>
+<line x1="104" y1="390" x2="104" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="104" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×1</text>
+<line x1="164" y1="390" x2="164" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="164" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×2</text>
+<line x1="224" y1="390" x2="224" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="224" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×3</text>
+<line x1="284" y1="390" x2="284" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="284" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×4</text>
+<line x1="344" y1="390" x2="344" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="344" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×5</text>
+<line x1="404" y1="390" x2="404" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="404" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×6</text>
+<line x1="464" y1="390" x2="464" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="464" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×7</text>
+<line x1="524" y1="390" x2="524" y2="395" stroke="#d4d8dd" stroke-width="1.5"/>
+<text x="524" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="middle">×8</text>
+<text x="44" y="428" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#16191d" text-anchor="start">p50 growth factor, dimensionless — median update latency at 128 KB ÷ median at 1 KB</text>
+<text x="44" y="450" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">Bars are p50 growth factors (median update latency at 128 KB ÷ median at 1 KB), not</text>
+<text x="44" y="464" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">absolute costs, and they are not directly comparable. Campaign 1 ran on one node, RF = 1,</text>
+<text x="44" y="478" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">3 GiB with a 2 GiB heap; campaign 3 on a six-node ring, RF = 3, 8 GiB with a 4 GiB heap.</text>
+<text x="44" y="492" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">The ×7.50 → ×5.94 step therefore mixes regime, topology and hardware; only ×5.94 → ×1.52</text>
+<text x="44" y="506" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">isolates one variable — same ring, same probe, flush forced before each update. A single</text>
+<text x="44" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">“cost per indexed KiB” for this engine is meaningless unless its regime is quoted with it.</text>
+<text x="44" y="534" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">Campaign 3 put the dataset on disk, never the probed read: the ×5.94 run re-reads the row</text>
+<text x="44" y="548" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">it just wrote, so rows 1 and 2 are both memtable reads (challenge C2, confirmed by M15).</text>
+<text x="44" y="562" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">Only the ×1.52 run forces the cycle’s SELECT onto the SSTable path — and even there the</text>
+<text x="44" y="576" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">OS page cache was never dropped, so no genuinely disk-bound read-modify-write read</text>
+<text x="44" y="590" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">exists in this dossier.</text>
+<text x="44" y="604" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">M15 forces that flush before every update: up to ~35 small SSTables for one SELECT to</text>
+<text x="44" y="618" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">merge, fragmentation a normal compaction would not leave. That inflates its ~90–100 ms</text>
+<text x="44" y="632" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">fixed floor, so ×1.52 is a worst case — the true disk-bound figure sits between it and</text>
+<text x="44" y="646" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">the two memtable runs above, ×5.94 and ×7.50.</text>
+<text x="44" y="660" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="11" font-weight="normal" fill="#5b636d" text-anchor="start">n = 30 timed repetitions per size in campaign 1 and in M15; campaign 3 records no count.</text>
+</svg>

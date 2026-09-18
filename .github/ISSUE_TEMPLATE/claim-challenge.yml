@@ -1,0 +1,107 @@
+name: "Challenge a claim"
+description: "A published claim is wrong, over-reaches its evidence, or rests on an unfair comparison."
+title: "[challenge] "
+labels: ["challenge"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository already carries a register of challenges (Cxx) and meta-challenges (Dxx)
+        written by the author against his own campaigns, several of them with measured resolutions
+        that went against him. Read `LIMITATIONS.md` §3 first, and `docs/challenges.fr.md` — your
+        objection may already be there, conceded. If it is there and you think the concession is too
+        weak, say that; it is a challenge in its own right.
+
+        You do not need a measurement to file this. An argument that a conclusion does not follow
+        from the evidence shown is enough.
+
+  - type: input
+    id: target
+    attributes:
+      label: "What are you challenging"
+      description: "A measurement identifier (M1–M23), a numbered point in RESULTS.md §4, an existing Cxx/Dxx, or a section heading."
+      placeholder: "M12, or RESULTS.md §2 headline table row 3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: quotation
+    attributes:
+      label: "The sentence as published"
+      description: "Quote it verbatim, with the file it appears in. Challenging a paraphrase wastes both our time."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "What kind of objection is this"
+      options:
+        - "The mechanism is wrong — the stated cause is not what produces the effect"
+        - "The mechanism holds but the magnitude does not transfer beyond this lab"
+        - "The evidence shown does not support the conclusion drawn from it"
+        - "It is already contradicted by other evidence inside this repository"
+        - "The comparison is not like-for-like"
+        - "The axis itself is unfair to one engine"
+        - "The claim is untestable as stated"
+    validations:
+      required: true
+
+  - type: textarea
+    id: argument
+    attributes:
+      label: "The argument"
+      description: "Why the claim fails. Cite files, sections or raw evidence where you can."
+    validations:
+      required: true
+
+  - type: input
+    id: contradicting-evidence
+    attributes:
+      label: "Which file under data/raw/ contradicts it, if any"
+      description: "Leave blank if your objection is to the reasoning rather than to the evidence."
+      placeholder: "rmw_postflush.json"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: unmeasured-axis
+    attributes:
+      label: "Are you offering to measure an axis this dossier never measured"
+      description: "The sixteen axes of RESULTS.md §6. Choosing one here is the largest contribution available — it does not correct the dossier, it does what the dossier could not."
+      options:
+        - "No — this is a challenge to something already published"
+        - "Concurrency"
+        - "Fixed offered-rate load"
+        - "Multi-host or WAN topology"
+        - "A genuinely disk-bound read"
+        - "Vector ANN search quality (recall, precision, ranking)"
+        - "Lexical/BM25 freshness on HCD, or vector-search freshness on mongot"
+        - "A production-sized or CPU-capped Data API tier"
+        - "A production-edition mongot or MongoDB Atlas"
+        - "Sharded MongoDB"
+        - "HCD's other query surfaces (findAndRerank, an external analytic stack)"
+        - "Decomposition of the 134 s aggregation"
+        - "Write throughput, properly measured"
+        - "Reads, search and aggregation at RF = 3 versus RF = 1"
+        - "Background maintenance (compaction) running during a mutation probe"
+        - "Environmental isolation on a quiet host"
+        - "Reproducibility across days or hosts"
+    validations:
+      required: true
+
+  - type: textarea
+    id: settlement
+    attributes:
+      label: "What would settle it"
+      description: "The measurement, the trace, the document or the argument that would close this one way or the other. If nothing could settle it, say so — an unfalsifiable claim in the dossier is itself a finding."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: "Before filing"
+      options:
+        - label: "I have checked LIMITATIONS.md §3 and this is not already an open challenge."
+        - label: "If I quoted a rate or a growth factor, I named its regime."

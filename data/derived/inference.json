@@ -1,0 +1,3911 @@
+{
+ "artefact": "shredding-cost-hcd-mongodb",
+ "document": "docs/STATISTICS.md",
+ "generated_by": "separation-of-support re-analysis over data/raw/ summary statistics",
+ "generated_at_utc": "2026-09-18",
+ "policy": {
+  "latency_statistic": "percentiles only; this dossier publishes no means for latency",
+  "no_figure_invented": "every value below is read from a file under data/raw/ and each record names its file and path",
+  "data_raw_untouched": true
+ },
+ "artefact_defect": {
+  "finding": "No raw per-observation latency series survive for any cross-engine comparison in this repository.",
+  "detail": "Of the 36 files under data/raw/, 25 carry at least one latency distribution and 23 of those store only the summary (n, min_ms, p50_ms, p95_ms, p99_ms, max_ms, stdev_ms); the remaining 11 files carry no latency distribution at all. Exactly two \u2014 vector_freshness_idle.json and vector_freshness_loaded.json \u2014 preserve a per-observation vector (cycles[].insert_to_vec_visible_ms, 60 values each), and they belong to an HCD-internal arm whose own verdict is NOT DETECTABLE. findings_turn_*.json store miss COUNTS, which is sufficient for an exact Fisher test but is not a latency series.",
+  "forecloses": [
+   "bootstrap confidence intervals on any cross-engine latency claim",
+   "rank tests (Wilcoxon rank-sum / Mann-Whitney U) on any cross-engine latency claim",
+   "distribution fitting, tail-index estimation, and any modal analysis",
+   "re-aggregation across the two passes of the mutation campaigns",
+   "any re-analysis at a percentile the probe did not already emit"
+  ],
+  "severity": "first-class reproducibility defect; permanent for a third party, since the processes are gone"
+ },
+ "method": {
+  "separation_of_support": "For arms A and B with observed ranges [min_A, max_A] and [min_B, max_B]: if the ranges are disjoint then every observation of one arm beat every observation of the other, and the direction of the effect is certain with no distributional assumption whatsoever.",
+  "exact_permutation_p": "Under exchangeability, the probability that one pre-specified arm of size n_A occupies all the extreme ranks against an arm of size n_B is 1 / C(n_A+n_B, n_A). This is the one-sided value reported; the two-sided value is twice it. It is also the smallest p-value the Wilcoxon rank-sum / Mann-Whitney U statistic can attain at those sample sizes.",
+  "ratio_interval": "[min_slow / max_fast, max_slow / min_fast] \u2014 the widest honest statement of effect size obtainable from summary statistics alone.",
+  "equivalence_note": "The ratio interval contains 1.0 if and only if the supports overlap. The two tests are the same test written twice; they are both reported because readers reach for different ones.",
+  "overlapping_arms": "Where the supports overlap, NOTHING about significance follows from these data. stdev_ms is present in most records but is not used: a standard deviation over an unknown, visibly heavy-tailed distribution licenses no interval, and this dossier publishes no means for latency."
+ },
+ "summary": {
+  "n_comparisons": 93,
+  "disjoint": 56,
+  "overlapping": 34,
+  "undeterminable_or_not_a_latency_comparison": 3,
+  "ratio_interval_spans_1.0": [
+   "MUT-HCDAPI-vs-MDB-default-8K-p2",
+   "MUT-HCDCQL-vs-MDB-wildcard-8K-p2",
+   "MUT-HCDCQL-vs-MDB-default-8K-p2",
+   "MUT-HCDAPI-vs-HCDCQL-8K-p1",
+   "MUT-HCDAPI-vs-HCDCQL-16K-p1",
+   "MUT-HCDAPI-vs-HCDCQL-16K-p2",
+   "MUT-HCDAPI-vs-HCDCQL-32K-p1",
+   "MUT-HCDAPI-vs-HCDCQL-32K-p2",
+   "MUT-HCDAPI-vs-HCDCQL-64K-p1",
+   "MUT-HCDAPI-vs-HCDCQL-64K-p2",
+   "MUT-HCDAPI-vs-HCDCQL-125K-p1",
+   "MUT-HCDAPI-vs-HCDCQL-125K-p2",
+   "RS-A-HCD-vs-MDBdefault",
+   "FRESH-HCD-vs-MONGOT-desync",
+   "FRESH-MONGOT-selfsync-vs-desync",
+   "AGG-CQLsweep-vs-CQLgroupby",
+   "SIZE-M3-variantB-readcontrol-1kb-vs-128kb",
+   "SIZE-M3-variantA-1kb-vs-128kb",
+   "FB-S2-9x7281B-vs-128x512B-p1",
+   "FB-internal-control-16x4096B-p1",
+   "FB-S2-9x7281B-vs-128x512B-p2",
+   "FB-internal-control-16x4096B-p2",
+   "TIER-API-vs-CQL-8K-p1",
+   "TIER-API-vs-CQL-8K-p2",
+   "TIER-API-vs-CQL-16K-p1",
+   "TIER-API-vs-CQL-16K-p2",
+   "TIER-API-vs-CQL-32K-p1",
+   "TIER-API-vs-CQL-32K-p2",
+   "TIER-API-vs-CQL-64K-p1",
+   "TIER-API-vs-CQL-64K-p2",
+   "TIER-API-vs-CQL-125K-p1",
+   "TIER-API-vs-CQL-125K-p2",
+   "FRESH-M1-idle-vs-underload-rf1",
+   "FRESH-M1-idle-vs-underload-rf1-pass2"
+  ],
+  "claims_resting_on_n_lt_10": [
+   "AGG-CQLbest-vs-HCDAPI",
+   "AGG-MDB-vs-HCDAPI"
+  ]
+ },
+ "comparisons": [
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-8K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass1",
+    "n": 30,
+    "min_ms": 32.113,
+    "p50_ms": 40.9,
+    "p95_ms": 49.848,
+    "p99_ms": 54.285,
+    "max_ms": 55.818,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 8 KiB pass1",
+    "n": 30,
+    "min_ms": 4.237,
+    "p50_ms": 5.544,
+    "p95_ms": 8.47,
+    "p99_ms": 10.229,
+    "max_ms": 10.53,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.3773,
+   "ratio_interval": [
+    3.0497,
+    13.1739
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-8K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass2",
+    "n": 30,
+    "min_ms": 27.961,
+    "p50_ms": 35.734,
+    "p95_ms": 45.853,
+    "p99_ms": 48.327,
+    "max_ms": 48.591,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 8 KiB pass2",
+    "n": 30,
+    "min_ms": 4.033,
+    "p50_ms": 5.541,
+    "p95_ms": 9.937,
+    "p99_ms": 13.953,
+    "max_ms": 15.353,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 6.449,
+   "ratio_interval": [
+    1.8212,
+    12.0484
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-16K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass1",
+    "n": 30,
+    "min_ms": 35.437,
+    "p50_ms": 43.632,
+    "p95_ms": 70.375,
+    "p99_ms": 326.149,
+    "max_ms": 429.927,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 16 KiB pass1",
+    "n": 30,
+    "min_ms": 3.672,
+    "p50_ms": 5.405,
+    "p95_ms": 9.672,
+    "p99_ms": 10.815,
+    "max_ms": 11.112,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 8.0725,
+   "ratio_interval": [
+    3.1891,
+    117.0825
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-16K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass2",
+    "n": 30,
+    "min_ms": 35.18,
+    "p50_ms": 42.145,
+    "p95_ms": 52.301,
+    "p99_ms": 68.748,
+    "max_ms": 75.258,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 16 KiB pass2",
+    "n": 30,
+    "min_ms": 4.025,
+    "p50_ms": 5.824,
+    "p95_ms": 8.184,
+    "p99_ms": 9.041,
+    "max_ms": 9.25,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.2364,
+   "ratio_interval": [
+    3.8032,
+    18.6976
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-32K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass1",
+    "n": 30,
+    "min_ms": 47.733,
+    "p50_ms": 56.867,
+    "p95_ms": 74.812,
+    "p99_ms": 77.761,
+    "max_ms": 78.308,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 32 KiB pass1",
+    "n": 30,
+    "min_ms": 3.616,
+    "p50_ms": 6.006,
+    "p95_ms": 7.572,
+    "p99_ms": 8.872,
+    "max_ms": 9.284,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 9.4684,
+   "ratio_interval": [
+    5.1414,
+    21.656
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-32K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass2",
+    "n": 30,
+    "min_ms": 45.868,
+    "p50_ms": 53.727,
+    "p95_ms": 63.31,
+    "p99_ms": 67.939,
+    "max_ms": 68.441,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 32 KiB pass2",
+    "n": 30,
+    "min_ms": 3.846,
+    "p50_ms": 6.274,
+    "p95_ms": 9.312,
+    "p99_ms": 17.816,
+    "max_ms": 21.12,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 8.5634,
+   "ratio_interval": [
+    2.1718,
+    17.7954
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-64K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass1",
+    "n": 30,
+    "min_ms": 67.321,
+    "p50_ms": 79.214,
+    "p95_ms": 110.702,
+    "p99_ms": 115.479,
+    "max_ms": 116.039,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 64 KiB pass1",
+    "n": 30,
+    "min_ms": 4.115,
+    "p50_ms": 5.846,
+    "p95_ms": 8.871,
+    "p99_ms": 13.272,
+    "max_ms": 14.679,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 13.5501,
+   "ratio_interval": [
+    4.5862,
+    28.199
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-64K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass2",
+    "n": 30,
+    "min_ms": 63.479,
+    "p50_ms": 74.677,
+    "p95_ms": 92.963,
+    "p99_ms": 360.077,
+    "max_ms": 467.906,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 64 KiB pass2",
+    "n": 30,
+    "min_ms": 4.384,
+    "p50_ms": 6.111,
+    "p95_ms": 11.303,
+    "p99_ms": 12.449,
+    "max_ms": 12.715,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 12.2201,
+   "ratio_interval": [
+    4.9924,
+    106.7304
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-125K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass1",
+    "n": 30,
+    "min_ms": 103.095,
+    "p50_ms": 130.787,
+    "p95_ms": 145.28,
+    "p99_ms": 280.436,
+    "max_ms": 335.336,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 125 KiB pass1",
+    "n": 30,
+    "min_ms": 5.166,
+    "p50_ms": 7.621,
+    "p95_ms": 10.648,
+    "p99_ms": 11.446,
+    "max_ms": 11.652,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 17.1614,
+   "ratio_interval": [
+    8.8478,
+    64.9121
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-wildcard-125K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (wildcard index) mutates faster than HCD through the Data API; headline 44x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass2",
+    "n": 30,
+    "min_ms": 91.27,
+    "p50_ms": 122.138,
+    "p95_ms": 154.793,
+    "p99_ms": 163.62,
+    "max_ms": 165.281,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 125 KiB pass2",
+    "n": 30,
+    "min_ms": 4.729,
+    "p50_ms": 6.465,
+    "p95_ms": 8.535,
+    "p99_ms": 10.063,
+    "max_ms": 10.663,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 18.8922,
+   "ratio_interval": [
+    8.5595,
+    34.9505
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-8K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass1",
+    "n": 30,
+    "min_ms": 32.113,
+    "p50_ms": 40.9,
+    "p95_ms": 49.848,
+    "p99_ms": 54.285,
+    "max_ms": 55.818,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 8 KiB pass1",
+    "n": 30,
+    "min_ms": 4.368,
+    "p50_ms": 5.67,
+    "p95_ms": 10.07,
+    "p99_ms": 10.981,
+    "max_ms": 11.326,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.2134,
+   "ratio_interval": [
+    2.8353,
+    12.7788
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-8K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass2",
+    "n": 30,
+    "min_ms": 27.961,
+    "p50_ms": 35.734,
+    "p95_ms": 45.853,
+    "p99_ms": 48.327,
+    "max_ms": 48.591,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 8 KiB pass2",
+    "n": 30,
+    "min_ms": 3.652,
+    "p50_ms": 5.16,
+    "p95_ms": 7.235,
+    "p99_ms": 24.506,
+    "max_ms": 31.529,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 6.9252,
+   "ratio_interval": [
+    0.8868,
+    13.3053
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-16K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass1",
+    "n": 30,
+    "min_ms": 35.437,
+    "p50_ms": 43.632,
+    "p95_ms": 70.375,
+    "p99_ms": 326.149,
+    "max_ms": 429.927,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 16 KiB pass1",
+    "n": 30,
+    "min_ms": 4.178,
+    "p50_ms": 5.217,
+    "p95_ms": 8.287,
+    "p99_ms": 8.891,
+    "max_ms": 9.138,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 8.3634,
+   "ratio_interval": [
+    3.878,
+    102.9026
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-16K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass2",
+    "n": 30,
+    "min_ms": 35.18,
+    "p50_ms": 42.145,
+    "p95_ms": 52.301,
+    "p99_ms": 68.748,
+    "max_ms": 75.258,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 16 KiB pass2",
+    "n": 30,
+    "min_ms": 4.263,
+    "p50_ms": 5.68,
+    "p95_ms": 8.064,
+    "p99_ms": 8.311,
+    "max_ms": 8.409,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.4199,
+   "ratio_interval": [
+    4.1836,
+    17.6538
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-32K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass1",
+    "n": 30,
+    "min_ms": 47.733,
+    "p50_ms": 56.867,
+    "p95_ms": 74.812,
+    "p99_ms": 77.761,
+    "max_ms": 78.308,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 32 KiB pass1",
+    "n": 30,
+    "min_ms": 3.613,
+    "p50_ms": 5.31,
+    "p95_ms": 7.882,
+    "p99_ms": 11.896,
+    "max_ms": 13.519,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 10.7094,
+   "ratio_interval": [
+    3.5308,
+    21.674
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-32K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass2",
+    "n": 30,
+    "min_ms": 45.868,
+    "p50_ms": 53.727,
+    "p95_ms": 63.31,
+    "p99_ms": 67.939,
+    "max_ms": 68.441,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 32 KiB pass2",
+    "n": 30,
+    "min_ms": 4.318,
+    "p50_ms": 6.605,
+    "p95_ms": 8.908,
+    "p99_ms": 11.605,
+    "max_ms": 12.684,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 8.1343,
+   "ratio_interval": [
+    3.6162,
+    15.8502
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-64K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass1",
+    "n": 30,
+    "min_ms": 67.321,
+    "p50_ms": 79.214,
+    "p95_ms": 110.702,
+    "p99_ms": 115.479,
+    "max_ms": 116.039,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 64 KiB pass1",
+    "n": 30,
+    "min_ms": 4.134,
+    "p50_ms": 6.039,
+    "p95_ms": 9.728,
+    "p99_ms": 10.642,
+    "max_ms": 10.772,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 13.1171,
+   "ratio_interval": [
+    6.2496,
+    28.0694
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-64K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass2",
+    "n": 30,
+    "min_ms": 63.479,
+    "p50_ms": 74.677,
+    "p95_ms": 92.963,
+    "p99_ms": 360.077,
+    "max_ms": 467.906,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 64 KiB pass2",
+    "n": 30,
+    "min_ms": 3.859,
+    "p50_ms": 6.437,
+    "p95_ms": 8.942,
+    "p99_ms": 11.145,
+    "max_ms": 11.983,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 11.6012,
+   "ratio_interval": [
+    5.2974,
+    121.2506
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-125K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass1",
+    "n": 30,
+    "min_ms": 103.095,
+    "p50_ms": 130.787,
+    "p95_ms": 145.28,
+    "p99_ms": 280.436,
+    "max_ms": 335.336,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 125 KiB pass1",
+    "n": 30,
+    "min_ms": 4.187,
+    "p50_ms": 6.484,
+    "p95_ms": 12.216,
+    "p99_ms": 39.669,
+    "max_ms": 50.781,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 20.1707,
+   "ratio_interval": [
+    2.0302,
+    80.0898
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-MDB-default-125K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "MongoDB (no ballast index) mutates faster than HCD through the Data API; headline 79x on the per-KiB slope",
+   "claim_ref": "M13",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass2",
+    "n": 30,
+    "min_ms": 91.27,
+    "p50_ms": 122.138,
+    "p95_ms": 154.793,
+    "p99_ms": 163.62,
+    "max_ms": 165.281,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 125 KiB pass2",
+    "n": 30,
+    "min_ms": 4.579,
+    "p50_ms": 6.468,
+    "p95_ms": 9.896,
+    "p99_ms": 10.519,
+    "max_ms": 10.647,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 18.8834,
+   "ratio_interval": [
+    8.5724,
+    36.0954
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-8K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 8 KiB pass1",
+    "n": 30,
+    "min_ms": 15.847,
+    "p50_ms": 18.407,
+    "p95_ms": 23.0,
+    "p99_ms": 52.42,
+    "max_ms": 63.786,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 8 KiB pass1",
+    "n": 30,
+    "min_ms": 4.237,
+    "p50_ms": 5.544,
+    "p95_ms": 8.47,
+    "p99_ms": 10.229,
+    "max_ms": 10.53,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 3.3202,
+   "ratio_interval": [
+    1.5049,
+    15.0545
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-8K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 8 KiB pass2",
+    "n": 30,
+    "min_ms": 15.161,
+    "p50_ms": 18.269,
+    "p95_ms": 24.154,
+    "p99_ms": 25.04,
+    "max_ms": 25.387,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 8 KiB pass2",
+    "n": 30,
+    "min_ms": 4.033,
+    "p50_ms": 5.541,
+    "p95_ms": 9.937,
+    "p99_ms": 13.953,
+    "max_ms": 15.353,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 3.2971,
+   "ratio_interval": [
+    0.9875,
+    6.2948
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-16K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 16 KiB pass1",
+    "n": 30,
+    "min_ms": 18.77,
+    "p50_ms": 25.233,
+    "p95_ms": 71.138,
+    "p99_ms": 72.764,
+    "max_ms": 73.06,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 16 KiB pass1",
+    "n": 30,
+    "min_ms": 3.672,
+    "p50_ms": 5.405,
+    "p95_ms": 9.672,
+    "p99_ms": 10.815,
+    "max_ms": 11.112,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 4.6685,
+   "ratio_interval": [
+    1.6892,
+    19.8965
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-16K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 16 KiB pass2",
+    "n": 30,
+    "min_ms": 22.912,
+    "p50_ms": 29.599,
+    "p95_ms": 73.509,
+    "p99_ms": 75.817,
+    "max_ms": 76.393,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 16 KiB pass2",
+    "n": 30,
+    "min_ms": 4.025,
+    "p50_ms": 5.824,
+    "p95_ms": 8.184,
+    "p99_ms": 9.041,
+    "max_ms": 9.25,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 5.0822,
+   "ratio_interval": [
+    2.477,
+    18.9796
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-32K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 32 KiB pass1",
+    "n": 30,
+    "min_ms": 31.203,
+    "p50_ms": 40.393,
+    "p95_ms": 86.717,
+    "p99_ms": 92.905,
+    "max_ms": 95.033,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 32 KiB pass1",
+    "n": 30,
+    "min_ms": 3.616,
+    "p50_ms": 6.006,
+    "p95_ms": 7.572,
+    "p99_ms": 8.872,
+    "max_ms": 9.284,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 6.7254,
+   "ratio_interval": [
+    3.3609,
+    26.2812
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-32K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 32 KiB pass2",
+    "n": 30,
+    "min_ms": 30.787,
+    "p50_ms": 41.274,
+    "p95_ms": 85.668,
+    "p99_ms": 88.943,
+    "max_ms": 90.098,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 32 KiB pass2",
+    "n": 30,
+    "min_ms": 3.846,
+    "p50_ms": 6.274,
+    "p95_ms": 9.312,
+    "p99_ms": 17.816,
+    "max_ms": 21.12,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 6.5786,
+   "ratio_interval": [
+    1.4577,
+    23.4264
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-64K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 64 KiB pass1",
+    "n": 30,
+    "min_ms": 49.891,
+    "p50_ms": 61.653,
+    "p95_ms": 109.82,
+    "p99_ms": 110.528,
+    "max_ms": 110.686,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 64 KiB pass1",
+    "n": 30,
+    "min_ms": 4.115,
+    "p50_ms": 5.846,
+    "p95_ms": 8.871,
+    "p99_ms": 13.272,
+    "max_ms": 14.679,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 10.5462,
+   "ratio_interval": [
+    3.3988,
+    26.8982
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-64K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 64 KiB pass2",
+    "n": 30,
+    "min_ms": 44.873,
+    "p50_ms": 59.034,
+    "p95_ms": 132.432,
+    "p99_ms": 178.387,
+    "max_ms": 188.228,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 64 KiB pass2",
+    "n": 30,
+    "min_ms": 4.384,
+    "p50_ms": 6.111,
+    "p95_ms": 11.303,
+    "p99_ms": 12.449,
+    "max_ms": 12.715,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 9.6603,
+   "ratio_interval": [
+    3.5291,
+    42.9352
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-125K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 125 KiB pass1",
+    "n": 30,
+    "min_ms": 73.131,
+    "p50_ms": 101.645,
+    "p95_ms": 128.923,
+    "p99_ms": 162.805,
+    "max_ms": 173.264,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 125 KiB pass1",
+    "n": 30,
+    "min_ms": 5.166,
+    "p50_ms": 7.621,
+    "p95_ms": 10.648,
+    "p99_ms": 11.446,
+    "max_ms": 11.652,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 13.3375,
+   "ratio_interval": [
+    6.2763,
+    33.5393
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-wildcard-125K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (wildcard) faster; headline 40x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 125 KiB pass2",
+    "n": 30,
+    "min_ms": 82.088,
+    "p50_ms": 100.633,
+    "p95_ms": 115.408,
+    "p99_ms": 119.356,
+    "max_ms": 119.768,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard 125 KiB pass2",
+    "n": 30,
+    "min_ms": 4.729,
+    "p50_ms": 6.465,
+    "p95_ms": 8.535,
+    "p99_ms": 10.063,
+    "max_ms": 10.663,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 15.5658,
+   "ratio_interval": [
+    7.6984,
+    25.3263
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-8K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 8 KiB pass1",
+    "n": 30,
+    "min_ms": 15.847,
+    "p50_ms": 18.407,
+    "p95_ms": 23.0,
+    "p99_ms": 52.42,
+    "max_ms": 63.786,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 8 KiB pass1",
+    "n": 30,
+    "min_ms": 4.368,
+    "p50_ms": 5.67,
+    "p95_ms": 10.07,
+    "p99_ms": 10.981,
+    "max_ms": 11.326,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 3.2464,
+   "ratio_interval": [
+    1.3992,
+    14.603
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-8K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 8 KiB pass2",
+    "n": 30,
+    "min_ms": 15.161,
+    "p50_ms": 18.269,
+    "p95_ms": 24.154,
+    "p99_ms": 25.04,
+    "max_ms": 25.387,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 8 KiB pass2",
+    "n": 30,
+    "min_ms": 3.652,
+    "p50_ms": 5.16,
+    "p95_ms": 7.235,
+    "p99_ms": 24.506,
+    "max_ms": 31.529,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 3.5405,
+   "ratio_interval": [
+    0.4809,
+    6.9515
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-16K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 16 KiB pass1",
+    "n": 30,
+    "min_ms": 18.77,
+    "p50_ms": 25.233,
+    "p95_ms": 71.138,
+    "p99_ms": 72.764,
+    "max_ms": 73.06,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 16 KiB pass1",
+    "n": 30,
+    "min_ms": 4.178,
+    "p50_ms": 5.217,
+    "p95_ms": 8.287,
+    "p99_ms": 8.891,
+    "max_ms": 9.138,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 4.8367,
+   "ratio_interval": [
+    2.0541,
+    17.4868
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-16K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 16 KiB pass2",
+    "n": 30,
+    "min_ms": 22.912,
+    "p50_ms": 29.599,
+    "p95_ms": 73.509,
+    "p99_ms": 75.817,
+    "max_ms": 76.393,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 16 KiB pass2",
+    "n": 30,
+    "min_ms": 4.263,
+    "p50_ms": 5.68,
+    "p95_ms": 8.064,
+    "p99_ms": 8.311,
+    "max_ms": 8.409,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 5.2111,
+   "ratio_interval": [
+    2.7247,
+    17.92
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-32K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 32 KiB pass1",
+    "n": 30,
+    "min_ms": 31.203,
+    "p50_ms": 40.393,
+    "p95_ms": 86.717,
+    "p99_ms": 92.905,
+    "max_ms": 95.033,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 32 KiB pass1",
+    "n": 30,
+    "min_ms": 3.613,
+    "p50_ms": 5.31,
+    "p95_ms": 7.882,
+    "p99_ms": 11.896,
+    "max_ms": 13.519,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.607,
+   "ratio_interval": [
+    2.3081,
+    26.3031
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-32K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 32 KiB pass2",
+    "n": 30,
+    "min_ms": 30.787,
+    "p50_ms": 41.274,
+    "p95_ms": 85.668,
+    "p99_ms": 88.943,
+    "max_ms": 90.098,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 32 KiB pass2",
+    "n": 30,
+    "min_ms": 4.318,
+    "p50_ms": 6.605,
+    "p95_ms": 8.908,
+    "p99_ms": 11.605,
+    "max_ms": 12.684,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 6.2489,
+   "ratio_interval": [
+    2.4272,
+    20.8657
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-64K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 64 KiB pass1",
+    "n": 30,
+    "min_ms": 49.891,
+    "p50_ms": 61.653,
+    "p95_ms": 109.82,
+    "p99_ms": 110.528,
+    "max_ms": 110.686,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 64 KiB pass1",
+    "n": 30,
+    "min_ms": 4.134,
+    "p50_ms": 6.039,
+    "p95_ms": 9.728,
+    "p99_ms": 10.642,
+    "max_ms": 10.772,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 10.2091,
+   "ratio_interval": [
+    4.6315,
+    26.7746
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-64K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 64 KiB pass2",
+    "n": 30,
+    "min_ms": 44.873,
+    "p50_ms": 59.034,
+    "p95_ms": 132.432,
+    "p99_ms": 178.387,
+    "max_ms": 188.228,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 64 KiB pass2",
+    "n": 30,
+    "min_ms": 3.859,
+    "p50_ms": 6.437,
+    "p95_ms": 8.942,
+    "p99_ms": 11.145,
+    "max_ms": 11.983,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 9.171,
+   "ratio_interval": [
+    3.7447,
+    48.7764
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-125K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 125 KiB pass1",
+    "n": 30,
+    "min_ms": 73.131,
+    "p50_ms": 101.645,
+    "p95_ms": 128.923,
+    "p99_ms": 162.805,
+    "max_ms": 173.264,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 125 KiB pass1",
+    "n": 30,
+    "min_ms": 4.187,
+    "p50_ms": 6.484,
+    "p95_ms": 12.216,
+    "p99_ms": 39.669,
+    "max_ms": 50.781,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 15.6763,
+   "ratio_interval": [
+    1.4401,
+    41.3814
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDCQL-vs-MDB-default-125K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Engine-to-engine, tier removed: MongoDB (default) faster; headline 72x on the slope",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD CQL-direct 125 KiB pass2",
+    "n": 30,
+    "min_ms": 82.088,
+    "p50_ms": 100.633,
+    "p95_ms": 115.408,
+    "p99_ms": 119.356,
+    "max_ms": 119.768,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "mongo-default 125 KiB pass2",
+    "n": 30,
+    "min_ms": 4.579,
+    "p50_ms": 6.468,
+    "p95_ms": 9.896,
+    "p99_ms": 10.519,
+    "max_ms": 10.647,
+    "source_file": "data/raw/cmp_mongo.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 15.5586,
+   "ratio_interval": [
+    7.71,
+    26.1559
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-8K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass1",
+    "n": 30,
+    "min_ms": 32.113,
+    "p50_ms": 40.9,
+    "p95_ms": 49.848,
+    "p99_ms": 54.285,
+    "max_ms": 55.818,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 8 KiB pass1",
+    "n": 30,
+    "min_ms": 15.847,
+    "p50_ms": 18.407,
+    "p95_ms": 23.0,
+    "p99_ms": 52.42,
+    "max_ms": 63.786,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 2.222,
+   "ratio_interval": [
+    0.5034,
+    3.5223
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-8K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 8 KiB pass2",
+    "n": 30,
+    "min_ms": 27.961,
+    "p50_ms": 35.734,
+    "p95_ms": 45.853,
+    "p99_ms": 48.327,
+    "max_ms": 48.591,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 8 KiB pass2",
+    "n": 30,
+    "min_ms": 15.161,
+    "p50_ms": 18.269,
+    "p95_ms": 24.154,
+    "p99_ms": 25.04,
+    "max_ms": 25.387,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x512B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 1.956,
+   "ratio_interval": [
+    1.1014,
+    3.205
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-16K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass1",
+    "n": 30,
+    "min_ms": 35.437,
+    "p50_ms": 43.632,
+    "p95_ms": 70.375,
+    "p99_ms": 326.149,
+    "max_ms": 429.927,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 16 KiB pass1",
+    "n": 30,
+    "min_ms": 18.77,
+    "p50_ms": 25.233,
+    "p95_ms": 71.138,
+    "p99_ms": 72.764,
+    "max_ms": 73.06,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.7292,
+   "ratio_interval": [
+    0.485,
+    22.905
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-16K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 16 KiB pass2",
+    "n": 30,
+    "min_ms": 35.18,
+    "p50_ms": 42.145,
+    "p95_ms": 52.301,
+    "p99_ms": 68.748,
+    "max_ms": 75.258,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 16 KiB pass2",
+    "n": 30,
+    "min_ms": 22.912,
+    "p50_ms": 29.599,
+    "p95_ms": 73.509,
+    "p99_ms": 75.817,
+    "max_ms": 76.393,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x1024B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4239,
+   "ratio_interval": [
+    0.4605,
+    3.2847
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-32K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass1",
+    "n": 30,
+    "min_ms": 47.733,
+    "p50_ms": 56.867,
+    "p95_ms": 74.812,
+    "p99_ms": 77.761,
+    "max_ms": 78.308,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 32 KiB pass1",
+    "n": 30,
+    "min_ms": 31.203,
+    "p50_ms": 40.393,
+    "p95_ms": 86.717,
+    "p99_ms": 92.905,
+    "max_ms": 95.033,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4078,
+   "ratio_interval": [
+    0.5023,
+    2.5096
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-32K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 32 KiB pass2",
+    "n": 30,
+    "min_ms": 45.868,
+    "p50_ms": 53.727,
+    "p95_ms": 63.31,
+    "p99_ms": 67.939,
+    "max_ms": 68.441,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 32 KiB pass2",
+    "n": 30,
+    "min_ms": 30.787,
+    "p50_ms": 41.274,
+    "p95_ms": 85.668,
+    "p99_ms": 88.943,
+    "max_ms": 90.098,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x2048B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.3017,
+   "ratio_interval": [
+    0.5091,
+    2.223
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-64K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass1",
+    "n": 30,
+    "min_ms": 67.321,
+    "p50_ms": 79.214,
+    "p95_ms": 110.702,
+    "p99_ms": 115.479,
+    "max_ms": 116.039,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 64 KiB pass1",
+    "n": 30,
+    "min_ms": 49.891,
+    "p50_ms": 61.653,
+    "p95_ms": 109.82,
+    "p99_ms": 110.528,
+    "max_ms": 110.686,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.2848,
+   "ratio_interval": [
+    0.6082,
+    2.3259
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-64K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 64 KiB pass2",
+    "n": 30,
+    "min_ms": 63.479,
+    "p50_ms": 74.677,
+    "p95_ms": 92.963,
+    "p99_ms": 360.077,
+    "max_ms": 467.906,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 64 KiB pass2",
+    "n": 30,
+    "min_ms": 44.873,
+    "p50_ms": 59.034,
+    "p95_ms": 132.432,
+    "p99_ms": 178.387,
+    "max_ms": 188.228,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x4096B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.265,
+   "ratio_interval": [
+    0.3372,
+    10.4273
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-125K-p1",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass1",
+    "n": 30,
+    "min_ms": 103.095,
+    "p50_ms": 130.787,
+    "p95_ms": 145.28,
+    "p99_ms": 280.436,
+    "max_ms": 335.336,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 125 KiB pass1",
+    "n": 30,
+    "min_ms": 73.131,
+    "p50_ms": 101.645,
+    "p95_ms": 128.923,
+    "p99_ms": 162.805,
+    "max_ms": 173.264,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.2867,
+   "ratio_interval": [
+    0.595,
+    4.5854
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "MUT-HCDAPI-vs-HCDCQL-125K-p2",
+   "axis": "single-field mutation cost (per indexed KiB)",
+   "claim": "Removing the Data API tier lowers the per-KiB slope by only ~9% (0.7775 -> 0.7037 ms/KiB)",
+   "claim_ref": "M14",
+   "slower_arm": {
+    "label": "HCD Data API 125 KiB pass2",
+    "n": 30,
+    "min_ms": 91.27,
+    "p50_ms": 122.138,
+    "p95_ms": 154.793,
+    "p99_ms": 163.62,
+    "max_ms": 165.281,
+    "source_file": "data/raw/cmp_hcd.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "HCD CQL-direct 125 KiB pass2",
+    "n": 30,
+    "min_ms": 82.088,
+    "p50_ms": 100.633,
+    "p95_ms": 115.408,
+    "p99_ms": 119.356,
+    "max_ms": 119.768,
+    "source_file": "data/raw/cmp_hcdcql.json",
+    "source_path": "arms.*.results['16x8000B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.2137,
+   "ratio_interval": [
+    0.7621,
+    2.0135
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Cache-resident (memtable) regime. Closed-loop sequential single client. The per-byte coefficient this axis rests on collapses from x5.94 to x1.52 once the read half of the RMW cycle is forced onto SSTables (M15, rmw_postflush.json)."
+  },
+  {
+   "id": "RS-A-HCD-vs-MDBdefault",
+   "axis": "filtered search, undeclared field",
+   "claim": "HCD's automatic SAI answers 21.7x faster than a MongoDB that was never given an index on the queried field",
+   "claim_ref": "M16-A",
+   "slower_arm": {
+    "label": "mongo-default filtered read, collection scan",
+    "n": 50,
+    "min_ms": 13.335,
+    "p50_ms": 376.698,
+    "p95_ms": 804.484,
+    "p99_ms": 860.088,
+    "max_ms": 863.381,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-default.A_filtered_read_qcol"
+   },
+   "faster_arm": {
+    "label": "HCD filtered read, automatic SAI",
+    "n": 50,
+    "min_ms": 13.113,
+    "p50_ms": 17.376,
+    "p95_ms": 23.758,
+    "p99_ms": 27.113,
+    "max_ms": 28.697,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.A_filtered_read_qcol"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 21.6792,
+   "ratio_interval": [
+    0.4647,
+    65.8416
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "This is a win over a MongoDB deliberately left without the index (challenge C12). What is measured is the dispensation from index design, not engine speed."
+  },
+  {
+   "id": "RS-A-MDBwildcard-vs-HCD",
+   "axis": "filtered search, declared (wildcard) index",
+   "claim": "With a wildcard index MongoDB answers 23.7x faster than HCD on the same query",
+   "claim_ref": "M16-A",
+   "slower_arm": {
+    "label": "HCD filtered read, automatic SAI",
+    "n": 50,
+    "min_ms": 13.113,
+    "p50_ms": 17.376,
+    "p95_ms": 23.758,
+    "p99_ms": 27.113,
+    "max_ms": 28.697,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.A_filtered_read_qcol"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard filtered read, declared index",
+    "n": 50,
+    "min_ms": 0.582,
+    "p50_ms": 0.732,
+    "p95_ms": 0.968,
+    "p99_ms": 1.015,
+    "max_ms": 1.039,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-wildcard.A_filtered_read_qcol"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 23.7377,
+   "ratio_interval": [
+    12.6208,
+    49.3076
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.91165e-30,
+   "exact_permutation_p_two_sided": 1.98233e-29,
+   "permutation_denominator_C(nA+nB,nA)": 100891344545564193334812497256,
+   "verdict": "certain in direction",
+   "notes": "HCD's figure includes the Data API HTTP hop and was never re-measured CQL-direct (challenge C15)."
+  },
+  {
+   "id": "RS-A-MDBwildcard-vs-MDBdefault",
+   "axis": "filtered search, MongoDB internal",
+   "claim": "Declaring a wildcard index moves MongoDB from a collection scan to an index seek",
+   "claim_ref": "M16-A",
+   "slower_arm": {
+    "label": "mongo-default filtered read, collection scan",
+    "n": 50,
+    "min_ms": 13.335,
+    "p50_ms": 376.698,
+    "p95_ms": 804.484,
+    "p99_ms": 860.088,
+    "max_ms": 863.381,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-default.A_filtered_read_qcol"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard filtered read, declared index",
+    "n": 50,
+    "min_ms": 0.582,
+    "p50_ms": 0.732,
+    "p95_ms": 0.968,
+    "p99_ms": 1.015,
+    "max_ms": 1.039,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-wildcard.A_filtered_read_qcol"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 514.6148,
+   "ratio_interval": [
+    12.8345,
+    1483.4725
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.91165e-30,
+   "exact_permutation_p_two_sided": 1.98233e-29,
+   "permutation_denominator_C(nA+nB,nA)": 100891344545564193334812497256,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "RS-B-MDBwildcard-vs-HCD",
+   "axis": "point read by _id",
+   "claim": "MongoDB reads a document by _id ~19.6x faster than HCD",
+   "claim_ref": "M16-B",
+   "slower_arm": {
+    "label": "HCD point read by _id",
+    "n": 50,
+    "min_ms": 8.04,
+    "p50_ms": 10.382,
+    "p95_ms": 14.452,
+    "p99_ms": 14.86,
+    "max_ms": 14.88,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.B_point_read_id"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard point read by _id",
+    "n": 50,
+    "min_ms": 0.417,
+    "p50_ms": 0.53,
+    "p95_ms": 0.657,
+    "p99_ms": 0.963,
+    "max_ms": 1.146,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-wildcard.B_point_read_id"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 19.5887,
+   "ratio_interval": [
+    7.0157,
+    35.6835
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.91165e-30,
+   "exact_permutation_p_two_sided": 1.98233e-29,
+   "permutation_denominator_C(nA+nB,nA)": 100891344545564193334812497256,
+   "verdict": "certain in direction",
+   "notes": "Stack versus stack. HCD's ~10 ms is the Data API HTTP hop; no CQL-direct read arm was ever run (C15)."
+  },
+  {
+   "id": "RS-B-MDBdefault-vs-HCD",
+   "axis": "point read by _id",
+   "claim": "MongoDB reads a document by _id faster than HCD (default arm)",
+   "claim_ref": "M16-B",
+   "slower_arm": {
+    "label": "HCD point read by _id",
+    "n": 50,
+    "min_ms": 8.04,
+    "p50_ms": 10.382,
+    "p95_ms": 14.452,
+    "p99_ms": 14.86,
+    "max_ms": 14.88,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.B_point_read_id"
+   },
+   "faster_arm": {
+    "label": "mongo-default point read by _id",
+    "n": 50,
+    "min_ms": 0.456,
+    "p50_ms": 0.616,
+    "p95_ms": 1.092,
+    "p99_ms": 1.242,
+    "max_ms": 1.309,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-default.B_point_read_id"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 16.8539,
+   "ratio_interval": [
+    6.1421,
+    32.6316
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.91165e-30,
+   "exact_permutation_p_two_sided": 1.98233e-29,
+   "permutation_denominator_C(nA+nB,nA)": 100891344545564193334812497256,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "RS-C-MDBwildcard-vs-HCD",
+   "axis": "secondary-index freshness (latency, not attempts)",
+   "claim": "The dossier calls this axis a TIE on attempts (1 on the first query in all three arms); on latency it is not a tie",
+   "claim_ref": "M16-C",
+   "slower_arm": {
+    "label": "HCD insert->found, secondary index",
+    "n": 40,
+    "min_ms": 24.439,
+    "p50_ms": 33.24,
+    "p95_ms": 42.494,
+    "p99_ms": 81.56,
+    "max_ms": 97.558,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.C_freshness_secondary.insert_to_found_ms"
+   },
+   "faster_arm": {
+    "label": "mongo-wildcard insert->found, secondary index",
+    "n": 40,
+    "min_ms": 4.31,
+    "p50_ms": 7.072,
+    "p95_ms": 9.751,
+    "p99_ms": 11.07,
+    "max_ms": 11.435,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-wildcard.C_freshness_secondary.insert_to_found_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 4.7002,
+   "ratio_interval": [
+    2.1372,
+    22.6353
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.3017e-24,
+   "exact_permutation_p_two_sided": 1.86034e-23,
+   "permutation_denominator_C(nA+nB,nA)": 107507208733336176461620,
+   "verdict": "certain in direction",
+   "notes": "The published verdict for this axis is 'tie', and that verdict is about poll attempts, not latency. On latency the arms are separated and mongo-wildcard wins."
+  },
+  {
+   "id": "RS-C-HCD-vs-MDBdefault",
+   "axis": "secondary-index freshness (latency, not attempts)",
+   "claim": "mongo-default's single successful find still took p50 894 ms because it scanned",
+   "claim_ref": "M16-C",
+   "slower_arm": {
+    "label": "mongo-default insert->found, secondary index",
+    "n": 40,
+    "min_ms": 868.97,
+    "p50_ms": 894.213,
+    "p95_ms": 940.127,
+    "p99_ms": 957.316,
+    "max_ms": 964.006,
+    "source_file": "data/raw/findings_rs_mongo.json",
+    "source_path": "arms.mongo-default.C_freshness_secondary.insert_to_found_ms"
+   },
+   "faster_arm": {
+    "label": "HCD insert->found, secondary index",
+    "n": 40,
+    "min_ms": 24.439,
+    "p50_ms": 33.24,
+    "p95_ms": 42.494,
+    "p99_ms": 81.56,
+    "max_ms": 97.558,
+    "source_file": "data/raw/findings_rs_hcd.json",
+    "source_path": "arms.hcd.C_freshness_secondary.insert_to_found_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 26.9017,
+   "ratio_interval": [
+    8.9072,
+    39.4454
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.3017e-24,
+   "exact_permutation_p_two_sided": 1.86034e-23,
+   "permutation_denominator_C(nA+nB,nA)": 107507208733336176461620,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "FRESH-HCD-vs-MONGOT-selfsync",
+   "axis": "search-index freshness",
+   "claim": "HCD's search index is on the write path; mongot's is asynchronous (p50 44.972 vs 1015.201 ms)",
+   "claim_ref": "M17",
+   "slower_arm": {
+    "label": "mongot $search write->visible, self-synchronised probe",
+    "n": 40,
+    "min_ms": 978.641,
+    "p50_ms": 1015.201,
+    "p95_ms": 1042.295,
+    "p99_ms": 1154.313,
+    "max_ms": 1224.72,
+    "source_file": "data/raw/findings_mongot_freshness.json",
+    "source_path": "search_write_to_visible_ms"
+   },
+   "faster_arm": {
+    "label": "HCD JVector write->searchable",
+    "n": 40,
+    "min_ms": 31.9,
+    "p50_ms": 44.972,
+    "p95_ms": 84.827,
+    "p99_ms": null,
+    "max_ms": 573.598,
+    "source_file": "data/raw/findings_hcd_vec_freshness.json",
+    "source_path": "search_write_to_visible_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 22.5741,
+   "ratio_interval": [
+    1.7061,
+    38.3925
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.3017e-24,
+   "exact_permutation_p_two_sided": 1.86034e-23,
+   "permutation_denominator_C(nA+nB,nA)": 107507208733336176461620,
+   "verdict": "certain in direction",
+   "notes": "The 1015.2 ms arm is the worst phase of a periodic refresh cycle, inflated by a probe that self-synchronised with the commit cycle; the dossier's own M18 corrects it downward. Not like-for-like: $search is lexical, JVector is vector (C14). mongot is 1.75.1 localDev on a single-node atlas-local container and may not be quoted as a property of MongoDB the product."
+  },
+  {
+   "id": "FRESH-HCD-vs-MONGOT-desync",
+   "axis": "search-index freshness, corrected magnitude",
+   "claim": "After de-synchronising the probe, mongot's lag is a ~1.1 s refresh interval with p50 664.3 ms, floor 89.1 ms",
+   "claim_ref": "M18",
+   "slower_arm": {
+    "label": "mongot $search lag, de-synchronised probe",
+    "n": 60,
+    "min_ms": 89.1,
+    "p50_ms": 664.3,
+    "p95_ms": null,
+    "p99_ms": null,
+    "max_ms": 1170.2,
+    "source_file": "data/raw/findings_mongot_floor.json",
+    "source_path": "de_synchronised_lag_ms"
+   },
+   "faster_arm": {
+    "label": "HCD JVector write->searchable",
+    "n": 40,
+    "min_ms": 31.9,
+    "p50_ms": 44.972,
+    "p95_ms": 84.827,
+    "p99_ms": null,
+    "max_ms": 573.598,
+    "source_file": "data/raw/findings_hcd_vec_freshness.json",
+    "source_path": "search_write_to_visible_ms"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 14.7714,
+   "ratio_interval": [
+    0.1553,
+    36.6834
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "This is the comparison the dossier's own correction leaves standing, and it is the one that fails separation: mongot's 89.1 ms floor sits below HCD's 573.598 ms max. The DIRECTION of M18 is architectural (mongot indexes off the change stream), not statistical; these summary data do not establish it."
+  },
+  {
+   "id": "FRESH-MONGOT-selfsync-vs-desync",
+   "axis": "mongot, probe artefact",
+   "claim": "The self-synchronised probe measured the worst phase of the cycle; de-synchronising it halves the lag",
+   "claim_ref": "M17 vs M18",
+   "slower_arm": {
+    "label": "mongot $search write->visible, self-synchronised probe",
+    "n": 40,
+    "min_ms": 978.641,
+    "p50_ms": 1015.201,
+    "p95_ms": 1042.295,
+    "p99_ms": 1154.313,
+    "max_ms": 1224.72,
+    "source_file": "data/raw/findings_mongot_freshness.json",
+    "source_path": "search_write_to_visible_ms"
+   },
+   "faster_arm": {
+    "label": "mongot $search lag, de-synchronised probe",
+    "n": 60,
+    "min_ms": 89.1,
+    "p50_ms": 664.3,
+    "p95_ms": null,
+    "p99_ms": null,
+    "max_ms": 1170.2,
+    "source_file": "data/raw/findings_mongot_floor.json",
+    "source_path": "de_synchronised_lag_ms"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.5282,
+   "ratio_interval": [
+    0.8363,
+    13.7455
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Same engine, same deployment, two probes. Overlapping support here is the expected result if the de-synchronised probe samples all phases of a cycle whose worst phase is what the first probe locked onto."
+  },
+  {
+   "id": "FRESH-MONGOT-search-vs-findbyid",
+   "axis": "mongot deployment, internal",
+   "claim": "On the same deployment find({_id}) is synchronous while $search lags",
+   "claim_ref": "M17",
+   "slower_arm": {
+    "label": "mongot $search write->visible, self-synchronised probe",
+    "n": 40,
+    "min_ms": 978.641,
+    "p50_ms": 1015.201,
+    "p95_ms": 1042.295,
+    "p99_ms": 1154.313,
+    "max_ms": 1224.72,
+    "source_file": "data/raw/findings_mongot_freshness.json",
+    "source_path": "search_write_to_visible_ms"
+   },
+   "faster_arm": {
+    "label": "mongot deployment, find({_id})",
+    "n": 40,
+    "min_ms": 1.035,
+    "p50_ms": 1.306,
+    "p95_ms": 1.685,
+    "p99_ms": 2.411,
+    "max_ms": 2.768,
+    "source_file": "data/raw/findings_mongot_freshness.json",
+    "source_path": "regular_find_by_id_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 777.3361,
+   "ratio_interval": [
+    353.5553,
+    1183.3043
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 9.3017e-24,
+   "exact_permutation_p_two_sided": 1.86034e-23,
+   "permutation_denominator_C(nA+nB,nA)": 107507208733336176461620,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "AGG-MDB-vs-HCDAPI",
+   "axis": "aggregation (GROUP BY cat, SUM(amt), 200 000 docs)",
+   "claim": "MongoDB server-side $group is 602x faster than HCD's Data API scan-and-aggregate",
+   "claim_ref": "M23",
+   "slower_arm": {
+    "label": "HCD Data API client scan-and-aggregate",
+    "n": 3,
+    "min_ms": 133827.164,
+    "p50_ms": 133984.229,
+    "p95_ms": 134990.509,
+    "p99_ms": 135079.956,
+    "max_ms": 135102.317,
+    "source_file": "data/raw/findings_agg_hcd.json",
+    "source_path": "result.C2_client_scan_aggregate_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB server-side $group",
+    "n": 15,
+    "min_ms": 215.956,
+    "p50_ms": 222.711,
+    "p95_ms": 252.075,
+    "p99_ms": 285.402,
+    "max_ms": 293.734,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.C1_groupby_sum_serverside_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 601.6058,
+   "ratio_interval": [
+    455.6067,
+    625.6011
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 0.00122549,
+   "exact_permutation_p_two_sided": 0.00245098,
+   "permutation_denominator_C(nA+nB,nA)": 816,
+   "verdict": "certain in direction",
+   "small_n_warning": "n < 10 in: HCD Data API client scan-and-aggregate \u2014 at such n the p95/p99 fields in the raw record are interpolations between the top two observations and carry no information about the tail",
+   "notes": "Capability gap, not a latency race: the 602x must never be quoted as 'HCD is 602x slower'. The same storage engine on the same host aggregates the same corpus in ~2 s through native CQL; the 134 s belongs to a tier that exposes no aggregation surface and therefore forces all 200 000 documents through the client at the Data API's default ~20 docs/page. The CQL arm carries its own disqualifying label in its own result file: it requires abandoning the document model and pre-designing a table partitioned by the group key. Campaign 7 sits outside the adversarial audit and the challenge rounds."
+  },
+  {
+   "id": "AGG-MDB-vs-CQLbest",
+   "axis": "aggregation",
+   "claim": "MongoDB is 9.0x faster than HCD's best native-CQL path",
+   "claim_ref": "M23",
+   "slower_arm": {
+    "label": "native CQL per-partition sweep (10 queries)",
+    "n": 15,
+    "min_ms": 1924.195,
+    "p50_ms": 2011.399,
+    "p95_ms": 2223.488,
+    "p99_ms": 2421.508,
+    "max_ms": 2471.012,
+    "source_file": "data/raw/findings_agg_cqlref.json",
+    "source_path": "C3a_per_partition_sweep_10q_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB server-side $group",
+    "n": 15,
+    "min_ms": 215.956,
+    "p50_ms": 222.711,
+    "p95_ms": 252.075,
+    "p99_ms": 285.402,
+    "max_ms": 293.734,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.C1_groupby_sum_serverside_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 9.0314,
+   "ratio_interval": [
+    6.5508,
+    11.4422
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 6.44673e-09,
+   "exact_permutation_p_two_sided": 1.28935e-08,
+   "permutation_denominator_C(nA+nB,nA)": 155117520,
+   "verdict": "certain in direction",
+   "notes": "Capability gap, not a latency race: the 602x must never be quoted as 'HCD is 602x slower'. The same storage engine on the same host aggregates the same corpus in ~2 s through native CQL; the 134 s belongs to a tier that exposes no aggregation surface and therefore forces all 200 000 documents through the client at the Data API's default ~20 docs/page. The CQL arm carries its own disqualifying label in its own result file: it requires abandoning the document model and pre-designing a table partitioned by the group key. Campaign 7 sits outside the adversarial audit and the challenge rounds."
+  },
+  {
+   "id": "AGG-CQLbest-vs-HCDAPI",
+   "axis": "aggregation",
+   "claim": "HCD's own two paths differ by 66.6x: native CQL ~2 s against the Data API's 134 s",
+   "claim_ref": "M23",
+   "slower_arm": {
+    "label": "HCD Data API client scan-and-aggregate",
+    "n": 3,
+    "min_ms": 133827.164,
+    "p50_ms": 133984.229,
+    "p95_ms": 134990.509,
+    "p99_ms": 135079.956,
+    "max_ms": 135102.317,
+    "source_file": "data/raw/findings_agg_hcd.json",
+    "source_path": "result.C2_client_scan_aggregate_ms"
+   },
+   "faster_arm": {
+    "label": "native CQL per-partition sweep (10 queries)",
+    "n": 15,
+    "min_ms": 1924.195,
+    "p50_ms": 2011.399,
+    "p95_ms": 2223.488,
+    "p99_ms": 2421.508,
+    "max_ms": 2471.012,
+    "source_file": "data/raw/findings_agg_cqlref.json",
+    "source_path": "C3a_per_partition_sweep_10q_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 66.6125,
+   "ratio_interval": [
+    54.1588,
+    70.2124
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 0.00122549,
+   "exact_permutation_p_two_sided": 0.00245098,
+   "permutation_denominator_C(nA+nB,nA)": 816,
+   "verdict": "certain in direction",
+   "small_n_warning": "n < 10 in: HCD Data API client scan-and-aggregate \u2014 at such n the p95/p99 fields in the raw record are interpolations between the top two observations and carry no information about the tail",
+   "notes": "Capability gap, not a latency race: the 602x must never be quoted as 'HCD is 602x slower'. The same storage engine on the same host aggregates the same corpus in ~2 s through native CQL; the 134 s belongs to a tier that exposes no aggregation surface and therefore forces all 200 000 documents through the client at the Data API's default ~20 docs/page. The CQL arm carries its own disqualifying label in its own result file: it requires abandoning the document model and pre-designing a table partitioned by the group key. Campaign 7 sits outside the adversarial audit and the challenge rounds."
+  },
+  {
+   "id": "AGG-CQLsweep-vs-CQLgroupby",
+   "axis": "aggregation, HCD/CQL internal",
+   "claim": "The per-partition sweep (2 011 ms) is HCD's best CQL path, ahead of the cross-partition GROUP BY (2 568 ms)",
+   "claim_ref": "M23",
+   "slower_arm": {
+    "label": "native CQL cross-partition GROUP BY",
+    "n": 15,
+    "min_ms": 2387.172,
+    "p50_ms": 2568.372,
+    "p95_ms": 2703.698,
+    "p99_ms": 2728.623,
+    "max_ms": 2734.854,
+    "source_file": "data/raw/findings_agg_cqlref.json",
+    "source_path": "C3b_full_groupby_cat_ms"
+   },
+   "faster_arm": {
+    "label": "native CQL per-partition sweep (10 queries)",
+    "n": 15,
+    "min_ms": 1924.195,
+    "p50_ms": 2011.399,
+    "p95_ms": 2223.488,
+    "p99_ms": 2421.508,
+    "max_ms": 2471.012,
+    "source_file": "data/raw/findings_agg_cqlref.json",
+    "source_path": "C3a_per_partition_sweep_10q_ms"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.2769,
+   "ratio_interval": [
+    0.9661,
+    1.4213
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data"
+  },
+  {
+   "id": "AGG-MDB-vs-CQLgroupby",
+   "axis": "aggregation",
+   "claim": "MongoDB is faster than HCD's cross-partition CQL GROUP BY",
+   "claim_ref": "M23",
+   "slower_arm": {
+    "label": "native CQL cross-partition GROUP BY",
+    "n": 15,
+    "min_ms": 2387.172,
+    "p50_ms": 2568.372,
+    "p95_ms": 2703.698,
+    "p99_ms": 2728.623,
+    "max_ms": 2734.854,
+    "source_file": "data/raw/findings_agg_cqlref.json",
+    "source_path": "C3b_full_groupby_cat_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB server-side $group",
+    "n": 15,
+    "min_ms": 215.956,
+    "p50_ms": 222.711,
+    "p95_ms": 252.075,
+    "p99_ms": 285.402,
+    "max_ms": 293.734,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.C1_groupby_sum_serverside_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 11.5323,
+   "ratio_interval": [
+    8.127,
+    12.6639
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 6.44673e-09,
+   "exact_permutation_p_two_sided": 1.28935e-08,
+   "permutation_denominator_C(nA+nB,nA)": 155117520,
+   "verdict": "certain in direction",
+   "notes": "Capability gap, not a latency race: the 602x must never be quoted as 'HCD is 602x slower'. The same storage engine on the same host aggregates the same corpus in ~2 s through native CQL; the 134 s belongs to a tier that exposes no aggregation surface and therefore forces all 200 000 documents through the client at the Data API's default ~20 docs/page. The CQL arm carries its own disqualifying label in its own result file: it requires abandoning the document model and pre-designing a table partitioned by the group key. Campaign 7 sits outside the adversarial audit and the challenge rounds."
+  },
+  {
+   "id": "CNT-MDBexact-vs-MDBest",
+   "axis": "exact count, MongoDB internal",
+   "claim": "MongoDB's exact count is a scan (115 ms); only the estimate is cheap (0.408 ms)",
+   "claim_ref": "M21",
+   "slower_arm": {
+    "label": "MongoDB count_documents({}) exact",
+    "n": 30,
+    "min_ms": 108.007,
+    "p50_ms": 115.009,
+    "p95_ms": 125.282,
+    "p99_ms": 127.694,
+    "max_ms": 128.577,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.A_count_all_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB estimated_document_count()",
+    "n": 30,
+    "min_ms": 0.336,
+    "p50_ms": 0.408,
+    "p95_ms": 0.695,
+    "p99_ms": 0.755,
+    "max_ms": 0.768,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.A_estimated_count_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 281.8848,
+   "ratio_interval": [
+    140.6341,
+    382.6696
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "MongoDB wins the counting axis because it ANSWERS, not because it answers cheaply."
+  },
+  {
+   "id": "CNT-MDBscan-vs-MDBidx",
+   "axis": "filtered count, MongoDB internal",
+   "claim": "MongoDB too pays index design here: 157 ms scanning, 12.7 ms after declaring cat_idx",
+   "claim_ref": "M21",
+   "slower_arm": {
+    "label": "MongoDB filtered count, collection scan",
+    "n": 30,
+    "min_ms": 149.065,
+    "p50_ms": 157.177,
+    "p95_ms": 197.138,
+    "p99_ms": 208.394,
+    "max_ms": 210.183,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.B_filtered_count_default_collscan_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB filtered count, declared cat index",
+    "n": 30,
+    "min_ms": 11.261,
+    "p50_ms": 12.659,
+    "p95_ms": 15.488,
+    "p99_ms": 15.63,
+    "max_ms": 15.643,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.B_filtered_count_cat_index_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 12.4162,
+   "ratio_interval": [
+    9.5292,
+    18.6647
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "CNT-HCDest-vs-MDBest",
+   "axis": "estimated count",
+   "claim": "HCD's estimatedDocumentCount() answered in 6.875 ms; MongoDB's in 0.408 ms",
+   "claim_ref": "M22",
+   "slower_arm": {
+    "label": "HCD estimatedDocumentCount() [RETURNED 0, TRUE COUNT 200 000]",
+    "n": 30,
+    "min_ms": 5.551,
+    "p50_ms": 6.875,
+    "p95_ms": 8.899,
+    "p99_ms": 10.152,
+    "max_ms": 10.652,
+    "source_file": "data/raw/findings_agg_hcd.json",
+    "source_path": "result.A_estimated_count_ms"
+   },
+   "faster_arm": {
+    "label": "MongoDB estimated_document_count()",
+    "n": 30,
+    "min_ms": 0.336,
+    "p50_ms": 0.408,
+    "p95_ms": 0.695,
+    "p99_ms": 0.755,
+    "max_ms": 0.768,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.A_estimated_count_ms"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 16.8505,
+   "ratio_interval": [
+    7.2279,
+    31.7024
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "VOID AS A LATENCY COMPARISON. The two arms did not compute the same thing: HCD returned 0 while the collection held 200 000 documents, because the estimate reads SSTable metadata and the memtable had not flushed. A wrong answer delivered quickly is not a faster answer. The separation reported here is arithmetically true and substantively meaningless; the finding on this axis is the correctness defect, not the 16.9x."
+  },
+  {
+   "id": "CNT-HCDexact-vs-MDBexact",
+   "axis": "exact count",
+   "claim": "HCD's Data API refuses countDocuments above 1 000 documents (TooManyDocumentsToCountException)",
+   "claim_ref": "M21",
+   "slower_arm": {
+    "label": "HCD countDocuments({})",
+    "n": 0,
+    "min_ms": null,
+    "p50_ms": null,
+    "p95_ms": null,
+    "p99_ms": null,
+    "max_ms": null,
+    "source_file": "data/raw/findings_agg_hcd.json",
+    "source_path": "result.A_count_all_ms (empty object) / result.counts.count_all_error"
+   },
+   "faster_arm": {
+    "label": "MongoDB count_documents({}) exact",
+    "n": 30,
+    "min_ms": 108.007,
+    "p50_ms": 115.009,
+    "p95_ms": 125.282,
+    "p99_ms": 127.694,
+    "max_ms": 128.577,
+    "source_file": "data/raw/findings_agg_mongodb.json",
+    "source_path": "result.A_count_all_ms"
+   },
+   "support": "NOT A LATENCY COMPARISON",
+   "ratio_of_medians": null,
+   "ratio_interval": null,
+   "spans_one": null,
+   "exact_permutation_p_one_sided": null,
+   "verdict": "structural, not statistical \u2014 HCD produced no observations because the operation is refused; nothing here is a distribution and no test applies",
+   "notes": "The strongest kind of result in the dossier and the one least in need of statistics: a capability difference is established by one observation, not by n. But an allow-list is a product decision and can change between builds."
+  },
+  {
+   "id": "SIZE-M3-variantB-1kb-vs-128kb",
+   "axis": "mutation cost vs unchanged indexed content",
+   "claim": "A constant one-field $set grew x7.50 for a x128 document, contradicting step 4 of the article's model",
+   "claim_ref": "M3",
+   "slower_arm": {
+    "label": "variant B, 128 kb document",
+    "n": 30,
+    "min_ms": 71.783,
+    "p50_ms": 90.783,
+    "p95_ms": 135.727,
+    "p99_ms": 223.528,
+    "max_ms": 258.239,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].variant_B_indexed_chunks.evidence.by_document_size['128kb']"
+   },
+   "faster_arm": {
+    "label": "variant B, 1 kb document",
+    "n": 30,
+    "min_ms": 9.521,
+    "p50_ms": 12.104,
+    "p95_ms": 16.034,
+    "p99_ms": 18.798,
+    "max_ms": 19.608,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].variant_B_indexed_chunks.evidence.by_document_size['1kb']"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 7.5002,
+   "ratio_interval": [
+    3.6609,
+    27.1231
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction",
+   "notes": "x7.50 is a MEMTABLE-regime coefficient at RF=1 and must never be quoted as an engine property. x5.94 on disk at RF=3 (M10); x1.52 once the cycle's SELECT is forced onto SSTables (M15)."
+  },
+  {
+   "id": "SIZE-M3-variantB-readcontrol-1kb-vs-128kb",
+   "axis": "read control for M3 variant B",
+   "claim": "The same-size read control grew only x1.56, which is what makes the x7.50 a mutation effect",
+   "claim_ref": "M3",
+   "slower_arm": {
+    "label": "variant B read control, 128 kb",
+    "n": 30,
+    "min_ms": 9.424,
+    "p50_ms": 11.523,
+    "p95_ms": 24.082,
+    "p99_ms": 27.897,
+    "max_ms": 28.532,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].variant_B_indexed_chunks.read_control.distributions['128kb']"
+   },
+   "faster_arm": {
+    "label": "variant B read control, 1 kb",
+    "n": 30,
+    "min_ms": 6.166,
+    "p50_ms": 7.39,
+    "p95_ms": 10.659,
+    "p99_ms": 12.253,
+    "max_ms": 12.656,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].variant_B_indexed_chunks.read_control.distributions['1kb']"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.5593,
+   "ratio_interval": [
+    0.7446,
+    4.6273
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data"
+  },
+  {
+   "id": "SIZE-M3-variantA-1kb-vs-128kb",
+   "axis": "mutation cost, ballast NOT indexed",
+   "claim": "Variant A is INCONCLUSIVE by the campaign's own pre-registered read-control rule",
+   "claim_ref": "M3",
+   "slower_arm": {
+    "label": "variant A, 128 kb document",
+    "n": 30,
+    "min_ms": 17.299,
+    "p50_ms": 22.066,
+    "p95_ms": 37.706,
+    "p99_ms": 42.532,
+    "max_ms": 43.152,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].evidence.by_document_size['128kb']"
+   },
+   "faster_arm": {
+    "label": "variant A, 1 kb document",
+    "n": 30,
+    "min_ms": 8.535,
+    "p50_ms": 11.468,
+    "p95_ms": 22.64,
+    "p99_ms": 29.41,
+    "max_ms": 30.435,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[2].evidence.by_document_size['1kb']"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.9241,
+   "ratio_interval": [
+    0.5684,
+    5.0559
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Separation of support agrees with the author's own pre-registered verdict: the arms overlap, and the dossier already calls this INCONCLUSIVE."
+  },
+  {
+   "id": "FB-S1-512B-vs-8000B-p1",
+   "axis": "M11 series S1: bytes per field at fixed field count",
+   "claim": "Indexed byte volume dominates: S1 endpoint ratio 4.556 (pass 1) / 4.738 (pass 2), r2 0.9999",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S1 16x8000B pass1",
+    "n": 30,
+    "min_ms": 97.957,
+    "p50_ms": 114.649,
+    "p95_ms": 140.412,
+    "p99_ms": 333.122,
+    "max_ms": 410.991,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x8000B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "S1 16x512B pass1",
+    "n": 30,
+    "min_ms": 21.878,
+    "p50_ms": 25.163,
+    "p95_ms": 28.965,
+    "p99_ms": 31.351,
+    "max_ms": 31.986,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x512B|pass1'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 4.5563,
+   "ratio_interval": [
+    3.0625,
+    18.7856
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "FB-S2-9x7281B-vs-128x512B-p1",
+   "axis": "M11 series S2: field count at fixed indexed volume",
+   "claim": "Field count is at most a weak secondary factor: S2 endpoint ratio 1.128 (pass 1) / 1.187 (pass 2)",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S2 128x512B pass1",
+    "n": 30,
+    "min_ms": 62.223,
+    "p50_ms": 75.291,
+    "p95_ms": 96.039,
+    "p99_ms": 98.203,
+    "max_ms": 98.91,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-128x512B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "S2 9x7281B pass1",
+    "n": 30,
+    "min_ms": 57.862,
+    "p50_ms": 66.74,
+    "p95_ms": 76.474,
+    "p99_ms": 77.224,
+    "max_ms": 77.329,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-9x7281B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.1281,
+   "ratio_interval": [
+    0.8047,
+    1.7094
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "The pre-registered rule (S2 ratio <= 1.15 -> bytes dominate; >= 1.5 -> field count independent) straddles its own threshold across the two passes, so the strict verdict is INCONCLUSIVE."
+  },
+  {
+   "id": "FB-internal-control-16x4096B-p1",
+   "axis": "M11 internal control (same configuration in both series)",
+   "claim": "The 16x4096B point measured in both series agrees to 2.0% (pass 1) and 0.65% (pass 2)",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S1 16x4096B pass1",
+    "n": 30,
+    "min_ms": 54.974,
+    "p50_ms": 68.384,
+    "p95_ms": 77.863,
+    "p99_ms": 77.993,
+    "max_ms": 77.996,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x4096B|pass1'].update"
+   },
+   "faster_arm": {
+    "label": "S2 16x4096B pass1",
+    "n": 30,
+    "min_ms": 56.977,
+    "p50_ms": 67.044,
+    "p95_ms": 79.633,
+    "p99_ms": 124.743,
+    "max_ms": 142.729,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-16x4096B|pass1'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.02,
+   "ratio_interval": [
+    0.3852,
+    1.3689
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "An internal control SHOULD overlap. Overlapping support here is the desired outcome, not a failure."
+  },
+  {
+   "id": "FB-S1-512B-vs-8000B-p2",
+   "axis": "M11 series S1: bytes per field at fixed field count",
+   "claim": "Indexed byte volume dominates: S1 endpoint ratio 4.556 (pass 1) / 4.738 (pass 2), r2 0.9999",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S1 16x8000B pass2",
+    "n": 30,
+    "min_ms": 97.984,
+    "p50_ms": 117.269,
+    "p95_ms": 135.468,
+    "p99_ms": 235.587,
+    "max_ms": 275.371,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x8000B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "S1 16x512B pass2",
+    "n": 30,
+    "min_ms": 20.579,
+    "p50_ms": 24.753,
+    "p95_ms": 28.446,
+    "p99_ms": 30.851,
+    "max_ms": 31.804,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x512B|pass2'].update"
+   },
+   "support": "DISJOINT",
+   "ratio_of_medians": 4.7376,
+   "ratio_interval": [
+    3.0809,
+    13.3812
+   ],
+   "spans_one": false,
+   "exact_permutation_p_one_sided": 8.45562e-18,
+   "exact_permutation_p_two_sided": 1.69112e-17,
+   "permutation_denominator_C(nA+nB,nA)": 118264581564861424,
+   "verdict": "certain in direction"
+  },
+  {
+   "id": "FB-S2-9x7281B-vs-128x512B-p2",
+   "axis": "M11 series S2: field count at fixed indexed volume",
+   "claim": "Field count is at most a weak secondary factor: S2 endpoint ratio 1.128 (pass 1) / 1.187 (pass 2)",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S2 128x512B pass2",
+    "n": 30,
+    "min_ms": 61.767,
+    "p50_ms": 80.281,
+    "p95_ms": 101.088,
+    "p99_ms": 460.539,
+    "max_ms": 606.43,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-128x512B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "S2 9x7281B pass2",
+    "n": 30,
+    "min_ms": 55.583,
+    "p50_ms": 67.629,
+    "p95_ms": 85.04,
+    "p99_ms": 106.03,
+    "max_ms": 113.034,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-9x7281B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.1871,
+   "ratio_interval": [
+    0.5464,
+    10.9104
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "The pre-registered rule (S2 ratio <= 1.15 -> bytes dominate; >= 1.5 -> field count independent) straddles its own threshold across the two passes, so the strict verdict is INCONCLUSIVE."
+  },
+  {
+   "id": "FB-internal-control-16x4096B-p2",
+   "axis": "M11 internal control (same configuration in both series)",
+   "claim": "The 16x4096B point measured in both series agrees to 2.0% (pass 1) and 0.65% (pass 2)",
+   "claim_ref": "M11",
+   "slower_arm": {
+    "label": "S1 16x4096B pass2",
+    "n": 30,
+    "min_ms": 52.581,
+    "p50_ms": 69.054,
+    "p95_ms": 89.964,
+    "p99_ms": 112.065,
+    "max_ms": 118.05,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S1-16x4096B|pass2'].update"
+   },
+   "faster_arm": {
+    "label": "S2 16x4096B pass2",
+    "n": 30,
+    "min_ms": 54.415,
+    "p50_ms": 68.609,
+    "p95_ms": 82.12,
+    "p99_ms": 90.058,
+    "max_ms": 93.298,
+    "source_file": "data/raw/findings_fieldbyte.json",
+    "source_path": "results['S2-16x4096B|pass2'].update"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.0065,
+   "ratio_interval": [
+    0.5636,
+    2.1694
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "An internal control SHOULD overlap. Overlapping support here is the desired outcome, not a failure."
+  },
+  {
+   "id": "TIER-API-vs-CQL-8K-p1",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 8 KiB pass1",
+    "n": 30,
+    "min_ms": 24.047,
+    "p50_ms": 28.827,
+    "p95_ms": 37.472,
+    "p99_ms": 45.481,
+    "max_ms": 48.348,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x512B|pass1'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 8 KiB pass1",
+    "n": 30,
+    "min_ms": 14.476,
+    "p50_ms": 17.871,
+    "p95_ms": 61.892,
+    "p99_ms": 64.124,
+    "max_ms": 64.712,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x512B|pass1'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.6131,
+   "ratio_interval": [
+    0.3716,
+    3.3399
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-8K-p2",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 8 KiB pass2",
+    "n": 30,
+    "min_ms": 20.352,
+    "p50_ms": 26.464,
+    "p95_ms": 32.78,
+    "p99_ms": 34.263,
+    "max_ms": 34.571,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x512B|pass2'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 8 KiB pass2",
+    "n": 30,
+    "min_ms": 12.419,
+    "p50_ms": 15.468,
+    "p95_ms": 62.458,
+    "p99_ms": 65.262,
+    "max_ms": 65.781,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x512B|pass2'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.7109,
+   "ratio_interval": [
+    0.3094,
+    2.7837
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-16K-p1",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 16 KiB pass1",
+    "n": 30,
+    "min_ms": 28.63,
+    "p50_ms": 33.9,
+    "p95_ms": 46.652,
+    "p99_ms": 55.862,
+    "max_ms": 59.404,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x1024B|pass1'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 16 KiB pass1",
+    "n": 30,
+    "min_ms": 14.936,
+    "p50_ms": 22.761,
+    "p95_ms": 69.763,
+    "p99_ms": 72.296,
+    "max_ms": 73.266,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x1024B|pass1'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4894,
+   "ratio_interval": [
+    0.3908,
+    3.9772
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-16K-p2",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 16 KiB pass2",
+    "n": 30,
+    "min_ms": 26.972,
+    "p50_ms": 33.48,
+    "p95_ms": 48.511,
+    "p99_ms": 58.12,
+    "max_ms": 61.514,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x1024B|pass2'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 16 KiB pass2",
+    "n": 30,
+    "min_ms": 10.069,
+    "p50_ms": 24.504,
+    "p95_ms": 73.671,
+    "p99_ms": 76.508,
+    "max_ms": 77.54,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x1024B|pass2'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.3663,
+   "ratio_interval": [
+    0.3478,
+    6.1092
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-32K-p1",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 32 KiB pass1",
+    "n": 30,
+    "min_ms": 38.914,
+    "p50_ms": 47.838,
+    "p95_ms": 69.042,
+    "p99_ms": 120.603,
+    "max_ms": 138.868,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x2048B|pass1'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 32 KiB pass1",
+    "n": 30,
+    "min_ms": 24.544,
+    "p50_ms": 32.715,
+    "p95_ms": 85.126,
+    "p99_ms": 96.706,
+    "max_ms": 101.059,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x2048B|pass1'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4623,
+   "ratio_interval": [
+    0.3851,
+    5.6579
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-32K-p2",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 32 KiB pass2",
+    "n": 30,
+    "min_ms": 37.632,
+    "p50_ms": 46.108,
+    "p95_ms": 55.47,
+    "p99_ms": 60.979,
+    "max_ms": 62.808,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x2048B|pass2'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 32 KiB pass2",
+    "n": 30,
+    "min_ms": 26.088,
+    "p50_ms": 32.059,
+    "p95_ms": 79.074,
+    "p99_ms": 82.598,
+    "max_ms": 84.032,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x2048B|pass2'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4382,
+   "ratio_interval": [
+    0.4478,
+    2.4075
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-64K-p1",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 64 KiB pass1",
+    "n": 30,
+    "min_ms": 57.611,
+    "p50_ms": 70.639,
+    "p95_ms": 81.297,
+    "p99_ms": 81.791,
+    "max_ms": 81.817,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x4096B|pass1'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 64 KiB pass1",
+    "n": 30,
+    "min_ms": 14.294,
+    "p50_ms": 49.307,
+    "p95_ms": 93.672,
+    "p99_ms": 99.536,
+    "max_ms": 100.861,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x4096B|pass1'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4326,
+   "ratio_interval": [
+    0.5712,
+    5.7239
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-64K-p2",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 64 KiB pass2",
+    "n": 30,
+    "min_ms": 60.819,
+    "p50_ms": 71.087,
+    "p95_ms": 182.752,
+    "p99_ms": 308.256,
+    "max_ms": 331.451,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x4096B|pass2'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 64 KiB pass2",
+    "n": 30,
+    "min_ms": 14.43,
+    "p50_ms": 44.568,
+    "p95_ms": 64.329,
+    "p99_ms": 85.688,
+    "max_ms": 94.13,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x4096B|pass2'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.595,
+   "ratio_interval": [
+    0.6461,
+    22.9696
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-125K-p1",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 125 KiB pass1",
+    "n": 30,
+    "min_ms": 99.396,
+    "p50_ms": 119.023,
+    "p95_ms": 140.116,
+    "p99_ms": 155.371,
+    "max_ms": 160.253,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x8000B|pass1'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 125 KiB pass1",
+    "n": 30,
+    "min_ms": 31.158,
+    "p50_ms": 86.431,
+    "p95_ms": 99.951,
+    "p99_ms": 182.362,
+    "max_ms": 216.007,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x8000B|pass1'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.3771,
+   "ratio_interval": [
+    0.4602,
+    5.1432
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "TIER-API-vs-CQL-125K-p2",
+   "axis": "M12 method 1: where the per-byte cost is charged",
+   "claim": "The Data API tier carries 29% of the per-KiB cost by method 1 (bypass), 19% by method 2 (coordinator trace)",
+   "claim_ref": "M12",
+   "slower_arm": {
+    "label": "Data API arm 125 KiB pass2",
+    "n": 30,
+    "min_ms": 93.465,
+    "p50_ms": 115.719,
+    "p95_ms": 136.929,
+    "p99_ms": 143.52,
+    "max_ms": 145.094,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x8000B|pass2'].data_api"
+   },
+   "faster_arm": {
+    "label": "direct-CQL arm 125 KiB pass2",
+    "n": 30,
+    "min_ms": 18.479,
+    "p50_ms": 78.409,
+    "p95_ms": 101.861,
+    "p99_ms": 169.227,
+    "max_ms": 195.138,
+    "source_file": "data/raw/findings_tier.json",
+    "source_path": "results['16x8000B|pass2'].direct_cql"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.4758,
+   "ratio_interval": [
+    0.479,
+    7.8518
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "Contradicted by M14's ~9% on the same quantity and never reconciled (audit finding I3). Arm B reuses already-shredded values, so it never exercises the shredding code and its 'storage' term is an optimistic floor (challenge C7)."
+  },
+  {
+   "id": "REGIME-M15-postflush-1kb-vs-128kb",
+   "axis": "M15: RMW forced onto the SSTable read path",
+   "claim": "Once the RMW SELECT is forced onto SSTables the growth collapses to x1.52 \u2014 the 0.77 ms/KiB rate is a memtable phenomenon",
+   "claim_ref": "M15",
+   "slower_arm": {
+    "label": "post-flush 128 kb",
+    "n": 30,
+    "min_ms": null,
+    "p50_ms": 163.402,
+    "p95_ms": 183.713,
+    "p99_ms": 217.448,
+    "max_ms": 229.834,
+    "source_file": "data/raw/rmw_postflush.json",
+    "source_path": "by_size['128kb']"
+   },
+   "faster_arm": {
+    "label": "post-flush 1 kb",
+    "n": 30,
+    "min_ms": null,
+    "p50_ms": 107.765,
+    "p95_ms": 120.874,
+    "p99_ms": 157.272,
+    "max_ms": 171.608,
+    "source_file": "data/raw/rmw_postflush.json",
+    "source_path": "by_size['1kb']"
+   },
+   "support": "UNDETERMINABLE",
+   "reason": "the raw record does not store min and/or max for at least one arm; separation of support cannot be evaluated",
+   "ratio_of_medians": 1.5163,
+   "ratio_interval": null,
+   "exact_permutation_p_one_sided": null,
+   "spans_one": null,
+   "verdict": "not established by these data (summary record incomplete)",
+   "notes": "rmw_postflush.json stores no min_ms for any size. The single measurement that overturned the dossier's flagship coefficient is therefore the one measurement on which separation of support cannot be evaluated at all."
+  },
+  {
+   "id": "REGIME-M10-disk-1kb-vs-128kb",
+   "axis": "M10: disk regime at RF=3",
+   "claim": "In the proven disk regime variant B grew x5.94 (20.389 -> 121.189 ms), so the indexed-content coefficient does not collapse on disk",
+   "claim_ref": "M10",
+   "slower_arm": {
+    "label": "disk RF=3 variant B, 128 kb",
+    "n": null,
+    "min_ms": null,
+    "p50_ms": 121.189,
+    "p95_ms": null,
+    "p99_ms": null,
+    "max_ms": null,
+    "source_file": "data/raw/findings_disk_rf3.json",
+    "source_path": "variantB_indexed_chunks.update_p50['128kb']"
+   },
+   "faster_arm": {
+    "label": "disk RF=3 variant B, 1 kb",
+    "n": null,
+    "min_ms": null,
+    "p50_ms": 20.389,
+    "p95_ms": null,
+    "p99_ms": null,
+    "max_ms": null,
+    "source_file": "data/raw/findings_disk_rf3.json",
+    "source_path": "variantB_indexed_chunks.update_p50['1kb']"
+   },
+   "support": "UNDETERMINABLE",
+   "reason": "findings_disk_rf3.json records only p50 per size \u2014 no n, no min, no max, no percentiles. Neither separation of support nor any ratio interval can be computed.",
+   "ratio_of_medians": 5.9438,
+   "ratio_interval": null,
+   "spans_one": null,
+   "exact_permutation_p_one_sided": null,
+   "verdict": "not established by these data (summary record incomplete)",
+   "notes": "The x5.94 is one of the three values of the dossier's flagship coefficient (x7.50 / x5.94 / x1.52). Two of the three \u2014 x5.94 and x1.52 \u2014 rest on records too thin to test."
+  },
+  {
+   "id": "FRESH-M1-idle-vs-underload-rf1",
+   "axis": "campaign 1 freshness probe, RF=1",
+   "claim": "The offered-rate freshness probe (50 writes/s) was the only probe in the dossier driven open-loop",
+   "claim_ref": "M1/campaign 1",
+   "slower_arm": {
+    "label": "under load, 50 writes/s",
+    "n": 120,
+    "min_ms": 32.471,
+    "p50_ms": 42.534,
+    "p95_ms": 50.834,
+    "p99_ms": 59.178,
+    "max_ms": 60.932,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[1].evidence.under_load"
+   },
+   "faster_arm": {
+    "label": "idle",
+    "n": 40,
+    "min_ms": 19.479,
+    "p50_ms": 25.462,
+    "p95_ms": 34.994,
+    "p99_ms": 78.375,
+    "max_ms": 100.919,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[1].evidence.idle"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 1.6705,
+   "ratio_interval": [
+    0.3218,
+    3.1281
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data",
+   "notes": "This is the ONE probe family in the repository that used a fixed offered rate, and therefore the one family not exposed to coordinated omission. Its n=40 idle / n=120 loaded asymmetry is declared here."
+  },
+  {
+   "id": "FRESH-M1-idle-vs-underload-rf1-pass2",
+   "axis": "campaign 1 freshness probe, RF=1, second pass",
+   "claim": "Second pass of the same offered-rate freshness probe",
+   "claim_ref": "M1/campaign 1",
+   "slower_arm": {
+    "label": "under load, 50 writes/s (pass 2)",
+    "n": 120,
+    "min_ms": 32.821,
+    "p50_ms": 42.285,
+    "p95_ms": 49.817,
+    "p99_ms": 53.849,
+    "max_ms": 55.644,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[1].replication_2.evidence.under_load"
+   },
+   "faster_arm": {
+    "label": "idle (pass 2)",
+    "n": 40,
+    "min_ms": 13.857,
+    "p50_ms": 18.71,
+    "p95_ms": 29.04,
+    "p99_ms": 54.491,
+    "max_ms": 68.62,
+    "source_file": "data/raw/findings.json",
+    "source_path": "findings[1].replication_2.evidence.idle"
+   },
+   "support": "OVERLAPPING",
+   "ratio_of_medians": 2.26,
+   "ratio_interval": [
+    0.4783,
+    4.0156
+   ],
+   "spans_one": true,
+   "exact_permutation_p_one_sided": null,
+   "exact_permutation_p_two_sided": null,
+   "verdict": "not established by these data"
+  }
+ ],
+ "turn_latency_exact_tests": {
+  "description": "M19 measures a proportion, not a latency, so the exact test here is Fisher's, not a permutation over ranks. Miss rate of a single search issued tau ms after the write, 30 cycles per point per engine.",
+  "caveat": "The premise that makes the tau >= 1000 ms column decisive \u2014 that an LLM-driven turn takes 1-10 s \u2014 is an assumption stated by the challenge author, never measured against a real workload. Single-node atlas-local mongot 1.75.1 localDev against HCD {dc1:3}; one pass; lexical $search against vector JVector.",
+  "points": [
+   {
+    "tau_ms": 0,
+    "mongodb_miss": "30/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 8.45562e-18,
+    "verdict": "certain in direction",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 100,
+    "mongodb_miss": "28/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 4.19399e-15,
+    "verdict": "certain in direction",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 250,
+    "mongodb_miss": "25/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 2.74496e-12,
+    "verdict": "certain in direction",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 500,
+    "mongodb_miss": "15/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 2.91607e-06,
+    "verdict": "certain in direction",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 750,
+    "mongodb_miss": "10/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 0.000398507,
+    "verdict": "certain in direction",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 1000,
+    "mongodb_miss": "0/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 1.0,
+    "verdict": "no difference observed",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 1500,
+    "mongodb_miss": "0/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 1.0,
+    "verdict": "no difference observed",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 2000,
+    "mongodb_miss": "0/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 1.0,
+    "verdict": "no difference observed",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   },
+   {
+    "tau_ms": 3000,
+    "mongodb_miss": "0/30",
+    "hcd_miss": "0/30",
+    "fisher_exact_p_one_sided": 1.0,
+    "verdict": "no difference observed",
+    "source_files": [
+     "data/raw/findings_turn_mongodb.json",
+     "data/raw/findings_turn_hcd.json"
+    ]
+   }
+  ]
+ },
+ "the_one_comparison_with_raw_data": {
+  "id": "VEC-idle-vs-loaded",
+  "axis": "M7 / vector-search freshness at RF=3 under vector-search = LOCAL_ONE",
+  "claim": "insert->vector-visible p50 74.735 ms idle against 74.406 ms at 40 vector-writes/s \u2014 the dossier reports the two as effectively identical and the axis as NOT DETECTABLE",
+  "claim_ref": "M7",
+  "why_this_one_is_different": "vector_freshness_idle.json and vector_freshness_loaded.json are the ONLY two files in data/raw/ that preserve a per-observation series (60 cycles each, field cycles[].insert_to_vec_visible_ms). Everywhere else in this repository the raw observations were discarded. This is therefore the only comparison in the dossier on which a rank test, a permutation test and a bootstrap interval are possible at all \u2014 and it is an HCD-internal comparison with no cross-engine counterpart.",
+  "idle": {
+   "n": 60,
+   "min_ms": 54.886,
+   "p50_ms": 74.735,
+   "max_ms": 393.759,
+   "source_file": "data/raw/vector_freshness_idle.json",
+   "source_path": "cycles[].insert_to_vec_visible_ms"
+  },
+  "loaded_40ps": {
+   "n": 60,
+   "min_ms": 63.365,
+   "p50_ms": 74.406,
+   "max_ms": 122.534,
+   "source_file": "data/raw/vector_freshness_loaded.json",
+   "source_path": "cycles[].insert_to_vec_visible_ms"
+  },
+  "support": "OVERLAPPING",
+  "median_difference_ms_idle_minus_loaded": 0.329,
+  "bootstrap_95pct_CI_median_difference_ms": [
+   -4.522,
+   1.632
+  ],
+  "bootstrap_iterations": 20000,
+  "mann_whitney_U_idle": 1685.0,
+  "mann_whitney_z": -0.6036,
+  "mann_whitney_p_two_sided_normal_approx": 0.546114,
+  "permutation_p_two_sided_on_median_difference": 0.859931,
+  "permutation_iterations": 200000,
+  "verdict": "no difference established between the idle and loaded arms; the bootstrap interval on the median difference contains 0",
+  "what_it_does_not_establish": "A null result on this axis is not evidence that the LOCAL_ONE / LOCAL_QUORUM asymmetry is safe. Both arms sit on a co-located ring whose inter-replica latency is sub-millisecond, and the whole measurement is bounded below the ~74 ms HTTP round-trip floor. The dossier's own verdict, NOT DETECTABLE, is the correct one and this analysis does not improve on it."
+ },
+ "derived_quantities": {
+  "note": "Quantities derived arithmetically from data/raw/ by division or subtraction only. No model, no fit, no assumption beyond the one stated in each entry. Recomputable by .github/scripts/check_inference.py.",
+  "AGG-D7-per-page-cost": {
+   "challenge": "D7, docs/challenges-campagne7.fr.md",
+   "question": "How does the 134-second HCD Data API client scan decompose?",
+   "assumption": "Data API find() pages at 20 documents per page. Established empirically by raw probe against the API (20 documents plus a nextPageState per response), not only from vendor documentation. If a build changes this default, this entry is void.",
+   "inputs": {
+    "total_scan_p50_ms": 133984.229,
+    "total_scan_source": "data/raw/findings_agg_hcd.json -> result.C2_client_scan_aggregate_ms.p50_ms",
+    "documents_scanned": 200000,
+    "documents_scanned_source": "data/raw/findings_agg_hcd.json -> result.C2_docs_scanned",
+    "page_size_documents": 20
+   },
+   "derivation": "133984.229 ms / (200000 / 20) = 133984.229 / 10000 pages",
+   "pages": 10000,
+   "cost_per_page_ms": 13.398,
+   "comparison_point_read": {
+    "point_read_p50_ms": 10.382,
+    "source": "data/raw/findings_rs_hcd.json -> arms.hcd.B_point_read_id.p50_ms (M16)",
+    "difference_ms": 3.016,
+    "difference_pct": 29.1,
+    "caveat": "M16 measured findOne({_id}) on collection rs_probe (1M documents, campaign 6), NOT a 20-document page on agg (200k, campaign 7). It is shown as a reference point, NOT substituted into the derivation. The earlier draft of D7 made that substitution and produced a spurious 30-second residue."
+   },
+   "reading": "The whole 134 s is 10 000 sequential round trips at 13.398 ms. There is no residue to explain. The 602x is a documented page-size limit multiplied by a measured per-call cost."
+  }
+ }
+}

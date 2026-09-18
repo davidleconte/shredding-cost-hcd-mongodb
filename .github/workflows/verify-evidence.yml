@@ -1,0 +1,261 @@
+# =============================================================================
+# verify-evidence — what a green check on this repository does and does not mean
+# =============================================================================
+#
+# This workflow verifies the INTERNAL CONSISTENCY of the artefact. It runs on a
+# stock GitHub runner with no database of any kind. It therefore re-runs nothing
+# and re-measures nothing.
+#
+# A green check asserts exactly seven things:
+#
+#   1. evidence-integrity  every file under data/raw/ still hashes to the value
+#                          committed in .github/evidence.sha256
+#   2. link-integrity      every relative Markdown link in every tracked .md file
+#                          points at a path that GIT TRACKS — not merely one
+#                          that exists on the author's disk
+#   3. json-validity       every file under data/raw/ parses, and every latency
+#                          distribution in it satisfies min <= p50 <= p95 <= p99
+#                          <= max with n >= 1
+#   4. probe-syntax        every probes/*.py compiles (it is NOT executed)
+#   5. derived-numbers     the separation-of-support verdicts, ratio intervals
+#                          and exact permutation p-values in
+#                          data/derived/inference.json re-derive from data/raw/
+#   6. figure-integrity    docs/figures/regime-collapse.svg is byte-identical to
+#                          a fresh render of data/raw/ by
+#                          .github/scripts/make_figures.py. The one derived
+#                          artefact that is a picture cannot drift from, or be
+#                          hand-edited away from, the evidence it draws.
+#   7. figure-traceability every decimal figure with >= 3 decimal places in the
+#                          seven English Markdown documents named in
+#                          .github/scripts/check_figure_traceability.py occurs
+#                          in data/raw/*.json or in
+#                          data/derived/inference.json -- exactly, or once
+#                          rounded to the precision the document prints, and the
+#                          rounded ones are listed by name. It matches against
+#                          the UNION of the evidence, so it catches an invented
+#                          figure and NOT a real figure attached to the wrong
+#                          measurement. Documents outside that list, this
+#                          repository's own ARTIFACT.md included, are not
+#                          covered.
+#
+# ----------------------------------------------------------------------------
+# WHAT CI CANNOT CHECK. Do not read the green tick as more than the above.
+# ----------------------------------------------------------------------------
+#
+#   * Every measurement in this repository. Reproducing M1-M23 needs a live
+#     HCD 2.0.6 ring with the Data API, and a MongoDB 8.x replica set with a
+#     mongot search node. Neither exists on a GitHub runner, and neither is
+#     started here. See REPRODUCING.md — reproduction happens on hardware, not
+#     in this workflow.
+#   * That the numbers in data/raw/ came from the runs the documents describe.
+#     A sha256 seals a file against later editing; it is not a witness to a
+#     measurement. The hashes were computed from the files as committed, so they
+#     inherit whatever trust the committed files already deserved — which is why
+#     the repository also ships an adversarial audit rather than relying on CI.
+#   * The host conditions the results depend on: one machine, one page cache,
+#     a closed-loop single client, no network between the client and the engines.
+#     Those are claims about a laboratory, and a laboratory cannot be linted.
+#   * Which storage regime a measurement fell in — whether a read was served from
+#     a memtable or forced onto SSTables. That distinction carries the headline
+#     result (x7.50 -> x5.94 -> x1.52) and it is an argument about the evidence,
+#     not a property of it.
+#   * Software versions: HCD 2.0.6, Data API v1.0.33, MongoDB 8.x. Nothing here
+#     contacts those products or verifies that they were the versions used.
+#   * That a probe measures what its name claims. The probe-syntax job proves the
+#     source parses. It proves nothing about its semantics, and it runs no probe.
+#   * Statistical adequacy. The derived-numbers job checks the arithmetic of the
+#     published inference; it does not decide whether n = 3 or n = 30 is enough
+#     to support any particular sentence. LIMITATIONS.md is the document for that.
+#   * That a traceable figure is the RIGHT figure for the sentence around it.
+#     Check 7 proves a number was measured or derived here; it cannot prove the
+#     sentence quoting it names the arm, regime or engine the number came from.
+#   * Whether the prose conclusions follow from the measurements. That is the
+#     reader's job, and the point of docs/challenges.fr.md.
+#
+# The honest summary: this workflow can catch rot, drift, tampering and bad
+# arithmetic. It cannot catch a wrong experiment. Nothing that fails here is
+# arguable; nothing that passes here is thereby established.
+#
+# Note on the weekly run: GitHub suspends `schedule` triggers after 60 days
+# without repository activity, and restores them on the next push or on a manual
+# re-enable. A missing weekly run is therefore not evidence of a passing week.
+# =============================================================================
+
+name: verify-evidence
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Mondays at 05:23 UTC. Catches rot on a repository nobody has touched.
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+
+  evidence-integrity:
+    name: 1 · evidence integrity (data/raw sha256)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Compare data/raw/ against .github/evidence.sha256
+        run: >-
+          bash .github/scripts/run_check.sh
+          "1 · Evidence integrity — data/raw/ vs .github/evidence.sha256"
+          python .github/scripts/check_evidence_manifest.py
+
+  link-integrity:
+    name: 2 · link integrity (relative Markdown links)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Resolve every relative Markdown link
+        run: >-
+          bash .github/scripts/run_check.sh
+          "2 · Link integrity — relative Markdown links in tracked .md files"
+          python .github/scripts/check_links.py
+
+  json-validity:
+    name: 3 · JSON validity and latency invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Parse data/raw/ and check min <= p50 <= p95 <= p99 <= max, n >= 1
+        run: >-
+          bash .github/scripts/run_check.sh
+          "3 · JSON validity — parse, and latency-order invariants"
+          python .github/scripts/check_raw_json.py
+
+  probe-syntax:
+    name: 4 · probe syntax (compile only, never run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Compile every probes/*.py without importing it
+        run: >-
+          bash .github/scripts/run_check.sh
+          "4 · Probe syntax — probes/*.py compile (nothing is executed)"
+          python .github/scripts/check_probe_syntax.py
+
+  derived-numbers:
+    name: 5 · derived numbers (inference.json vs data/raw)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Re-derive separation of support from the raw evidence
+        run: >-
+          bash .github/scripts/run_check.sh
+          "5 · Derived numbers — data/derived/inference.json re-derived from data/raw/"
+          python .github/scripts/check_inference.py
+
+  figure-integrity:
+    name: 6 · figure integrity (regime-collapse.svg vs data/raw)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Re-render the figure and diff it against the committed SVG
+        run: >-
+          bash .github/scripts/run_check.sh
+          "6 · Figure integrity — docs/figures/regime-collapse.svg vs a fresh render of data/raw/"
+          python .github/scripts/make_figures.py --check
+
+  figure-traceability:
+    name: 7 · figure traceability (published figures vs evidence)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Trace every published figure to data/raw/ or data/derived/
+        run: >-
+          bash .github/scripts/run_check.sh
+          "7 · Figure traceability — published figures vs data/raw/ and data/derived/inference.json"
+          python .github/scripts/check_figure_traceability.py
+
+  summary:
+    name: verification summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - evidence-integrity
+      - link-integrity
+      - json-validity
+      - probe-syntax
+      - derived-numbers
+      - figure-integrity
+      - figure-traceability
+    steps:
+      - name: Write the verification table and fail if any check failed
+        env:
+          R1: ${{ needs.evidence-integrity.result }}
+          R2: ${{ needs.link-integrity.result }}
+          R3: ${{ needs.json-validity.result }}
+          R4: ${{ needs.probe-syntax.result }}
+          R5: ${{ needs.derived-numbers.result }}
+          R6: ${{ needs.figure-integrity.result }}
+          R7: ${{ needs.figure-traceability.result }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          mark() { case "$1" in success) echo "pass";; failure) echo "FAIL";; *) echo "$1";; esac; }
+
+          {
+            echo "## Verification summary"
+            echo
+            echo "| # | Check | What it asserts | Result |"
+            echo "|---|-------|-----------------|--------|"
+            echo "| 1 | evidence integrity | every file under \`data/raw/\` hashes to \`.github/evidence.sha256\` | $(mark "$R1") |"
+            echo "| 2 | link integrity | every relative Markdown link in a tracked \`.md\` resolves to a tracked path | $(mark "$R2") |"
+            echo "| 3 | JSON validity | \`data/raw/\` parses; \`min <= p50 <= p95 <= p99 <= max\`, \`n >= 1\` | $(mark "$R3") |"
+            echo "| 4 | probe syntax | every \`probes/*.py\` compiles — none is executed | $(mark "$R4") |"
+            echo "| 5 | derived numbers | \`data/derived/inference.json\` re-derives from \`data/raw/\` | $(mark "$R5") |"
+            echo "| 6 | figure integrity | \`docs/figures/regime-collapse.svg\` re-renders byte for byte from \`data/raw/\` | $(mark "$R6") |"
+            echo "| 7 | figure traceability | every figure with >= 3 decimals in the seven English documents occurs in \`data/raw/\` or \`data/derived/inference.json\` | $(mark "$R7") |"
+            echo
+            echo "**What this run did NOT do.** It started no HCD ring and no MongoDB"
+            echo "replica set, so it re-measured nothing. A green result means the"
+            echo "artefact is internally consistent and has not drifted — not that any"
+            echo "measurement in it is correct. Reproduction is described in"
+            echo "\`REPRODUCING.md\` and requires hardware. The full list of claims that"
+            echo "cannot be checked here is in the header of"
+            echo "\`.github/workflows/verify-evidence.yml\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          failed=0
+          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7"; do
+            [ "$result" = "success" ] || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7" >&2
+            exit 1
+          fi
+          echo "All seven verification checks succeeded."

@@ -139,8 +139,9 @@ La version quantifiée, calculée depuis les JSON bruts et détaillée dans `doc
 
 Le point qui compte n'est pas que l'effet résiste. C'est que **le plancher de la p-valeur est fixé
 par `n = 3`, pas par l'effet**. L'effet est astronomique ; la preuve vaut p ≈ 0,001, parce que trois
-répétitions ne permettent pas mieux, quelle que soit l'ampleur. Trois exécutions de plus la portaient
-sous 10⁻⁵. C'est le seul endroit du dossier où la parcimonie a coûté cher pour rien — le bras
+répétitions ne permettent pas mieux, quelle que soit l'ampleur. Quatre exécutions de plus la portaient
+sous 10⁻⁵ (`1 / C(22,7)` = 5,9 × 10⁻⁶) ; trois de plus n'atteignent que 1,8 × 10⁻⁵ (`1 / C(21,6)`).
+C'est le seul endroit du dossier où la parcimonie a coûté cher pour rien — le bras
 coûtait 134 s l'unité.
 
 Les p95 et p99 du bras HCD sont sans information : avec `n = 3`, le 95ᵉ percentile est une

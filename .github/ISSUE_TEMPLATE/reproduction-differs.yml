@@ -1,0 +1,141 @@
+name: "A reproduction that differs"
+description: "You ran a probe from this repository and got a materially different number."
+title: "[reproduction] Mxx — "
+labels: ["reproduction"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Your numbers are **expected** to differ from ours — `REPRODUCING.md` §7 says so up front, and
+        the regime, not the magnitude, is what transfers. File this when the difference is large
+        enough, or in a direction surprising enough, that it calls a published conclusion into
+        question.
+
+        A median alone cannot settle a comparison in this dossier: the same configuration measured
+        twice here gave ×1.92 and ×2.21. Give the distribution.
+
+  - type: input
+    id: measurement
+    attributes:
+      label: "Which measurement (Mxx)"
+      description: "M1–M23. There is no M9. If you are not sure, name the section of RESULTS.md."
+      placeholder: "M13"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: probe
+    attributes:
+      label: "Which probe did you run"
+      options:
+        - "agg_cql_arm.py"
+        - "disk_regime_driver.py"
+        - "hcd_cql_arm.py"
+        - "method2_trace.py"
+        - "mongot_floor.py"
+        - "mongot_freshness.py"
+        - "probe_aggregation.py"
+        - "probe_comparative.py"
+        - "probe_field_vs_byte.py"
+        - "probe_read_search.py"
+        - "probe_tier_vs_storage.py"
+        - "rmw_postflush.py"
+        - "turn_latency.py"
+        - "vector_freshness_rf3.py"
+        - "verify_storage_claims.py"
+        - "verify_storage_claims_rf3.py"
+        - "Other, or my own harness"
+    validations:
+      required: true
+
+  - type: input
+    id: raw-file
+    attributes:
+      label: "Which file under data/raw/ is your run to be compared against"
+      description: "Optional — the data dictionary in data/README.md names the producing probe for every file, so leave this blank if you are not sure which one applies."
+      placeholder: "comparison_v2.json"
+    validations:
+      required: false
+
+  - type: textarea
+    id: command
+    attributes:
+      label: "The command you ran"
+      description: "Exactly as issued, including flags and environment variables. Redact credentials."
+      render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: regime
+    attributes:
+      label: "Regime"
+      description: "A rate or growth factor without its regime cannot be compared with one of ours."
+      options:
+        - "Memtable- or cache-resident (what almost every figure in this dossier is)"
+        - "Proven disk-bound (SSTables on disk, a compaction crossed, caches invalidated)"
+        - "Unknown — I could not establish which"
+    validations:
+      required: true
+
+  - type: textarea
+    id: distribution
+    attributes:
+      label: "What you observed"
+      description: "Percentiles, never a mean. Fill in every row you have; n, min and max are the point of this field."
+      value: |
+        | | n | min | p50 | p95 | max |
+        |---|---|---|---|---|---|
+        | arm A (name it) | | | | | |
+        | arm B (name it) | | | | | |
+
+        Published figure I am contradicting:
+        Ratio or growth factor I got:
+    validations:
+      required: true
+
+  - type: textarea
+    id: host
+    attributes:
+      label: "Host fingerprint"
+      description: "Ours: one shared QEMU VM, Xeon Gold 6148, 80 vCPU, 220 GiB, load average 14–16, no root, page cache never dropped."
+      value: |
+        CPU model and count:
+        RAM:
+        Kernel / OS:
+        Bare metal, VM or container:
+        Load average during the run:
+        Could you drop the page cache (root)?:
+        Were the engines co-located with the client?:
+    validations:
+      required: true
+
+  - type: textarea
+    id: builds
+    attributes:
+      label: "Build strings for both engines"
+      description: "localDev mongot and Atlas production search are not the same product; neither are HCD's Data API and CQL paths."
+      value: |
+        nodetool version:
+        Data API image tag:
+        MongoDB db.version():
+        mongot version and edition (if search is involved):
+        pymongo / astrapy versions:
+    validations:
+      required: true
+
+  - type: textarea
+    id: raw-output
+    attributes:
+      label: "Your raw output"
+      description: "Paste or attach the JSON your probe wrote. Attach the raw sample vector too if your harness kept it — ours did not, and that is a defect of ours, not a standard for you."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: "Before filing"
+      options:
+        - label: "I am reporting percentiles, not a mean latency."
+        - label: "I have read the reading rules at the end of RESULTS.md."

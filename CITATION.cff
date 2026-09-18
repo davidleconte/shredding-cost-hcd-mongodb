@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 title: >-
-  Shredding cost: what physical storage layout does to write cost,
-  index freshness and concurrency in document databases
+  Shredding cost: what physical storage layout does to write cost and index
+  freshness in document databases
 message: >-
   If you cite a figure from this repository, please read LIMITATIONS.md
   first and cite the measurement identifier (Mxx) alongside the number,
@@ -25,7 +25,7 @@ keywords:
   - DataStax HCD
   - MongoDB
   - storage-attached index
-  - write amplification
+  - read-modify-write
   - benchmark methodology
 license: CC-BY-4.0
 license-url: https://creativecommons.org/licenses/by/4.0/

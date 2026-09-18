@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "Read this before filing — what this dossier does not establish"
+    url: https://github.com/davidleconte/shredding-cost-hcd-mongodb/blob/main/LIMITATIONS.md
+    about: "Integrity findings I1–I9 and the challenge register, written by the author against his own campaigns. Many objections are already there, conceded."
+  - name: "Read this before quoting a number — the eight reading rules"
+    url: https://github.com/davidleconte/shredding-cost-hcd-mongodb/blob/main/RESULTS.md#reading-rules-for-anyone-quoting-this-dossier
+    about: "The eight misquotations this dossier is most likely to suffer, and the sixteen axes it never measured at all."
+  - name: "Read this before reproducing — why your numbers will differ"
+    url: https://github.com/davidleconte/shredding-cost-hcd-mongodb/blob/main/REPRODUCING.md#7-why-your-numbers-will-differ-from-ours
+    about: "You will not reproduce these figures and are not supposed to. The mechanism transfers; the magnitude does not."
+  - name: "Scope of the work, and the author's employer"
+    url: https://github.com/davidleconte/shredding-cost-hcd-mongodb/blob/main/DISCLAIMER.md
+    about: "Personal research, not an employer position. What was measured, and why this is not a benchmark or a product comparison."

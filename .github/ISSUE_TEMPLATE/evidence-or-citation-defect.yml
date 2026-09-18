@@ -1,0 +1,91 @@
+name: "Evidence or citation defect"
+description: "A raw file, a number, a link, a licence, the citation metadata, or a quotation of this work elsewhere is wrong."
+title: "[defect] "
+labels: ["citation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for defects of the record rather than of the conclusions: a number in the prose that
+        does not match the file it cites, a broken path, wrong citation metadata, a bug in a probe,
+        or this work being quoted somewhere without the caveat that makes the number mean anything.
+
+        Note before you file a raw-file defect: files under `data/raw/` are **never edited**, not
+        even to correct a figure a later run disproved. `findings_mongot_freshness.json` still reads
+        `p50_ms: 1015.201` on purpose. A defect there is fixed in the prose that cites the file, or
+        by publishing a new file beside it — never by amending it.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "What kind of defect"
+      options:
+        - "A number in the prose does not match the raw file it cites"
+        - "A raw file is malformed, mislabelled, or does not back the claim that points at it"
+        - "A link, an anchor or a file path is broken"
+        - "Citation metadata is wrong or incomplete (CITATION.cff, authorship, licence, DOI)"
+        - "A licence or attribution statement is wrong"
+        - "A defect in the probe code under probes/"
+        - "This work is being quoted elsewhere without its regime or its caveat"
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: "Where"
+      description: "File and section, heading, line number, or the raw filename."
+      placeholder: "RESULTS.md §3, M12 row — or data/raw/findings_tier.json"
+    validations:
+      required: true
+
+  - type: textarea
+    id: defect
+    attributes:
+      label: "What is there now, and what it should be"
+      description: "Quote the current text or value verbatim. If you have the corrected value, give the raw file and the field it comes from."
+    validations:
+      required: true
+
+  - type: input
+    id: measurement
+    attributes:
+      label: "Measurement or raw file concerned"
+      description: "M1–M23, or a filename under data/raw/. Leave blank if neither applies."
+      placeholder: "M12 / findings_tier_method2.json"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: reading-rule
+    attributes:
+      label: "For a misquotation: which of the eight reading rules is being broken"
+      description: "The rules are at the end of RESULTS.md. They name the eight misquotations this dossier is most likely to suffer."
+      options:
+        - "Not a misquotation"
+        - "1 — a per-KiB rate or growth factor quoted without its regime"
+        - "2 — the 602× quoted as HCD being 602× slower, rather than as an API surface"
+        - "3 — the tier share quoted as a single number, when it is 9–29 % and unreconciled"
+        - "4 — the mongot lag quoted as MongoDB's or Atlas's, when it is mongot 1.75.1 localDev"
+        - "5 — HCD's search freshness quoted as zero, when it is bounded below the HTTP floor"
+        - "6 — the 21.7× undeclared-field win quoted as engine speed"
+        - "7 — one MongoDB arm reported instead of both"
+        - "8 — 13.738 ms quoted as the cost of Paxos, when three replicas shared one host"
+    validations:
+      required: true
+
+  - type: input
+    id: where-quoted
+    attributes:
+      label: "For a misquotation: where"
+      description: "URL, publication or venue. Leave blank otherwise."
+    validations:
+      required: false
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: "Anything else"
+      description: "Attachments, a patch, a screenshot of the misquotation."
+    validations:
+      required: false

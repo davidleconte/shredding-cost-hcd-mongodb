@@ -633,15 +633,47 @@ residue is `system.paxos`, which `paxos_state_purging = legacy` would not reclai
 - **Two axes were never measured at all.** Vector ANN search performance (as opposed to vector
   freshness, which M7 could only bound below the HTTP floor), and the freshness of HCD's lexical path
   against mongot's `$vectorSearch` (C14 / D4, explicitly unresolved).
-- **Campaign 7 has a report, but no adversarial verdict.** `data/raw/findings_agg_hcd.json`,
-  `data/raw/findings_agg_mongodb.json` and `data/raw/findings_agg_cqlref.json` were produced by
-  `probes/probe_aggregation.py` and `probes/agg_cql_arm.py`, are covered in full by the campaign
-  report `docs/campaigns/07-aggregation.fr.md`, and carry the identifiers M20–M23. What they do not
-  carry is an adversarial verdict: `docs/audit-adversarial.fr.md` is written against M1–M17 over six
-  campaigns, `docs/challenges.fr.md` against M1–M13, and neither document examines the aggregation
-  axis. **No figure from M20–M23 has been challenged**, so each stands on the reserves its own report
-  attaches to it — the HCD scan arm's n = 3, the cache regime that M22's zero proves, the
-  apples-to-oranges label the CQL arm carries in its own result file — and on nothing beyond them.
+- **Campaign 7 now carries an adversarial verdict — added 18 September 2026, and it cost the
+  campaign something.** This entry previously read *"No figure from M20–M23 has been challenged"*,
+  which was true when written and is no longer. `docs/audit-adversarial.fr.md` is written against
+  M1–M17 and `docs/challenges.fr.md` against M1–M13, so neither examines the aggregation axis;
+  [`docs/challenges-campagne7.fr.md`](docs/challenges-campagne7.fr.md) supplies the missing pass —
+  nine challenges, D6–D14. **No conclusion was reversed.** What changed:
+
+  - **Two measurements came out stronger.** The 134-second client scan decomposes exactly, with no
+    residue, from the measurement alone: 133 984.229 ms over 10 000 pages of 20 documents is
+    **13.398 ms per page**, against 10.382 ms for a single-document point read — the +29 % being the
+    payload of twenty documents rather than one. So the 602× is a documented page-size limit
+    multiplied by a measured per-call cost, and the claim upgrades from [U] to [M] (D7). The
+    1 000-document count ceiling is documented vendor behaviour, not a container artefact, which
+    moves the mechanism from [M] to [D] — while the measurement **contradicts** the documentation's
+    phrasing, since the probe set `upper_bound = 400 000` and the server ignored it, so the user
+    control the wording implies does not exist on this build (D8).
+  - **One was narrowed.** `estimatedDocumentCount() = 0` is a pre-flush cold-start property; steady
+    state after flush and compaction was never measured, and "not approximate, wrong" must be bound
+    to the condition measured (D9).
+  - **One resolved against the challenger.** The MongoDB `$group` ran with `cat_idx` present
+    (`probes/probe_aggregation.py`), but the index is irrelevant to it: `$sum: "$amt"` cannot be
+    served by an index on `cat` alone, and the index-served filtered count takes 12.659 ms against
+    the `$group`'s 222.711 ms — 17.6×, the signature of a collection scan (D10).
+  - **Three challenges are new, and two turn on the dossier.** **D12** is the heaviest finding in
+    this document: the campaign charges the native-CQL path with a design cost — "pre-designing a
+    table partitioned by the group key" — that **its own data does not support**. The misaligned arm
+    (C3b) is only ×1.28 slower than the aligned one, and that ×1.28 is itself not established: the
+    supports overlap across an 83.8 ms window and the ratio interval is **[0.966, 1.421]**, its lower
+    bound below unity, so the data cannot even exclude that the cross-partition scan is *faster*.
+    What survives, and it suffices, is that reaching the CQL path means abandoning the document model
+    at all — structural, and no interval touches it. **D13** shows the 46.3× ingest asymmetry the
+    campaign reports without comment confounds a documented batch ceiling (100 documents per
+    `insertMany`, hence 2 000 calls against MongoDB's 20) with per-document shredding cost, because
+    only one batch size was tried per engine. **D14** bounds M23 to a single query shape: ten groups,
+    one `SUM`, no filter — plausibly the shape most favourable to MongoDB that could have been chosen.
+
+  **What this still does not give M20–M23.** The reserves their own report attaches still stand and
+  are not lifted by having been challenged: the HCD scan arm's n = 3 (whose exact permutation
+  p-value is floored at 1.23 × 10⁻³ by the sample size, not by the effect — see
+  [`docs/STATISTICS.md`](docs/STATISTICS.md)), the cache regime that M22's zero itself proves, and
+  the apples-to-oranges label the CQL arm carries in its own result file.
 - **Reproduction is not possible in the strict sense.** The ring's state mutated across campaigns
   (`system.paxos` from 0 to ~13 GiB per node; the 20 `supply_chain_hcd` indexes dropped and recreated
   six times), and the machine was never idle. What can be reproduced is the *method*: the probes are
