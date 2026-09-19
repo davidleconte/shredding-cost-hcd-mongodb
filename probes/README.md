@@ -312,3 +312,8 @@ records kept a median and nothing else: the shared `dist()` helper emits n / p50
 / stdev and drops both the minimum and the series, and separation of support needs the minimum.
 This probe does not call that helper. Rules R1–R4 are fixed in its docstring before execution;
 record the verdict against them and not against what the data suggest afterwards.
+
+Running it is not straightforward on the measurement host as it stands: the guardrail that this
+dossier itself measured — a hundred SAI indexes per node — is at or near its limit there, so
+creating a collection through the Data API may be refused. [`.github/WORK-ORDER-regime-disque.fr.md`](../.github/WORK-ORDER-regime-disque.fr.md) carries the
+checks that decide, the CQL variant to use if it is, and what must not change in either case.
