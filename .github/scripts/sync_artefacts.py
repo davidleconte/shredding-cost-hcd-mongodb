@@ -110,7 +110,11 @@ def preflight(repo: Path) -> None:
     run(["git", "-C", str(repo), "fetch", "-q", "origin"])
     here = run(["git", "-C", str(repo), "rev-parse", "HEAD"]).stdout.strip()
     there = run(["git", "-C", str(repo), "rev-parse", "origin/main"]).stdout.strip()
-    if here != there:
+    behind_n = run(["git", "-C", str(repo), "rev-list", "--count", "HEAD..origin/main"]).stdout.strip()
+    # Seul le RETARD est dangereux : il fait construire sur une base périmée.
+    # Être en avance de commits déjà vérifiés ne l'est pas, et refuser dans ce cas
+    # obligeait à pousser avant de synchroniser, sans raison.
+    if here != there and behind_n != "0":
         behind = run(["git", "-C", str(repo), "rev-list", "--count", "HEAD..origin/main"]).stdout.strip()
         ahead = run(["git", "-C", str(repo), "rev-list", "--count", "origin/main..HEAD"]).stdout.strip()
         refuse(f"HEAD et origin/main divergent ({ahead} en avance, {behind} en retard). "
