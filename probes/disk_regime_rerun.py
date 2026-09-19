@@ -151,6 +151,45 @@ def ballast(kb: int) -> dict[str, str]:
     return out
 
 
+def host_fingerprint() -> dict[str, Any]:
+    """Identifies the machine, so that a reader can refuse to compare this record
+    with one taken elsewhere.
+
+    `findings_disk_rf3.json` — the record carrying the x5.94 this probe exists to
+    replace — does NOT carry one. Its host is known from campaign context and not
+    from the file, which is a second defect beyond the missing minimum and count.
+    """
+    model, mem_gib = "unknown", None
+    try:
+        with open("/proc/cpuinfo") as fh:
+            model = next((l.split(":", 1)[1].strip() for l in fh
+                          if l.startswith("model name")), "unknown")
+    except OSError:
+        pass
+    try:
+        with open("/proc/meminfo") as fh:
+            mem_gib = round(int(next(l for l in fh if l.startswith("MemTotal")).split()[1])
+                            / 1024 / 1024, 1)
+    except (OSError, StopIteration):
+        pass
+    try:
+        load1, load5, load15 = os.getloadavg()
+    except OSError:
+        load1 = load5 = load15 = None
+    return {
+        "hostname": os.uname().nodename,
+        "cpu_model": model,
+        "cpu_count": os.cpu_count(),
+        "mem_gib": mem_gib,
+        "platform": " ".join(os.uname()),
+        "loadavg_at_start": [load1, load5, load15],
+        "note": ("The published x7.50 / x5.94 / x1.52 were measured on `alphadebunker`. "
+                 "A record taken on any other machine cannot be compared with them: the "
+                 "ratio would mix engine with hardware, which is the confound this "
+                 "dossier exists to avoid."),
+    }
+
+
 def flush_dc1() -> None:
     """Flush is NOT timed and NOT part of any reported figure."""
     for node in DC1_NODES:
@@ -254,6 +293,10 @@ def run() -> dict[str, Any]:
     if "min_ms" in mu and "min_ms" in su:
         v["R2_regimes_separated_at_1KB"] = separated(mu, su)
     result["verdicts"] = v
+    try:
+        result["loadavg_at_end"] = list(os.getloadavg())
+    except OSError:
+        result["loadavg_at_end"] = None
     return result
 
 
@@ -265,6 +308,7 @@ if __name__ == "__main__":
                     "of support and any interval are computable."),
         "closes": ["REGIME-M10-disk-1kb-vs-128kb", "REGIME-M15-postflush-1kb-vs-128kb"],
         "run_at_utc": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+        "host": host_fingerprint(),
         "conditions": {
             "sizes_kb": list(SIZES_KB),
             "reps_per_point": REPS,
@@ -285,6 +329,8 @@ if __name__ == "__main__":
             "This exercises the SSTable read path, not disk seeks.",
             "Single sequential closed-loop client; percentiles are service-time, not load tails.",
             "One host, one build. Nothing here addresses concurrency or multi-node topology.",
+            "The host was shared and under uncontrolled background load; loadavg is recorded at "
+            "start and at end so that a reader can judge the drift rather than trust the run.",
         ],
     }
     out["result"] = run()
