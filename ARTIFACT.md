@@ -105,7 +105,7 @@ Every number in the table below is regenerated from the tree by
 | `probes/*.py` | **19** (plus 2 `.orig` reference copies) |
 | `.github/scripts/check_*.py` | 9 |
 | `git tag -l` | v1.0-arxiv |
-| tracked files | 121 |
+| tracked files | 122 |
 <!-- END ARTIFACT FACTS -->
 
 What does not derive mechanically: **eight campaign reports** — the seven in `docs/campaigns/`
