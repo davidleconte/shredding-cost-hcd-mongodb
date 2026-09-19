@@ -77,7 +77,7 @@ Partez de `probes/disk_regime_rerun.py` et modifiez le strict nécessaire. **Ne 
 sonde.** Ce qui suit doit être préservé à l'identique :
 
 1. **Le helper `dist()`**, qui émet `min_ms` **et** `raw_ms`. C'est la raison d'être de cette sonde :
-   le helper partagé par les autres sondes du dépôt émet `n / p50 / p95 / p99 / max / stdev` et jette
+   le helper `dist()` de `probes/rmw_postflush.py`, partagé par les autres sondes émet `n / p50 / p95 / p99 / max / stdev` et jette
    le minimum et la série, ce qui rend la séparation des supports incalculable. Vingt-trois
    enregistrements sur vingt-cinq sont perdus pour cette raison. Ne l'appelez pas, ne le réintroduisez
    pas, et ne « simplifiez » pas `dist()`.
@@ -178,7 +178,7 @@ pas un échec à corriger en ajustant quoi que ce soit.
 
 - **Pas de root**, donc pas de vidage du cache de pages. Les SSTables fraîchement écrites sont petites
   et chaudes : on exerce le chemin de lecture SSTable, pas des déplacements de tête. Cette limite est
-  héritée de `rmw_postflush.py` et n'est pas réparée ici.
+  héritée de `probes/rmw_postflush.py` et n'est pas réparée ici.
 - **Client unique séquentiel**, en boucle fermée, comme partout dans ce dossier. Les percentiles sont
   des percentiles de temps de service à utilisation négligeable, pas des queues sous charge.
 - **Un hôte, partagé, sous charge de fond non contrôlée.** D'où l'enregistrement de la charge au début
