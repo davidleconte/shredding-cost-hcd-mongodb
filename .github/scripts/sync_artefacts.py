@@ -68,6 +68,10 @@ MAPPING: dict[str, str] = {
     "Part-I-what-a-mutation-costs.pdf":             "docs/article/Part-I-what-a-mutation-costs.pdf",
     "Part-II-when-the-index-is-current.pdf":        "docs/article/Part-II-when-the-index-is-current.pdf",
 
+    # designs de campagne, versionnés pour l'agent de mesure
+    "DESIGN-campagne-structures-index.md":          ".github/DESIGN-campagne-structures-index.fr.md",
+    "DESIGN-campagne-mongodb.md":                   ".github/DESIGN-campagne-mongodb.fr.md",
+
     # probes
     "disk_regime_rerun.py":                         "probes/disk_regime_rerun.py",
     "mongo_regime_rerun.py":                        "probes/mongo_regime_rerun.py",
