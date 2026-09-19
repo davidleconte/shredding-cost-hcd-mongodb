@@ -158,7 +158,7 @@ Pas de pipeline côté serveur dans la Data API : 134 s contre 0,22 s par la seu
 <small style="color:var(--muted)">Le même moteur agrège en ~2 s en CQL natif. Et sa doctrine dit de
 <strong>ne pas agréger à la requête</strong> mais de pré-calculer l'agrégat à l'écriture — ce qui n'est ni
 l'une ni l'autre des deux voies mesurées.</small></td>
-<td class="stat"><b>Certaine</b> — supports disjoints. La réserve « sur 3 observations » est levée sur la médiane : rejouée à <b>n = 15</b>, elle vaut 132 985,311 ms, −0,7 % (campagne 7bis). Elle tient sur les percentiles de queue</td>
+<td class="stat"><b>Certaine</b> — supports disjoints, sur 3 observations</td>
 <td class="scope"><span class="tag g-hold">Tient</span>
 L'absence de pipeline est un fait d'interface : elle arrive au premier document et ne dépend d'aucune
 volumétrie. <b>S'aggrave à l'échelle :</b> le balayage client croît linéairement avec la collection.</td>
@@ -168,7 +168,7 @@ volumétrie. <b>S'aggrave à l'échelle :</b> le balayage client croît linéair
 <td class="axis">Compter exactement<small>cardinal d'une collection</small></td>
 <td class="win"><span class="pill p-mdb"><i class="dot"></i>MongoDB</span></td>
 <td class="marg"><strong>Par capacité.</strong> La Data API refuse au-delà d'un seuil documenté (1 000 ici),
-et son estimateur a répondu <strong>0</strong> pour 200 000 documents réels avant le premier flush — puis <strong>171 267</strong> après flush et <strong>172 132</strong> après compaction majeure (campagne 7bis) : l'erreur est de l'ordre de 14 % en <em>régime permanent</em>, et non un artefact de démarrage.</td>
+et son estimateur a répondu <strong>0</strong> pour 200 000 documents réels, avant premier flush.</td>
 <td class="stat"><b>Structurelle</b> — aucune observation, l'opération est refusée</td>
 <td class="scope"><span class="tag g-unk">Indéterminé</span>
 Le refus est constant ; le coût du comparateur dépend de la voie. Son balayage non indexé croît avec le
