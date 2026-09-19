@@ -1,0 +1,59 @@
+\begin{thebibliography}{10}
+
+\bibitem{chang2008bigtable}
+Fay Chang, Jeffrey Dean, Sanjay Ghemawat, Wilson~C. Hsieh, Deborah~A. Wallach,
+  Mike Burrows, Tushar Chandra, Andrew Fikes, and Robert~E. Gruber.
+\newblock Bigtable: A distributed storage system for structured data.
+\newblock {\em ACM Transactions on Computer Systems}, 26(2):1--26, 2008.
+
+\bibitem{dean2013tail}
+Jeffrey Dean and Luiz~Andr{\'e} Barroso.
+\newblock The tail at scale.
+\newblock {\em Communications of the ACM}, 56(2):74--80, 2013.
+
+\bibitem{fieller1954ratio}
+E.~C. Fieller.
+\newblock Some problems in interval estimation.
+\newblock {\em Journal of the Royal Statistical Society, Series B},
+  16(2):175--185, 1954.
+
+\bibitem{lakshman2010cassandra}
+Avinash Lakshman and Prashant Malik.
+\newblock Cassandra: A decentralized structured storage system.
+\newblock {\em ACM SIGOPS Operating Systems Review}, 44(2):35--40, 2010.
+
+\bibitem{lamport1998parttime}
+Leslie Lamport.
+\newblock The part-time parliament.
+\newblock {\em ACM Transactions on Computer Systems}, 16(2):133--169, 1998.
+
+\bibitem{luo2019lsmsurvey}
+Chen Luo and Michael~J. Carey.
+\newblock {LSM}-based storage techniques: A survey.
+\newblock In {\em The VLDB Journal}, volume~29, pages 393--418, 2020.
+
+\bibitem{oneil1996lsm}
+Patrick O'Neil, Edward Cheng, Dieter Gawlick, and Elizabeth O'Neil.
+\newblock The log-structured merge-tree ({LSM}-tree).
+\newblock {\em Acta Informatica}, 33(4):351--385, 1996.
+
+\bibitem{raasveldt2018fair}
+Mark Raasveldt, Pedro Holanda, Tim Gubner, and Hannes M{\"u}hleisen.
+\newblock Fair benchmarking considered difficult: Common pitfalls in database
+  performance testing.
+\newblock {\em Proceedings of the Workshop on Testing Database Systems
+  (DBTest)}, pages 1--6, 2018.
+
+\bibitem{schroeder2006openclosed}
+Bianca Schroeder, Adam Wierman, and Mor Harchol-Balter.
+\newblock Open versus closed: A cautionary tale.
+\newblock {\em Proceedings of the 3rd USENIX Symposium on Networked Systems
+  Design and Implementation (NSDI)}, pages 239--252, 2006.
+
+\bibitem{wohlin2012experimentation}
+Claes Wohlin, Per Runeson, Martin H{\"o}st, Magnus~C. Ohlsson, Bj{\"o}rn
+  Regnell, and Anders Wessl{\'e}n.
+\newblock Experimentation in software engineering.
+\newblock 2012.
+
+\end{thebibliography}
