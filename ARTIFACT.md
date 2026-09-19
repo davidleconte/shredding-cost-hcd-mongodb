@@ -105,7 +105,6 @@ Every number in the table below is regenerated from the tree by
 | `probes/*.py` | **20** (plus 2 `.orig` reference copies) |
 | `.github/scripts/check_*.py` | 10 |
 | `git tag -l` | v1.0-arxiv |
-| tracked files | 131 |
 <!-- END ARTIFACT FACTS -->
 
 What does not derive mechanically: **eight campaign reports** — the seven in `docs/campaigns/`
@@ -139,12 +138,23 @@ Two consequences were drawn from that, and **both are now discharged**:
    remains the only genuinely independent confirmation in this repository that the evidence
    directory is in the state its documents describe.
 
-**As re-verified, at `457568f`.** Seventeen commits, still no tag, the window running from
-`2026-09-18 10:03:02` to `17:08:26 +0000`. Those three figures are prose rather than generated, and
-deliberately so: a generated block must not contain a fact that generating it changes, and the
-commit that writes such a block moves `HEAD`. Everything that *is* stable across its own commit —
-evidence count and size, stamp coverage, probe count, script count, tag list, tracked files,
-untracked paths — is in the generated table in §1.3. The material changes since `b61eef4`, each of
+**As re-verified, at `7782704`.** 41 commits, tagged `v1.0-arxiv`, the window running from
+`2026-09-18 10:03:02` to `2026-09-19 08:37:01 +0000`.
+
+Those figures are prose rather than generated, and so are three others that were tried in the block
+and removed from it — the rule and its three instances are worth stating once, because each was
+found a day after the last and each cost a red build. **A generated block may contain only facts
+invariant under the act of generating *and committing* it.** `HEAD` moves when you commit. Untracked
+paths differ from one machine to the next, so a block naming them publishes whatever scratch file
+happened to sit beside the repository — that is how this check first went red, having embedded a
+local grading report into a committed document. And the **tracked-file count**, subtlest of the
+three, is stable only if every file a commit adds was staged *before* the block was regenerated;
+regenerating first is the natural order, so the trap is baited. It fired the day after the other two
+were removed: the block recorded 131 while the commit carrying it brought the tree to 133, and it
+passed locally and failed on a clean clone.
+
+What remains in the generated table in §1.3 is what survives its own commit: evidence count and
+size, stamp coverage, probe count, script count and the tag list. The material changes since `b61eef4`, each of
 which invalidated something this document had asserted:
 
 | Landed | What it changed here |

@@ -118,7 +118,6 @@ def facts() -> dict[str, str]:
         "manifest_entries": str(len(entries)),
         "check_scripts": str(len(scripts)),
         "tags": git("tag", "-l") or "(none)",
-        "tracked_files": str(len(git("ls-files").splitlines())),
     }
     # Deliberately absent, and each for its own reason.
     #   Commit count, HEAD, commit window: a generated block must not contain a fact that
@@ -130,7 +129,16 @@ def facts() -> dict[str, str]:
     #   checkout — which is what CI and every reader has — computes something different.
     #   That is how this check first went red: it published .github/GRADE-REPORT.md, an
     #   untracked local file, into a committed document.
-    # All of these live in §1.4 as prose about a named past state, which is what they are.
+    #   Tracked-file count: the subtlest of the three, and it fired a day after the other
+    #   two were removed. It is stable across a commit ONLY if every file that commit adds
+    #   was staged before the block was regenerated — and regenerating before staging is
+    #   the natural order, so the trap is baited. The block recorded 131 while the commit
+    #   that carried it brought the tree to 133.
+    # THE RULE, stated once with its three instances above: a generated block may contain
+    # only facts invariant under the act of generating AND committing it. HEAD moves when
+    # you commit; untracked paths differ per machine; the tracked-file count changes when
+    # the commit adds files. All three live in §1.4 as prose about a named past state,
+    # which is what they are.
 
 
 def facts_block() -> str:
@@ -143,8 +151,7 @@ def facts_block() -> str:
             + f"| `data/MANIFEST.sha256` entries | {f['manifest_entries']} |\n"
             + f"| `probes/*.py` | **{f['probes']}** (plus {f['probe_orig']} `.orig` reference copies) |\n"
             + f"| `.github/scripts/check_*.py` | {f['check_scripts']} |\n"
-            + f"| `git tag -l` | {f['tags']} |\n"
-            + f"| tracked files | {f['tracked_files']} |\n")
+            + f"| `git tag -l` | {f['tags']} |\n")
 
 
 def splice(text: str, begin: str, end: str, body: str) -> str:
