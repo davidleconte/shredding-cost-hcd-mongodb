@@ -186,6 +186,50 @@ pas un échec à corriger en ajustant quoi que ce soit.
 
 ---
 
+## 7 · Une seconde campagne, indépendante — le bras MongoDB hors cache
+
+**À ne lancer qu'après la première**, et seulement si elle s'est bien passée. Les deux mesures sont
+indépendantes ; les enchaîner dans la même session ne gagne rien et brouille les deux.
+
+`probes/mongo_regime_rerun.py` ferme une asymétrie que le dossier porte depuis le début :
+**le moteur décomposant a été mesuré dans trois régimes, le comparateur dans un seul.** Tous les
+enregistrements MongoDB de `data/raw/` sont en cache. La conclusion « le coefficient est un artefact
+de régime » s'appuie donc sur un moteur mesuré trois fois et un moteur mesuré une fois.
+
+Trois issues sont ouvertes, et **la troisième n'est pas exclue** :
+
+- MongoDB se dégrade autant hors cache → l'écart de 3 à 13 fois se réduit, et l'axe mutation doit
+  être réénoncé avec son régime ;
+- il se dégrade moins → l'écart s'élargit et le constat du dossier se renforce sur une preuve qu'il
+  n'a pas aujourd'hui ;
+- il se dégrade davantage → **la direction pourrait s'inverser à certaines tailles**.
+
+```bash
+export MONGO_URI="mongodb://127.0.0.1:27017/?directConnection=true"
+python3 probes/mongo_regime_rerun.py > /tmp/findings_mongo_regime.json
+```
+
+**Vérifiez d'abord que le replica set est debout** — il n'a pas tourné depuis la campagne
+comparative : `docker ps --format '{{.Names}}' | grep mongo`. Sinon,
+`env/docker-compose.mongodb-rs.yml` le reconstruit, et `REPRODUCING.md` dit ce que ce fichier fixe et
+ce qu'il devine.
+
+**Le point délicat, et il est déclaré dans la sonde.** Il n'existe aucun moyen supporté de vider le
+cache WiredTiger sans redémarrer `mongod`, ce qui changerait plus que le cache. La sonde utilise donc
+une pression de ballast — une collection de plusieurs fois la taille du cache, lue de bout en bout —
+et **vérifie l'éviction bras par bras** en lisant le compteur `pages read into cache`. Un bras où ce
+compteur ne bouge pas est enregistré `NOT_EVICTED` et **n'est pas rapporté**. Ne contournez pas ce
+garde-fou : un bras non évincé qui serait rapporté comme évincé serait le pire résultat possible de
+toute l'opération.
+
+**Ce qui compte pour la comparaison, c'est la règle R2** : le rapport des *facteurs de croissance*,
+pas des latences. Si MongoDB croît à moins de 20 % de HCD, l'expression « artefact de régime » vaut
+pour les deux moteurs et doit être réénoncée comme une propriété du stockage en général, pas de la
+décomposition. **Cette mesure-là doit être prise sur le même hôte que la première**, sans quoi le
+rapport mélange moteur et matériel.
+
+---
+
 ## 7 · Le critère de succès, et il est objectif
 
 Après rapatriement et ajout au manifeste, sur le MacBook :
@@ -195,4 +239,8 @@ python3 .github/scripts/check_inference.py
 ```
 
 Il rend aujourd'hui `3 not decidable from summary statistics`. **Il doit en rendre moins.** C'est la
-mesure du succès de toute l'opération, et elle ne dépend d'aucune appréciation.
+mesure du succès de la première campagne, et elle ne dépend d'aucune appréciation.
+
+Pour la seconde, le critère est différent et tout aussi objectif : `docs/THREATS-TO-VALIDITY.md`
+porte la menace **L10** à deux étoiles, qui dit que le comparateur n'a jamais été mesuré hors cache.
+Un enregistrement dont aucun bras ne porte `NOT_EVICTED` la ferme.

@@ -317,3 +317,15 @@ Running it is not straightforward on the measurement host as it stands: the guar
 dossier itself measured — a hundred SAI indexes per node — is at or near its limit there, so
 creating a collection through the Data API may be refused. [`.github/WORK-ORDER-regime-disque.fr.md`](../.github/WORK-ORDER-regime-disque.fr.md) carries the
 checks that decide, the CQL variant to use if it is, and what must not change in either case.
+
+## `mongo_regime_rerun.py` — written, not yet run
+
+The companion to `disk_regime_rerun.py`, and it exists for a reason the dossier should have caught
+earlier: the decomposing engine was measured in three regimes and the comparator in one. Every
+MongoDB record here is cache-resident, so the claim that the per-byte coefficient is a *regime
+artefact* rests on one engine measured three times and one measured once.
+
+Eviction is the difficult part and the probe does not pretend otherwise: there is no supported way
+to drop WiredTiger's cache without restarting `mongod`, which would change more than the cache. It
+uses ballast pressure instead, and **verifies eviction per arm** by reading the pages-read-into-cache
+counter — an arm where that counter does not move is recorded `NOT_EVICTED` rather than reported.
