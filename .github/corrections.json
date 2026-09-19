@@ -1,0 +1,234 @@
+{
+  "_README": [
+    "Ledger for .github/scripts/check_corrections_parity.py (CI job 11).",
+    "One entry per correction this dossier has made to itself. A `trigger` is the superseded",
+    "reading, written in EVERY language it is published in — the repair of 18 September missed two",
+    "stale claims because it searched only the English phrasing. A `qualifier` is what must",
+    "accompany the trigger wherever it appears; the convention here is to KEEP a superseded reading",
+    "and refute it in place, so a trigger is licensed by a qualifier in the same block, not",
+    "forbidden outright. `exempt` maps a surface to a written reason and is printed on every run.",
+    "Adding an entry whose trigger matches nothing fails the check on purpose."
+  ],
+  "corrections": [
+    {
+      "id": "D9-refuted",
+      "date": "2026-09-18",
+      "what": "D9 narrowed the estimator's zero to a cold-start artefact; campaign 7bis refuted the narrowing — 171 267 after flush, 172 132 after major compaction, against a true 200 000. The defect is steady-state, and M22 was understated.",
+      "trigger": [
+        "cold-start property",
+        "cold start property",
+        "avant premier flush",
+        "propriété du démarrage à froid",
+        "steady state, after flush and compaction, was not measured"
+      ],
+      "qualifier": [
+        "171 267",
+        "172 132",
+        "steady state",
+        "état durable",
+        "régime permanent",
+        "⛔",
+        "réfuté",
+        "refuté",
+        "retiré",
+        "14 %",
+        "withdrawn",
+        "un-scoped"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "D12-annulled",
+      "date": "2026-09-18",
+      "what": "D12 withdrew the clause 'pre-designing a table partitioned by the group key'; the withdrawal is annulled and the clause reinstated. Its 'misaligned arm' is a second query shape against the same pre-partitioned table, and on a PRIMARY KEY (id) table the GROUP BY is refused outright.",
+      "trigger": [
+        "the penalty is withdrawn",
+        "does not separate from noise",
+        "misaligned arm",
+        "le bras désaligné",
+        "bras non aligné"
+      ],
+      "qualifier": [
+        "annulled",
+        "annulé",
+        "reinstated",
+        "réinstaur",
+        "error of object",
+        "même table",
+        "same table",
+        "refuses it",
+        "refused",
+        "refusé",
+        "2200"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "D12-R3-reserve",
+      "date": "2026-09-18",
+      "what": "R3 narrows the annulment: the refusal covers C3b's GROUP BY shape, not C3a's sweep, which runs against an unaligned table once ALLOW FILTERING is added — and C3a is the arm behind the headline 2 011.399 ms.",
+      "trigger": [
+        "code=2200",
+        "refuses it outright",
+        "only supported on the columns of the primary key"
+      ],
+      "qualifier": [
+        "allow filtering",
+        "sweep",
+        "c3a",
+        "balayage par partition",
+        "false positive",
+        "faux positif",
+        "grep",
+        "case-insensitive",
+        "insensible à la casse"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "D7-decomposition",
+      "date": "2026-09-18",
+      "what": "The 134 s was decomposed by importing M16's point-read p50, a different operation on a different collection in a different campaign, leaving a 30 s residue that was an artefact of the wrong constant. The correct decomposition imports nothing: 133 984.229 ms over 10 000 pages is 13.398 ms per page, no residue.",
+      "trigger": [
+        "104 seconds",
+        "104 s",
+        "10.4 ms per data api read",
+        "10.382 ms for a single-document point read"
+      ],
+      "qualifier": [
+        "13.398",
+        "13.4 ms per page",
+        "no residue",
+        "sans reliquat",
+        "artefact of the wrong constant",
+        "wrong constant"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "C1bis-not-engine-to-engine",
+      "date": "2026-09-18",
+      "what": "The 40x/72x was labelled engine-to-engine. Both HCD arms issue UPDATE ... IF tx_id = ?, and no probe ever issues a non-conditional HCD update, so stripping the Data API tier did not strip the Paxos round.",
+      "trigger": [
+        "engine-to-engine",
+        "engine to engine"
+      ],
+      "qualifier": [
+        "tier stripped",
+        "tier removed",
+        "not engine-to-engine",
+        "c1-bis",
+        "paxos",
+        "honest engine-to-engine figure"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "602x-query-shape",
+      "date": "2026-09-18",
+      "what": "The 602x holds at ten groups. At 100 000 groups the same comparison gives 151x, because MongoDB's cost scales with group cardinality and HCD's does not.",
+      "trigger": [
+        "602×",
+        "602x"
+      ],
+      "qualifier": [
+        "584",
+        "151",
+        "ten groups",
+        "dix groupes",
+        "query shape",
+        "forme de requête",
+        "capability",
+        "tier gap",
+        "capability gap",
+        "lacune d'api",
+        "refutes itself"
+      ],
+      "exempt": {
+        "docs/campaigns/07-aggregation.fr.md": "Archive. README declares the campaign reports 'as written at the time — nothing deleted, nothing reworded'; a campaign report cannot be corrected in place without destroying what it is evidence of. Campaign 7bis is the correction, and it is a separate document.",
+        "docs/challenges-campagne7.fr.md": "The adversarial record argues ABOUT the figure rather than publishing it as a result — 'à un effet de 602×, une erreur d'un facteur deux laisserait encore 300×'. Requiring the query-shape reserve inside an argument that uses the magnitude as a premise would make the check fire on correct prose."
+      }
+    },
+    {
+      "id": "n3-discharged",
+      "date": "2026-09-18",
+      "what": "The HCD aggregation arm's n = 3 reserve is discharged on the median: re-run at n = 15 the median is 132 985.311 ms, -0.7 %. It still holds for the tail percentiles.",
+      "trigger": [
+        "sur 3 observations",
+        "n = 3, spread",
+        "on 3 observations"
+      ],
+      "qualifier": [
+        "132 985",
+        "n = 15",
+        "n=15",
+        "tail",
+        "queue",
+        "percentile"
+      ],
+      "exempt": {}
+    },
+    {
+      "id": "ingest-46x-withdrawn",
+      "date": "2026-09-18",
+      "what": "The 46.3x ingest ratio compared the Data API's 100-document call ceiling against MongoDB's 10 000-document native batch. At a matched batch of 100 on both arms the ratio is 6.9x.",
+      "trigger": [
+        "46.3×",
+        "46.3x",
+        "46,3×"
+      ],
+      "qualifier": [
+        "6.9",
+        "6,9",
+        "matched batch",
+        "lot apparié",
+        "withdrawn",
+        "retiré"
+      ],
+      "exempt": {
+        "docs/challenges-campagne7.fr.md": "D13 states the 46.3x in order to dismantle it; the statement and its refutation are the structure of the challenge, and they sit in adjacent blocks by design.",
+        "docs/campaigns/07-aggregation.fr.md": "Archive — see the reason under 602x-query-shape."
+      }
+    },
+    {
+      "id": "no-interval-anywhere",
+      "date": "2026-09-18",
+      "what": "Campaign 7bis retained its per-observation series, so the aggregation axis carries bootstrap intervals and a rank test. The blanket claim that no confidence interval exists or is recoverable is false. The superseded phrasing was removed from every surface rather than refuted in place, so this entry's obligation is inverted: the trigger must match nothing.",
+      "trigger": [
+        "no confidence interval anywhere",
+        "aucun intervalle de confiance nulle part"
+      ],
+      "qualifier": [
+        "7bis",
+        "but one",
+        "sauf un",
+        "one axis"
+      ],
+      "exempt": {},
+      "resolved": true
+    },
+    {
+      "id": "cache-regime-discharged",
+      "date": "2026-09-18",
+      "what": "M22's zero was read as proof that campaign 7 ran cache-resident, and that reserve attached to the aggregation axis. Campaign 7bis re-measured axis C after flush and major compaction: 130 127.0 ms, 2.1 % FASTER than in cache. The regime was not what carried the result.",
+      "trigger": [
+        "cache regime, not a proven disk regime",
+        "régime cache, non en régime disque prouvé",
+        "proves the corpus was still memtable-resident"
+      ],
+      "qualifier": [
+        "130 127",
+        "7bis",
+        "post-compaction",
+        "après compaction",
+        "2.1 %",
+        "2,1 %",
+        "discharged",
+        "levée"
+      ],
+      "exempt": {
+        "docs/campaigns/07-aggregation.fr.md": "Archive — see the reason under 602x-query-shape."
+      }
+    }
+  ]
+}

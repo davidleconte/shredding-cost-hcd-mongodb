@@ -6,7 +6,7 @@
 # stock GitHub runner with no database of any kind. It therefore re-runs nothing
 # and re-measures nothing.
 #
-# A green check asserts exactly ten things:
+# A green check asserts exactly eleven things:
 #
 #   1. evidence-integrity  every file under data/raw/ still hashes to the value
 #                          committed in data/MANIFEST.sha256
@@ -201,6 +201,21 @@ jobs:
           "10 · Diptych consistency — section and figure references resolve, note anchors pair, shared tables agree"
           python .github/scripts/check_article_refs.py docs/article/article-part1-what-a-mutation-costs.html docs/article/article-part2-when-the-index-is-current.html
 
+  corrections-parity:
+    name: 11 · corrections parity (every correction reached every surface)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Check every declared correction against every published surface
+        run: >-
+          bash .github/scripts/run_check.sh
+          "11 · Corrections parity — a superseded reading never stands without its correction"
+          python .github/scripts/check_corrections_parity.py
+
+
   derived-numbers:
     name: 5 · derived numbers (inference.json vs data/raw)
     runs-on: ubuntu-latest
@@ -258,6 +273,7 @@ jobs:
       - probe-citations
       - artifact-facts
       - article-refs
+      - corrections-parity
     steps:
       - name: Write the verification table and fail if any check failed
         env:
@@ -271,6 +287,7 @@ jobs:
           R8: ${{ needs.probe-citations.result }}
           R9: ${{ needs.artifact-facts.result }}
           R10: ${{ needs.article-refs.result }}
+          R11: ${{ needs.corrections-parity.result }}
         shell: bash
         run: |
           set -uo pipefail
@@ -302,11 +319,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           failed=0
-          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7" "$R8" "$R9" "$R10"; do
+          for result in "$R1" "$R2" "$R3" "$R4" "$R5" "$R6" "$R7" "$R8" "$R9" "$R10" "$R11"; do
             [ "$result" = "success" ] || failed=1
           done
           if [ "$failed" -ne 0 ]; then
-            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7 R8=$R8 R9=$R9 R10=$R10" >&2
+            echo "One or more verification checks did not succeed: R1=$R1 R2=$R2 R3=$R3 R4=$R4 R5=$R5 R6=$R6 R7=$R7 R8=$R8 R9=$R9 R10=$R10 R11=$R11" >&2
             exit 1
           fi
-          echo "All ten verification checks succeeded."
+          echo "All eleven verification checks succeeded."
